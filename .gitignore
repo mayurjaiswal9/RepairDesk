@@ -1,0 +1,41 @@
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- IDE / Editors ----
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# ---- Environment / secrets ----
+.env
+.env.*
+*.local
+
+# ============ Backend (Spring Boot / Java) ============
+backend/target/
+backend/build/
+backend/.gradle/
+backend/out/
+backend/!**/src/main/**/target/
+backend/!**/src/test/**/target/
+HELP.md
+
+# ============ Frontend (Flutter / Dart) ============
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/build/
+frontend/.pub-cache/
+frontend/.pub/
+frontend/pubspec.lock
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/ios/Pods/
+frontend/**/GeneratedPluginRegistrant.*
+*.g.dart
+*.freezed.dart
+
+# ============ Logs ============
+*.log
