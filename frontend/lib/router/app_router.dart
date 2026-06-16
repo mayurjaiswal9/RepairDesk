@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/auth/session_controller.dart';
 import '../features/authentication/presentation/login_screen.dart';
+import '../features/authentication/presentation/register_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 
 part 'app_router.g.dart';
@@ -11,8 +12,8 @@ part 'app_router.g.dart';
 /// Named route paths — single source of truth for navigation.
 abstract class AppRoutes {
   static const login     = '/login';
+  static const register  = '/register';
   static const dashboard = '/dashboard';
-  // Phase 2+ routes added as features are built.
 }
 
 @riverpod
@@ -29,12 +30,13 @@ GoRouter appRouter(Ref ref) {
       // Still restoring session from storage — stay put.
       if (session.isLoading) return null;
 
-      final isLoginRoute = state.matchedLocation == AppRoutes.login;
+      final isPublicRoute = state.matchedLocation == AppRoutes.login ||
+          state.matchedLocation == AppRoutes.register;
 
-      if (!session.isAuthenticated && !isLoginRoute) {
+      if (!session.isAuthenticated && !isPublicRoute) {
         return AppRoutes.login;
       }
-      if (session.isAuthenticated && isLoginRoute) {
+      if (session.isAuthenticated && isPublicRoute) {
         return AppRoutes.dashboard;
       }
       return null;
@@ -43,6 +45,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.register,
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: AppRoutes.dashboard,
