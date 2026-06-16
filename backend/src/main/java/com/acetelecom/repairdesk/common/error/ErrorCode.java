@@ -1,0 +1,27 @@
+package com.acetelecom.repairdesk.common.error;
+
+import org.springframework.http.HttpStatus;
+
+/**
+ * Canonical application error codes mapped to HTTP statuses. Returned in the
+ * standard {@link ApiError} response so clients can branch on a stable code.
+ */
+public enum ErrorCode {
+
+    VALIDATION_ERROR(HttpStatus.UNPROCESSABLE_ENTITY),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED),
+    FORBIDDEN(HttpStatus.FORBIDDEN),
+    NOT_FOUND(HttpStatus.NOT_FOUND),
+    CONFLICT(HttpStatus.CONFLICT),
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
+
+    private final HttpStatus status;
+
+    ErrorCode(HttpStatus status) {
+        this.status = status;
+    }
+
+    public HttpStatus status() {
+        return status;
+    }
+}

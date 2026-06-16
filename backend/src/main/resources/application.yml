@@ -1,0 +1,95 @@
+spring:
+  application:
+    name: repairdesk
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/repairdesk}
+    username: ${DB_USERNAME:repairdesk}
+    password: ${DB_PASSWORD:repairdesk}
+    hikari:
+      pool-name: repairdesk-pool
+      maximum-pool-size: ${DB_POOL_MAX:10}
+      minimum-idle: ${DB_POOL_MIN:2}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schema is owned by Flyway only. Never let Hibernate generate or alter DDL.
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    # All REST endpoints live under the versioned base path (Constitution).
+    context-path: /api/v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+# Application-specific configuration (consumed as we build out features).
+app:
+  cors:
+    # Comma-separated origins for the Flutter Web client (dev defaults).
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8081}
+  jwt:
+    # Non-expiring JWTs (gap-analysis). Secret MUST be overridden in prod.
+    secret: ${JWT_SECRET:local-dev-only-change-me-please-32bytes-minimum-secret}
+  storage:
+    # Local file-system attachment volume (StorageService abstraction).
+    location: ${STORAGE_LOCATION:./data/attachments}
+  security:
+    password-min-length: 8
+  admin:
+    # Default admin seed (GAP-03). Mobile is a placeholder updated on first login.
+    default-username: admin
+    default-password: Admin@1234
+    default-mobile: "0000000000"
+
+logging:
+  level:
+    org.flywaydb: info
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+logging:
+  level:
+    com.acetelecom.repairdesk: debug
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+# In prod, ALL of these MUST be provided via environment variables:
+#   DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, STORAGE_LOCATION, CORS_ALLOWED_ORIGINS
+management:
+  endpoint:
+    health:
+      show-details: never
