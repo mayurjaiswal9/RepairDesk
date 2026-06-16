@@ -1,0 +1,47 @@
+name: repairdesk
+description: RepairDesk — mobile-first repair shop management app (ACE Telecom V1).
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management & DI (Constitution mandate)
+  flutter_riverpod: ^3.1.0
+  riverpod_annotation: ^4.0.0
+
+  # Navigation (Constitution mandate)
+  go_router: ^17.3.0
+
+  # HTTP client (Constitution mandate)
+  dio: ^5.8.0+1
+
+  # Immutable models & JSON serialization (Constitution mandate)
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.9.0
+
+  # Secure token storage
+  flutter_secure_storage: ^10.3.1
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code generation (Constitution mandate)
+  build_runner: ^2.4.15
+  freezed: ^3.2.3
+  json_serializable: ^6.9.5
+  riverpod_generator: ^4.0.0+1
+  custom_lint: ^0.8.1
+  riverpod_lint: ^3.1.0
+
+flutter:
+  uses-material-design: true

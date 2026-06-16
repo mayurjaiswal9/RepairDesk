@@ -24,6 +24,6 @@ public record UserProfileResponse(
                 user.getRole().name(),
                 user.getStatus().name(),
                 user.isMustChangePassword(),
-                user.getCreatedAt());
+                user.getCreatedAt()); // inherited from BaseEntity
     }
 }

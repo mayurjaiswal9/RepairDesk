@@ -1,0 +1,31 @@
+<configuration>
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="repairdesk"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--
+                Pattern includes correlationId from MDC.
+                No passwords, tokens, or IMEI values are ever logged (enforced by application code).
+                Format: timestamp level [app] [thread] correlationId logger - message
+            -->
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5level [${appName}] [%15.15t] [%X{correlationId:--}] %-40.40logger{39} : %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Suppress noisy framework DEBUG in prod-like environments -->
+    <springProfile name="prod">
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.acetelecom.repairdesk" level="INFO"/>
+    </springProfile>
+
+    <springProfile name="local">
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.acetelecom.repairdesk" level="DEBUG"/>
+        <logger name="org.flywaydb"              level="INFO"/>
+        <logger name="org.hibernate.SQL"         level="DEBUG"/>
+    </springProfile>
+</configuration>
