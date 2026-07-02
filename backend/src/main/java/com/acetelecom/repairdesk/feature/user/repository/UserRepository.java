@@ -7,7 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 import com.acetelecom.repairdesk.feature.user.domain.AccountStatus;
+import com.acetelecom.repairdesk.feature.user.domain.Role;
 import com.acetelecom.repairdesk.feature.user.domain.User;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
@@ -29,4 +32,16 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     }
 
     boolean existsByStatusNot(AccountStatus status);
+
+    List<User> findByRoleAndStatusNotOrderByNameAsc(Role role, AccountStatus excluded);
+
+    default List<User> findActiveByRole(Role role) {
+        return findByRoleAndStatusNotOrderByNameAsc(role, AccountStatus.DELETED);
+    }
+
+    List<User> findByStatusNotOrderByRoleAscUsernameAsc(AccountStatus excluded);
+
+    default List<User> findAllNonDeleted() {
+        return findByStatusNotOrderByRoleAscUsernameAsc(AccountStatus.DELETED);
+    }
 }

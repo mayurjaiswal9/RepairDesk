@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../requests/presentation/new_request_screen.dart';
 import '../data/customer_home_repository.dart';
 
 final _myRepairsProvider = FutureProvider.autoDispose(
@@ -52,11 +53,12 @@ class CustomerHomeScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: REQ-020 — navigate to repair request intake form
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Repair request form — coming soon')),
+        onPressed: () async {
+          final submitted = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+                builder: (_) => const NewRequestScreen()),
           );
+          if (submitted == true) ref.invalidate(_myRepairsProvider);
         },
         icon: const Icon(Icons.add),
         label: const Text('New Request'),

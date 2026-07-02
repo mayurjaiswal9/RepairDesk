@@ -1,0 +1,84 @@
+import 'package:dio/dio.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../../core/error/app_exception.dart';
+import '../../../core/network/api_client.dart';
+
+part 'profile_repository.g.dart';
+
+@riverpod
+ProfileRepository profileRepository(Ref ref) =>
+    ProfileRepository(ref.watch(apiClientProvider));
+
+class UserProfileData {
+  final String id;
+  final String username;
+  final String? name;
+  final String mobile;
+  final String role;
+  final String status;
+  final bool mustChangePassword;
+
+  const UserProfileData({
+    required this.id,
+    required this.username,
+    this.name,
+    required this.mobile,
+    required this.role,
+    required this.status,
+    required this.mustChangePassword,
+  });
+
+  factory UserProfileData.fromJson(Map<String, dynamic> json) =>
+      UserProfileData(
+        id: json['id'] as String,
+        username: json['username'] as String,
+        name: json['name'] as String?,
+        mobile: json['mobile'] as String,
+        role: json['role'] as String,
+        status: json['status'] as String,
+        mustChangePassword: json['mustChangePassword'] as bool? ?? false,
+      );
+}
+
+class ProfileRepository {
+  ProfileRepository(this._dio);
+  final Dio _dio;
+
+  Future<UserProfileData> getMe() async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/me');
+      return UserProfileData.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<UserProfileData> updateMobile(String mobile) async {
+    try {
+      final res = await _dio.patch<Map<String, dynamic>>('/me',
+          data: {'mobile': mobile});
+      return UserProfileData.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> changePassword(
+      String currentPassword, String newPassword) async {
+    try {
+      await _dio.post<void>('/me/change-password', data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+}

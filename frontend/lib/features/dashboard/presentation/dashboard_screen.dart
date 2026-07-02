@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/session_controller.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../customer_home/presentation/customer_home_screen.dart';
+import '../../jobs/presentation/jobs_list_screen.dart';
+import '../../account/presentation/account_screen.dart';
+import '../../notifications/data/unread_count_provider.dart';
+import '../../notifications/presentation/notifications_screen.dart';
 import '../../requests/presentation/request_queue_screen.dart';
 import '../data/dashboard_repository.dart';
 
@@ -19,11 +23,13 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('RepairDesk'),
         actions: [
+          _BellButton(),
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sign out',
-            onPressed: () =>
-                ref.read(sessionControllerProvider.notifier).signOut(),
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: 'Account',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AccountScreen()),
+            ),
           ),
         ],
       ),
@@ -100,7 +106,9 @@ class _StaffDashboard extends ConsumerWidget {
             icon: Icons.build_outlined,
             label: 'Jobs',
             subtitle: 'Track ongoing repairs',
-            onTap: () {},
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const JobsListScreen()),
+            ),
           ),
           if (role == 'ADMIN') ...[
             _NavTile(
@@ -185,6 +193,48 @@ class _NavTile extends StatelessWidget {
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+// ── Bell button with unread badge ────────────────────────────────────────
+
+class _BellButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final countAsync = ref.watch(unreadCountProvider);
+    final count = countAsync.value ?? 0;
+
+    return IconButton(
+      tooltip: 'Notifications',
+      onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.notifications_outlined),
+          if (count > 0)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                    color: AppTheme.error, shape: BoxShape.circle),
+                constraints:
+                    const BoxConstraints(minWidth: 16, minHeight: 16),
+                child: Text(
+                  count > 99 ? '99+' : '$count',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

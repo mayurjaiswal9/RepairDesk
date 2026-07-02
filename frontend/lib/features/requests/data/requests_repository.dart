@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/error/app_exception.dart';
@@ -89,6 +90,40 @@ class RequestsRepository {
     try {
       await _dio.post<void>('/requests/$requestId/request-info',
           data: {'message': message});
+    } on DioException catch (e) {
+      throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> createRequest({
+    required String categoryId,
+    required String contactName,
+    required String contactMobile,
+    String? deviceBrand,
+    String? deviceModel,
+    required String issueDescription,
+    required DateTime preferredDate,
+    required TimeOfDay preferredTime,
+  }) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>('/requests', data: {
+        'deviceCategoryId': categoryId,
+        'contactName': contactName,
+        'contactMobile': contactMobile,
+        if (deviceBrand != null && deviceBrand.isNotEmpty)
+          'deviceBrand': deviceBrand,
+        if (deviceModel != null && deviceModel.isNotEmpty)
+          'deviceModel': deviceModel,
+        'issueDescription': issueDescription,
+        'preferredDate':
+            '${preferredDate.year.toString().padLeft(4, '0')}-'
+            '${preferredDate.month.toString().padLeft(2, '0')}-'
+            '${preferredDate.day.toString().padLeft(2, '0')}',
+        'preferredTime':
+            '${preferredTime.hour.toString().padLeft(2, '0')}:'
+            '${preferredTime.minute.toString().padLeft(2, '0')}',
+      });
+      return res.data!;
     } on DioException catch (e) {
       throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
     }
