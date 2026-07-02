@@ -81,4 +81,53 @@ class ProfileRepository {
           : AppException.fromDioError(e);
     }
   }
+
+  // ── Admin: user management ──────────────────────────────────────────────
+
+  Future<List<UserProfileData>> listAllUsers() async {
+    try {
+      final res = await _dio.get<List<dynamic>>('/users');
+      return res.data!
+          .cast<Map<String, dynamic>>()
+          .map(UserProfileData.fromJson)
+          .toList();
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> createUser({
+    required String username,
+    required String name,
+    required String mobile,
+    required String password,
+    required String role,
+  }) async {
+    try {
+      await _dio.post<void>('/users', data: {
+        'username': username,
+        'name': name,
+        'mobile': mobile,
+        'password': password,
+        'role': role,
+      });
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> setUserStatus(String userId, bool active) async {
+    try {
+      await _dio.post<void>(
+          '/users/$userId/${active ? 'activate' : 'deactivate'}');
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
 }

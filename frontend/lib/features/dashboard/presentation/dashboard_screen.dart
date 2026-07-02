@@ -9,6 +9,9 @@ import '../../account/presentation/account_screen.dart';
 import '../../notifications/data/unread_count_provider.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../requests/presentation/request_queue_screen.dart';
+import '../../admin/presentation/categories_screen.dart';
+import '../../admin/presentation/staff_screen.dart';
+import '../../admin/presentation/settings_screen.dart';
 import '../data/dashboard_repository.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -115,19 +118,25 @@ class _StaffDashboard extends ConsumerWidget {
               icon: Icons.people_outline,
               label: 'Staff Management',
               subtitle: 'Manage team members',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const StaffScreen()),
+              ),
             ),
             _NavTile(
               icon: Icons.devices_outlined,
               label: 'Device Categories',
               subtitle: 'Manage product catalog',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+              ),
             ),
             _NavTile(
               icon: Icons.settings_outlined,
               label: 'Settings',
               subtitle: 'Business settings and working hours',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
             ),
           ],
         ],
@@ -247,19 +256,6 @@ class _TechnicianLanding extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.engineering, size: 64, color: AppTheme.primary),
-          const SizedBox(height: AppTheme.spaceM),
-          Text('My Jobs',
-              style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppTheme.spaceS),
-          const Text('Job list screen — coming in next phase.',
-              style: TextStyle(color: AppTheme.textSecondary)),
-        ],
-      ),
-    );
+    return const JobsListScreen();
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../requests/presentation/new_request_screen.dart';
 import '../data/customer_home_repository.dart';
+import 'repair_detail_screen.dart';
 
 final _myRepairsProvider = FutureProvider.autoDispose(
     (ref) => ref.watch(customerHomeRepositoryProvider).myRepairs());
@@ -48,7 +49,15 @@ class CustomerHomeScreen extends ConsumerWidget {
                   itemCount: items.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: AppTheme.spaceS),
-                  itemBuilder: (_, i) => _RepairCard(item: items[i]),
+                  itemBuilder: (_, i) => _RepairCard(
+                        item: items[i],
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => RepairDetailScreen(
+                                  referenceNumber:
+                                      items[i].referenceNumber)),
+                        ),
+                      ),
                 ),
         ),
       ),
@@ -91,8 +100,9 @@ class CustomerHomeScreen extends ConsumerWidget {
 }
 
 class _RepairCard extends StatelessWidget {
-  const _RepairCard({required this.item});
+  const _RepairCard({required this.item, this.onTap});
   final RepairListItem item;
+  final VoidCallback? onTap;
 
   static const _statusColors = {
     'Submitted — Under Review': AppTheme.warning,
@@ -114,7 +124,10 @@ class _RepairCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.zero,
-      child: Padding(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        onTap: onTap,
+        child: Padding(
         padding: const EdgeInsets.all(AppTheme.spaceM),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,6 +170,7 @@ class _RepairCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
