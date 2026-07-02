@@ -109,6 +109,24 @@ public class RepairRequestController {
         return ResponseEntity.noContent().build();
     }
 
+    // ── RV-005: Priority & notes ──────────────────────────────────────────────
+
+    @PostMapping("/{id}/priority")
+    @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
+    public RepairRequestResponse setPriority(@PathVariable UUID id,
+            @RequestBody PriorityRequest body) {
+        return service.setPriority(id, body.priority(), currentUser.get());
+    }
+
+    @PostMapping("/{id}/notes")
+    @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
+    public RepairRequestResponse appendNote(@PathVariable UUID id,
+            @RequestBody NoteRequest body) {
+        return service.appendNote(id, body.note(), currentUser.get());
+    }
+
     record RejectRequest(String reasonCode, String customerMessage) {}
     record InfoRequest(String message) {}
+    record PriorityRequest(String priority) {}
+    record NoteRequest(String note) {}
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../attachments/presentation/attachments_widget.dart';
 import '../../scheduling/presentation/schedule_appointment_screen.dart';
 import '../data/jobs_repository.dart';
 
@@ -162,7 +163,21 @@ class _JobDetailBody extends ConsumerWidget {
             const Divider(),
             ..._availableActions(job.status)
                 .map((a) => _ActionTile(action: a, job: job, onRefresh: onRefresh)),
+            const SizedBox(height: AppTheme.spaceM),
           ],
+
+          // ── Internal Notes ────────────────────────────────────────────
+          _NotesSection(job: job, onRefresh: onRefresh),
+          const SizedBox(height: AppTheme.spaceM),
+
+          // ── Attachments ───────────────────────────────────────────────
+          AttachmentsWidget(
+            ownerType: 'JOB',
+            ownerId: job.id,
+            canUpload: true,
+            canDelete: true,
+          ),
+          const SizedBox(height: AppTheme.spaceL),
         ],
       ),
     );
@@ -405,6 +420,119 @@ class _ActionTile extends ConsumerWidget {
                 content: Text('Error: $e'),
                 backgroundColor: AppTheme.error));
       }
+    }
+  }
+}
+
+// ── Notes section ─────────────────────────────────────────────────────────────
+
+class _NotesSection extends ConsumerStatefulWidget {
+  const _NotesSection({required this.job, required this.onRefresh});
+  final JobDetail job;
+  final VoidCallback onRefresh;
+
+  @override
+  ConsumerState<_NotesSection> createState() => _NotesSectionState();
+}
+
+class _NotesSectionState extends ConsumerState<_NotesSection> {
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Internal Notes',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(color: AppTheme.primary)),
+            const Spacer(),
+            _saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : IconButton(
+                    icon: const Icon(Icons.add_comment_outlined, size: 20),
+                    tooltip: 'Add note',
+                    onPressed: () => _showAddNoteDialog(context),
+                  ),
+          ],
+        ),
+        const Divider(),
+        if (widget.job.internalNotes != null &&
+            widget.job.internalNotes!.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppTheme.spaceS),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              widget.job.internalNotes!,
+              style: const TextStyle(
+                  fontSize: 13, color: AppTheme.textPrimary, height: 1.5),
+            ),
+          )
+        else
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppTheme.spaceS),
+            child: Text('No internal notes',
+                style: TextStyle(color: AppTheme.textSecondary)),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showAddNoteDialog(BuildContext context) async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Add Note'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Enter note...',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (ok != true || ctrl.text.trim().isEmpty) return;
+
+    setState(() => _saving = true);
+    try {
+      await ref.read(jobsRepositoryProvider).appendNote(
+            widget.job.id,
+            ctrl.text.trim(),
+          );
+      widget.onRefresh();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Error: $e'),
+                backgroundColor: AppTheme.error));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 }

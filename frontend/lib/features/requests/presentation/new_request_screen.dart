@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../attachments/data/attachments_repository.dart';
 import '../../catalog/data/catalog_repository.dart';
 import '../data/requests_repository.dart';
 
@@ -27,6 +31,8 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   TimeOfDay? _preferredTime;
   bool _submitting = false;
   String? _errorMessage;
+  final List<XFile> _pickedPhotos = [];
+  final _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -51,7 +57,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
     });
 
     try {
-      await ref.read(requestsRepositoryProvider).createRequest(
+      final response = await ref.read(requestsRepositoryProvider).createRequest(
             categoryId: _selectedCategoryId!,
             contactName: _contactNameCtrl.text.trim(),
             contactMobile: _contactMobileCtrl.text.trim(),
@@ -61,6 +67,22 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
             preferredDate: _preferredDate!,
             preferredTime: _preferredTime!,
           );
+
+      // Upload any picked photos
+      if (_pickedPhotos.isNotEmpty) {
+        final attRepo = ref.read(attachmentsRepositoryProvider);
+        final requestId = response['id'] as String? ?? '';
+        if (requestId.isNotEmpty) {
+          for (final xfile in _pickedPhotos) {
+            try {
+              await attRepo.uploadToRequest(requestId, File(xfile.path));
+            } catch (_) {
+              // Non-fatal: continue on upload errors
+            }
+          }
+        }
+      }
+
       if (!mounted) return;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -231,6 +253,72 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: AppTheme.spaceL),
+
+                // ── Photos (optional) ─────────────────────────────────────
+                _SectionHeader(title: 'Photos (Optional)'),
+                const SizedBox(height: AppTheme.spaceS),
+                const Text(
+                  'Attach up to 5 photos of the device or damage.',
+                  style: TextStyle(
+                      color: AppTheme.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: AppTheme.spaceS),
+                if (_pickedPhotos.isNotEmpty) ...[
+                  SizedBox(
+                    height: 80,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _pickedPhotos.length,
+                      separatorBuilder: (_, separator) =>
+                          const SizedBox(width: 8),
+                      itemBuilder: (_, i) => Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(_pickedPhotos[i].path),
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: InkWell(
+                              onTap: () => setState(
+                                  () => _pickedPhotos.removeAt(i)),
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close,
+                                    size: 14, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceS),
+                ],
+                if (_pickedPhotos.length < 5)
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                    label: const Text('Add Photo'),
+                    onPressed: () async {
+                      final xfile = await _picker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 85,
+                      );
+                      if (xfile != null) {
+                        setState(() => _pickedPhotos.add(xfile));
+                      }
+                    },
+                  ),
                 const SizedBox(height: AppTheme.spaceL),
 
                 if (_errorMessage != null) ...[

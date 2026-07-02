@@ -188,4 +188,28 @@ class JobsRepository {
           : AppException.fromDioError(e);
     }
   }
+
+  Future<JobDetail> appendNote(String jobId, String note) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+          '/jobs/$jobId/notes', data: {'note': note});
+      return JobDetail.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<JobDetail> setPriority(String jobId, String priority) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+          '/jobs/$jobId/priority', data: {'priority': priority});
+      return JobDetail.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
 }

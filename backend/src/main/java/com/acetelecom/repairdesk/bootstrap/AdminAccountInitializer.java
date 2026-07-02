@@ -1,5 +1,7 @@
 package com.acetelecom.repairdesk.bootstrap;
 
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -48,9 +50,10 @@ public class AdminAccountInitializer implements ApplicationRunner {
 
         String passwordHash = passwordEncoder.encode(admin.getDefaultPassword());
         jdbcTemplate.update(
-                "INSERT INTO users (username, mobile, name, password_hash, role, status, must_change_password) "
-                        + "VALUES (?, ?, ?, ?, 'ADMIN', 'ACTIVE', false)",
-                admin.getDefaultUsername(), admin.getDefaultMobile(), "Administrator", passwordHash);
+                "INSERT INTO users (id, username, mobile, name, password_hash, role, status, must_change_password, created_at, updated_at, version) "
+                        + "VALUES (?, ?, ?, ?, ?, 'ADMIN', 'ACTIVE', false, NOW(), NOW(), 0)",
+                UUID.randomUUID(), admin.getDefaultUsername(), admin.getDefaultMobile(),
+                "Administrator", passwordHash);
 
         log.warn("Seeded default admin '{}'.", admin.getDefaultUsername());
     }

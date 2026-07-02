@@ -96,7 +96,33 @@ public class JobController {
         return ResponseEntity.noContent().build();
     }
 
+    // ── JOB-006: Priority, warranty, notes ───────────────────────────────────
+
+    @PostMapping("/{id}/priority")
+    @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
+    public JobResponse setPriority(@PathVariable UUID id,
+            @RequestBody PriorityRequest body) {
+        return service.setPriority(id, body.priority(), currentUser.get());
+    }
+
+    @PostMapping("/{id}/warranty")
+    @Secured({ "ROLE_STAFF", "ROLE_ADMIN", "ROLE_TECHNICIAN" })
+    public JobResponse setWarranty(@PathVariable UUID id,
+            @RequestBody WarrantyRequest body) {
+        return service.setWarranty(id, body.confirmed(), currentUser.get());
+    }
+
+    @PostMapping("/{id}/notes")
+    @Secured({ "ROLE_STAFF", "ROLE_ADMIN", "ROLE_TECHNICIAN" })
+    public JobResponse appendNote(@PathVariable UUID id,
+            @RequestBody NoteRequest body) {
+        return service.appendNote(id, body.note(), currentUser.get());
+    }
+
     record AssignRequest(UUID technicianId) {}
     record CompleteRequest(@NotBlank String resolutionSummary) {}
     record ReasonRequest(@NotBlank String reason) {}
+    record PriorityRequest(String priority) {}
+    record WarrantyRequest(boolean confirmed) {}
+    record NoteRequest(String note) {}
 }

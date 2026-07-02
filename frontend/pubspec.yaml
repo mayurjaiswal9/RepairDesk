@@ -31,6 +31,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   intl: ^0.20.3
 
+  # File/image picker (REQ-021, JOB-023)
+  image_picker: ^1.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

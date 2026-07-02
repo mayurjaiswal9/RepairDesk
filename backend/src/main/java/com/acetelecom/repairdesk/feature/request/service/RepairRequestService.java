@@ -14,8 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
 import com.acetelecom.repairdesk.common.web.PageResponse;
+import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.devicecategory.repository.DeviceCategoryRepository;
+import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
 import com.acetelecom.repairdesk.feature.request.dto.CreateRequestDto;
@@ -37,14 +39,17 @@ public class RepairRequestService {
     private final DeviceCategoryRepository categoryRepo;
     private final UserRepository userRepo;
     private final JdbcTemplate jdbc;
+    private final AuditService auditService;
 
     public RepairRequestService(RepairRequestRepository requestRepo,
             DeviceCategoryRepository categoryRepo,
             UserRepository userRepo,
-            JdbcTemplate jdbc) {
+            JdbcTemplate jdbc,
+            AuditService auditService) {
         this.requestRepo = requestRepo;
         this.categoryRepo = categoryRepo;
         this.userRepo = userRepo;
+        this.auditService = auditService;
         this.jdbc = jdbc;
     }
 
@@ -162,9 +167,55 @@ public class RepairRequestService {
         }
     }
 
+    // ── RV-005: Priority ─────────────────────────────────────────────────────
+
+    public RepairRequestResponse setPriority(UUID id, String priorityName,
+            AuthenticatedUser actor) {
+        assertStaffOrAdmin(actor);
+        RepairRequest req = findById(id);
+        Priority priority;
+        try {
+            priority = Priority.valueOf(priorityName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Unknown priority: " + priorityName);
+        }
+        String old = req.getPriority().name();
+        req.setPriority(priority);
+        requestRepo.save(req);
+        auditService.record(actor, "REQUEST", id, "PRIORITY_CHANGED",
+                old + " → " + priority);
+        return RepairRequestResponse.from(req);
+    }
+
+    // ── RV-005: Internal notes ────────────────────────────────────────────────
+
+    public RepairRequestResponse appendNote(UUID id, String note,
+            AuthenticatedUser actor) {
+        assertStaffOrAdmin(actor);
+        RepairRequest req = findById(id);
+        auditService.record(actor, "REQUEST", id, "NOTE_ADDED", note);
+        return RepairRequestResponse.from(req);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     private void assertOwner(RepairRequest req, AuthenticatedUser caller) {
         if (!req.isOwnedBy(caller.id())) {
             throw new ApiException(ErrorCode.FORBIDDEN, "Access denied");
         }
+    }
+
+    private void assertStaffOrAdmin(AuthenticatedUser actor) {
+        String role = actor.role();
+        if (!"STAFF".equals(role) && !"ADMIN".equals(role)) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "Staff or Admin access required");
+        }
+    }
+
+    private RepairRequest findById(UUID id) {
+        return requestRepo.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
+                        "Repair request not found"));
     }
 }

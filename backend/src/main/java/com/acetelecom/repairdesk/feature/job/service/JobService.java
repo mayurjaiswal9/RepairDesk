@@ -332,6 +332,63 @@ public class JobService {
         }
     }
 
+    // ── JOB-006: Priority, warranty, notes ───────────────────────────────────
+
+    public JobResponse setPriority(UUID id, String priorityName, AuthenticatedUser actor) {
+        assertStaffOrAdmin(actor);
+        Job job = requireJob(id);
+        com.acetelecom.repairdesk.feature.request.domain.Priority p;
+        try {
+            p = com.acetelecom.repairdesk.feature.request.domain.Priority
+                    .valueOf(priorityName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Unknown priority: " + priorityName);
+        }
+        String old = job.getPriority() != null ? job.getPriority().name() : "null";
+        job.setPriority(p);
+        jobRepo.save(job);
+        auditService.record(actor, "JOB", id, "PRIORITY_CHANGED",
+                old + " → " + p);
+        return JobResponse.from(job);
+    }
+
+    public JobResponse setWarranty(UUID id, boolean confirmed, AuthenticatedUser actor) {
+        Job job = requireJob(id);
+        assertCanReadWrite(job, actor);
+        job.setWarrantyConfirmed(confirmed);
+        jobRepo.save(job);
+        auditService.record(actor, "JOB", id, "WARRANTY_UPDATED",
+                "warrantyConfirmed=" + confirmed);
+        return JobResponse.from(job);
+    }
+
+    public JobResponse appendNote(UUID id, String note, AuthenticatedUser actor) {
+        Job job = requireJob(id);
+        assertCanReadWrite(job, actor);
+        String existing = job.getInternalNotes();
+        String combined = (existing != null && !existing.isBlank())
+                ? existing + "\n\n--- " + Instant.now() + " ---\n" + note
+                : note;
+        job.setInternalNotes(combined);
+        jobRepo.save(job);
+        auditService.record(actor, "JOB", id, "NOTE_ADDED",
+                "note appended by " + actor.username());
+        return JobResponse.from(job);
+    }
+
+    private void assertCanReadWrite(Job job, AuthenticatedUser actor) {
+        boolean isTech = "TECHNICIAN".equals(actor.role());
+        boolean isStaff = "STAFF".equals(actor.role()) || "ADMIN".equals(actor.role());
+        if (isTech && !job.canTechnicianTransition(actor.id())) {
+            throw new ApiException(ErrorCode.FORBIDDEN,
+                    "Technician can only modify their assigned jobs");
+        }
+        if (!isTech && !isStaff) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "Insufficient role");
+        }
+    }
+
     @SafeVarargs
     private <T extends Enum<T>> void assertCanTransitionJob(Job job, AuthenticatedUser actor,
             T... allowedFromStatuses) {
