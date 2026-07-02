@@ -49,10 +49,9 @@ public class AdminAccountInitializer implements ApplicationRunner {
         String passwordHash = passwordEncoder.encode(admin.getDefaultPassword());
         jdbcTemplate.update(
                 "INSERT INTO users (username, mobile, name, password_hash, role, status, must_change_password) "
-                        + "VALUES (?, ?, ?, ?, 'ADMIN', 'ACTIVE', true)",
+                        + "VALUES (?, ?, ?, ?, 'ADMIN', 'ACTIVE', false)",
                 admin.getDefaultUsername(), admin.getDefaultMobile(), "Administrator", passwordHash);
 
-        log.warn("Seeded default admin '{}' (must change password on first login).",
-                admin.getDefaultUsername());
+        log.warn("Seeded default admin '{}'.", admin.getDefaultUsername());
     }
 }

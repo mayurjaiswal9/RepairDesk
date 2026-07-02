@@ -25,4 +25,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, UU
     Page<RepairRequest> findQueueFiltered(@Param("status") String status, Pageable pageable);
 
     Optional<RepairRequest> findByReferenceNumber(String referenceNumber);
+
+    @Query("SELECT COUNT(r) FROM RepairRequest r WHERE r.status = :status")
+    long countByStatus(@Param("status") String status);
 }

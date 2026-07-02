@@ -1,0 +1,52 @@
+import 'package:dio/dio.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../../core/error/app_exception.dart';
+import '../../../core/network/api_client.dart';
+
+part 'customer_home_repository.g.dart';
+
+@riverpod
+CustomerHomeRepository customerHomeRepository(Ref ref) =>
+    CustomerHomeRepository(ref.watch(apiClientProvider));
+
+class RepairListItem {
+  final String referenceNumber;
+  final String deviceCategoryName;
+  final String friendlyStatus;
+  final String? submittedAt;
+  final String? updatedAt;
+
+  const RepairListItem({
+    required this.referenceNumber,
+    required this.deviceCategoryName,
+    required this.friendlyStatus,
+    this.submittedAt,
+    this.updatedAt,
+  });
+
+  factory RepairListItem.fromJson(Map<String, dynamic> json) => RepairListItem(
+        referenceNumber: json['referenceNumber'] as String,
+        deviceCategoryName: json['deviceCategoryName'] as String,
+        friendlyStatus: json['friendlyStatus'] as String,
+        submittedAt: json['submittedAt'] as String?,
+        updatedAt: json['updatedAt'] as String?,
+      );
+}
+
+class CustomerHomeRepository {
+  CustomerHomeRepository(this._dio);
+  final Dio _dio;
+
+  Future<List<RepairListItem>> myRepairs() async {
+    try {
+      final res = await _dio.get<List<dynamic>>('/me/repairs');
+      return res.data!
+          .cast<Map<String, dynamic>>()
+          .map(RepairListItem.fromJson)
+          .toList();
+    } on DioException catch (e) {
+      throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    }
+  }
+}

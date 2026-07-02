@@ -6,7 +6,6 @@ import 'app.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    // ProviderScope is the root of the Riverpod DI tree (Constitution mandate).
     const ProviderScope(
       child: RepairDeskApp(),
     ),

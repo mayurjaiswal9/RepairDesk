@@ -1,0 +1,96 @@
+import 'package:dio/dio.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../../core/error/app_exception.dart';
+import '../../../core/network/api_client.dart';
+
+part 'requests_repository.g.dart';
+
+@riverpod
+RequestsRepository requestsRepository(Ref ref) =>
+    RequestsRepository(ref.watch(apiClientProvider));
+
+class RequestSummary {
+  final String id;
+  final String referenceNumber;
+  final String customerUsername;
+  final String deviceCategoryName;
+  final String contactName;
+  final String status;
+  final String priority;
+  final String? submittedAt;
+
+  const RequestSummary({
+    required this.id,
+    required this.referenceNumber,
+    required this.customerUsername,
+    required this.deviceCategoryName,
+    required this.contactName,
+    required this.status,
+    required this.priority,
+    this.submittedAt,
+  });
+
+  factory RequestSummary.fromJson(Map<String, dynamic> json) => RequestSummary(
+        id: json['id'] as String,
+        referenceNumber: json['referenceNumber'] as String,
+        customerUsername: json['customerUsername'] as String,
+        deviceCategoryName: json['deviceCategoryName'] as String,
+        contactName: json['contactName'] as String,
+        status: json['status'] as String,
+        priority: json['priority'] as String,
+        submittedAt: json['submittedAt'] as String?,
+      );
+}
+
+class RequestsRepository {
+  RequestsRepository(this._dio);
+  final Dio _dio;
+
+  Future<List<RequestSummary>> queue({String? status, int page = 0}) async {
+    try {
+      final params = <String, dynamic>{'page': page, 'size': 20};
+      if (status != null) params['status'] = status;
+      final res = await _dio.get<Map<String, dynamic>>(
+        '/requests',
+        queryParameters: params,
+      );
+      final content = (res.data!['content'] as List<dynamic>);
+      return content
+          .cast<Map<String, dynamic>>()
+          .map(RequestSummary.fromJson)
+          .toList();
+    } on DioException catch (e) {
+      throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> approve(String requestId) async {
+    try {
+      await _dio.post<void>('/requests/$requestId/approve');
+    } on DioException catch (e) {
+      throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> reject(
+      String requestId, String reasonCode, String customerMessage) async {
+    try {
+      await _dio.post<void>('/requests/$requestId/reject', data: {
+        'reasonCode': reasonCode,
+        'customerMessage': customerMessage,
+      });
+    } on DioException catch (e) {
+      throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> requestInfo(String requestId, String message) async {
+    try {
+      await _dio.post<void>('/requests/$requestId/request-info',
+          data: {'message': message});
+    } on DioException catch (e) {
+      throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    }
+  }
+}

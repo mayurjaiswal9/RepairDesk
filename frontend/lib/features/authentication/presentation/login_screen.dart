@@ -51,8 +51,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Router redirect handles navigation after state change.
     } on AppException catch (e) {
       setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(() => _errorMessage = 'Unexpected error. Please try again.');
+    } catch (e) {
+      setState(() => _errorMessage = 'Error: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

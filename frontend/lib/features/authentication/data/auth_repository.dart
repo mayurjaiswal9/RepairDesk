@@ -26,6 +26,8 @@ class AuthRepository {
       return AuthResponse.fromJson(res.data!);
     } on DioException catch (e) {
       throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    } catch (e) {
+      throw AppException(errorCode: 'UNKNOWN', message: e.toString());
     }
   }
 
@@ -48,6 +50,8 @@ class AuthRepository {
       return AuthResponse.fromJson(res.data!);
     } on DioException catch (e) {
       throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    } catch (e) {
+      throw AppException(errorCode: 'UNKNOWN', message: e.toString());
     }
   }
 
