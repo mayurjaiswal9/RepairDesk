@@ -118,6 +118,82 @@ public class UserService {
         return UserProfile.from(userRepo.save(user));
     }
 
+    // ── STAFF-003: Edit user ──────────────────────────────────────────────
+
+    public UserProfile updateUser(UUID userId, String name, String mobile, String roleName,
+            AuthenticatedUser actor) {
+        User user = requireUser(userId);
+        if (name != null && !name.isBlank()) {
+            user.setName(name.trim());
+        }
+        if (mobile != null && !mobile.isBlank() && !mobile.equals(user.getMobile())) {
+            userRepo.findActiveByMobile(mobile).ifPresent(u -> {
+                if (!u.getId().equals(userId)) {
+                    throw new ApiException(ErrorCode.CONFLICT, "Mobile already registered");
+                }
+            });
+            user.setMobile(mobile.trim());
+        }
+        if (roleName != null) {
+            Role newRole;
+            try {
+                newRole = Role.valueOf(roleName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR, "Invalid role: " + roleName);
+            }
+            if (newRole == Role.CUSTOMER) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "Cannot assign CUSTOMER role via admin");
+            }
+            if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN) {
+                long activeAdmins = userRepo.findActiveByRole(Role.ADMIN).stream()
+                        .filter(u -> !u.getId().equals(userId)).count();
+                if (activeAdmins == 0) {
+                    throw new ApiException(ErrorCode.CONFLICT,
+                            "Cannot demote the last active admin");
+                }
+            }
+            user.setRole(newRole);
+        }
+        user.setUpdatedAt(Instant.now());
+        return UserProfile.from(userRepo.save(user));
+    }
+
+    // ── STAFF-005: Admin reset password ──────────────────────────────────
+
+    public void adminResetPassword(UUID userId, String newPassword, AuthenticatedUser actor) {
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Password must be at least 8 characters");
+        }
+        User user = requireUser(userId);
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(true);
+        user.setUpdatedAt(Instant.now());
+        userRepo.save(user);
+    }
+
+    // ── STAFF-004: Soft delete ────────────────────────────────────────────
+
+    public void deleteUser(UUID userId, AuthenticatedUser actor) {
+        User user = requireUser(userId);
+        if (user.getId().equals(actor.id())) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Cannot delete your own account");
+        }
+        if (user.getRole() == Role.ADMIN) {
+            long activeAdmins = userRepo.findActiveByRole(Role.ADMIN).stream()
+                    .filter(u -> !u.getId().equals(userId)).count();
+            if (activeAdmins == 0) {
+                throw new ApiException(ErrorCode.CONFLICT,
+                        "Cannot delete the last active admin");
+            }
+        }
+        user.setStatus(AccountStatus.DELETED);
+        user.setUpdatedAt(Instant.now());
+        userRepo.save(user);
+    }
+
     // ─────────────────────────────────────────────────────────────────────
 
     private User requireUser(UUID id) {

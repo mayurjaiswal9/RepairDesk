@@ -62,6 +62,7 @@ class JobDetail {
   final String priority;
   final String? assignedTechnicianId;
   final String? assignedTechnicianName;
+  final String? currentAppointmentId;
   final String? resolutionSummary;
   final String? cancelReason;
   final String? internalNotes;
@@ -83,6 +84,7 @@ class JobDetail {
     required this.priority,
     this.assignedTechnicianId,
     this.assignedTechnicianName,
+    this.currentAppointmentId,
     this.resolutionSummary,
     this.cancelReason,
     this.internalNotes,
@@ -105,6 +107,7 @@ class JobDetail {
         priority: json['priority'] as String,
         assignedTechnicianId: json['assignedTechnicianId'] as String?,
         assignedTechnicianName: json['assignedTechnicianName'] as String?,
+        currentAppointmentId: json['currentAppointmentId'] as String?,
         resolutionSummary: json['resolutionSummary'] as String?,
         cancelReason: json['cancelReason'] as String?,
         internalNotes: json['internalNotes'] as String?,

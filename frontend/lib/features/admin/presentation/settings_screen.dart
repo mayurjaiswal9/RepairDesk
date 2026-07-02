@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../data/admin_repository.dart';
+import 'settings_edit_screen.dart';
 
 final _settingsProvider = FutureProvider.autoDispose(
     (ref) => ref.watch(adminRepositoryProvider).schedulingConfig());
@@ -15,7 +16,24 @@ class SettingsScreen extends ConsumerWidget {
     final configAsync = ref.watch(_settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Business Settings')),
+      appBar: AppBar(
+        title: const Text('Business Settings'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit',
+            onPressed: () async {
+              final config = ref.read(_settingsProvider).value;
+              if (config == null) return;
+              final result = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                    builder: (_) => SettingsEditScreen(current: config)),
+              );
+              if (result == true) ref.invalidate(_settingsProvider);
+            },
+          ),
+        ],
+      ),
       body: configAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(

@@ -6,12 +6,15 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.acetelecom.repairdesk.feature.user.domain.AccountStatus;
@@ -66,5 +69,34 @@ public class UserManagementController {
     @Secured("ROLE_ADMIN")
     public UserProfile deactivate(@PathVariable UUID id) {
         return service.setStatus(id, AccountStatus.DISABLED, currentUser.get());
+    }
+
+    /** Edit user name / mobile / role (STAFF-003). */
+    @PatchMapping("/{id}")
+    @Secured("ROLE_ADMIN")
+    public UserProfile update(@PathVariable UUID id, @RequestBody UpdateUserRequest req) {
+        return service.updateUser(id, req.name(), req.mobile(), req.role(), currentUser.get());
+    }
+
+    /** Admin reset password (STAFF-005). */
+    @PostMapping("/{id}/reset-password")
+    @Secured("ROLE_ADMIN")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@PathVariable UUID id, @RequestBody ResetPasswordRequest req) {
+        service.adminResetPassword(id, req.newPassword(), currentUser.get());
+    }
+
+    /** Soft-delete a user (STAFF-004). */
+    @DeleteMapping("/{id}")
+    @Secured("ROLE_ADMIN")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        service.deleteUser(id, currentUser.get());
+    }
+
+    record UpdateUserRequest(String name, String mobile, String role) {
+    }
+
+    record ResetPasswordRequest(String newPassword) {
     }
 }

@@ -44,4 +44,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     default List<User> findAllNonDeleted() {
         return findByStatusNotOrderByRoleAscUsernameAsc(AccountStatus.DELETED);
     }
+
+    @Query("SELECT u FROM User u WHERE u.role = :role AND u.status <> 'DELETED' "
+            + "AND (:q IS NULL OR lower(u.name) LIKE lower(concat('%', :q, '%')) "
+            + "     OR lower(u.username) LIKE lower(concat('%', :q, '%')) "
+            + "     OR u.mobile LIKE concat('%', :q, '%')) "
+            + "ORDER BY u.name ASC")
+    List<User> searchCustomers(@Param("role") Role role, @Param("q") String q);
 }

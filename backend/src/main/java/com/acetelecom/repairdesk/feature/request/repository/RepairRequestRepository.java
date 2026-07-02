@@ -28,4 +28,6 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, UU
 
     @Query("SELECT COUNT(r) FROM RepairRequest r WHERE r.status = :status")
     long countByStatus(@Param("status") String status);
+
+    java.util.List<RepairRequest> findByCustomerIdOrderByUpdatedAtDesc(UUID customerId);
 }

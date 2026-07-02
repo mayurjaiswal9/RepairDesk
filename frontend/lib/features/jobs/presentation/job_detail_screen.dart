@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../scheduling/presentation/schedule_appointment_screen.dart';
 import '../data/jobs_repository.dart';
 
 final _jobDetailFamily = FutureProvider.autoDispose
@@ -99,9 +100,9 @@ class _JobDetailBody extends ConsumerWidget {
           ),
           const SizedBox(height: AppTheme.spaceM),
 
-          // ── Technician ────────────────────────────────────────────────
+          // ── Technician & Appointment ─────────────────────────────────
           _Section(
-            title: 'Technician',
+            title: 'Technician & Appointment',
             children: [
               if (job.assignedTechnicianName != null)
                 _InfoRow(
@@ -112,6 +113,28 @@ class _JobDetailBody extends ConsumerWidget {
                     style: TextStyle(color: AppTheme.textSecondary)),
               const SizedBox(height: AppTheme.spaceS),
               _AssignTechnicianButton(job: job, onRefresh: onRefresh),
+              if (job.status == 'ASSIGNED' || job.status == 'SCHEDULED') ...[
+                const SizedBox(height: AppTheme.spaceS),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                  label: Text(job.currentAppointmentId != null
+                      ? 'Reschedule Appointment'
+                      : 'Schedule Appointment'),
+                  onPressed: () async {
+                    final result = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                          builder: (_) => ScheduleAppointmentScreen(
+                                jobId: job.id,
+                                referenceNumber: job.referenceNumber,
+                                defaultTechnicianId: job.assignedTechnicianId,
+                                existingAppointmentId:
+                                    job.currentAppointmentId,
+                              )),
+                    );
+                    if (result == true) onRefresh();
+                  },
+                ),
+              ],
             ],
           ),
           const SizedBox(height: AppTheme.spaceM),

@@ -12,6 +12,8 @@ import '../../requests/presentation/request_queue_screen.dart';
 import '../../admin/presentation/categories_screen.dart';
 import '../../admin/presentation/staff_screen.dart';
 import '../../admin/presentation/settings_screen.dart';
+import '../../customer_management/presentation/customers_screen.dart';
+import '../../scheduling/presentation/calendar_screen.dart';
 import '../data/dashboard_repository.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -111,6 +113,22 @@ class _StaffDashboard extends ConsumerWidget {
             subtitle: 'Track ongoing repairs',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const JobsListScreen()),
+            ),
+          ),
+          _NavTile(
+            icon: Icons.calendar_month_outlined,
+            label: 'Appointments',
+            subtitle: 'Weekly calendar view',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CalendarScreen()),
+            ),
+          ),
+          _NavTile(
+            icon: Icons.person_search_outlined,
+            label: 'Customers',
+            subtitle: 'Search customer profiles and history',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CustomersScreen()),
             ),
           ),
           if (role == 'ADMIN') ...[

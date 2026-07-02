@@ -154,4 +154,32 @@ class AdminRepository {
           : AppException.fromDioError(e);
     }
   }
+
+  Future<void> updateSettings({
+    int? slotDurationMinutes,
+    int? bookingHorizonDays,
+    String? businessName,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (slotDurationMinutes != null) body['slotDurationMinutes'] = slotDurationMinutes;
+      if (bookingHorizonDays != null) body['bookingHorizonDays'] = bookingHorizonDays;
+      if (businessName != null) body['businessName'] = businessName;
+      await _dio.put<void>('/settings', data: body);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> updateWorkingHours(List<Map<String, dynamic>> hours) async {
+    try {
+      await _dio.put<void>('/settings/working-hours', data: hours);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
 }

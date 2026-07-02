@@ -87,6 +87,10 @@ public class Job extends BaseEntity {
     @Column(name = "cancellation_reason", columnDefinition = "text")
     private String cancelReason;
 
+    // ── Active appointment pointer ──
+    @Column(name = "current_appointment_id")
+    private UUID currentAppointmentId;
+
     // ── Technician-visible fields only ──
     @Column(name = "internal_notes", columnDefinition = "text")
     private String internalNotes;
