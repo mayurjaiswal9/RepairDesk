@@ -18,6 +18,21 @@ class AppException implements Exception {
   bool get isValidation   => errorCode == 'VALIDATION_ERROR';
   bool get isNotFound     => errorCode == 'NOT_FOUND';
   bool get isForbidden    => errorCode == 'FORBIDDEN';
+  bool get isNetwork      => errorCode == 'NETWORK' || errorCode == 'TIMEOUT';
+
+  /// A user-friendly message suitable for direct display in the UI.
+  String get userMessage => switch (errorCode) {
+    'UNAUTHORIZED' => 'Session expired. Please sign in again.',
+    'FORBIDDEN' => 'You don\'t have permission to do that.',
+    'NOT_FOUND' => 'Item not found.',
+    'CONFLICT' => message,
+    'VALIDATION_ERROR' => fieldErrors.isNotEmpty
+        ? fieldErrors.map((e) => e.message).join(', ')
+        : message,
+    'NETWORK' => 'No connection. Check your network.',
+    'TIMEOUT' => 'Request timed out. Please try again.',
+    _ => message,
+  };
 
   /// Build from a Dio error, parsing the standard API error body when present.
   factory AppException.fromDioError(DioException error) {

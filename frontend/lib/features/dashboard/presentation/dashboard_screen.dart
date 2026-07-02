@@ -75,22 +75,30 @@ class _StaffDashboard extends ConsumerWidget {
                 height: 80,
                 child: Center(child: CircularProgressIndicator())),
             error: (_, err) => const SizedBox.shrink(),
-            data: (c) => Row(
+            data: (c) => Column(
               children: [
-                _CounterCard(
-                    label: 'Pending Review',
-                    count: c.pendingReview,
-                    color: AppTheme.warning),
-                const SizedBox(width: AppTheme.spaceM),
-                _CounterCard(
-                    label: 'Needs Info',
-                    count: c.infoRequired,
-                    color: AppTheme.secondary),
-                const SizedBox(width: AppTheme.spaceM),
-                _CounterCard(
-                    label: 'Active Jobs',
-                    count: c.activeJobs,
-                    color: AppTheme.primary),
+                Row(
+                  children: [
+                    _CounterCard(
+                        label: 'Pending Review',
+                        count: c.pendingReview,
+                        color: AppTheme.warning),
+                    const SizedBox(width: AppTheme.spaceM),
+                    _CounterCard(
+                        label: 'Needs Info',
+                        count: c.infoRequired,
+                        color: AppTheme.secondary),
+                    const SizedBox(width: AppTheme.spaceM),
+                    _CounterCard(
+                        label: 'Active Jobs',
+                        count: c.activeJobs,
+                        color: AppTheme.primary),
+                  ],
+                ),
+                if (c.unscheduledJobs > 0) ...[
+                  const SizedBox(height: AppTheme.spaceS),
+                  _UnscheduledBanner(count: c.unscheduledJobs),
+                ],
               ],
             ),
           ),
@@ -220,6 +228,41 @@ class _NavTile extends StatelessWidget {
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+// ── Unscheduled-jobs banner (SCH-023) ─────────────────────────────────────
+
+class _UnscheduledBanner extends StatelessWidget {
+  const _UnscheduledBanner({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spaceM, vertical: AppTheme.spaceS),
+      decoration: BoxDecoration(
+        color: AppTheme.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        border: Border.all(color: AppTheme.warning.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.calendar_today_outlined,
+              size: 18, color: AppTheme.warning),
+          const SizedBox(width: AppTheme.spaceS),
+          Expanded(
+            child: Text(
+              '$count job${count == 1 ? '' : 's'} not yet scheduled',
+              style: const TextStyle(
+                  color: AppTheme.warning, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }

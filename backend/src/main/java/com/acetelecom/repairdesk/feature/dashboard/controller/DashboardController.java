@@ -27,12 +27,16 @@ public class DashboardController {
 
     @GetMapping("/counters")
     public Map<String, Long> counters() {
+        long assigned = jobRepo.countByStatus(JobStatus.ASSIGNED);
+        long scheduled = jobRepo.countByStatus(JobStatus.SCHEDULED);
+        long inProgress = jobRepo.countByStatus(JobStatus.IN_PROGRESS);
+        long awaitingParts = jobRepo.countByStatus(JobStatus.AWAITING_PARTS);
+        // Jobs with CREATED or ASSIGNED status have no appointment yet (SCH-023)
+        long created = jobRepo.countByStatus(JobStatus.CREATED);
         return Map.of(
                 "pendingReview", requestRepo.countByStatus(RequestStatus.PENDING_REVIEW.name()),
                 "infoRequired", requestRepo.countByStatus(RequestStatus.INFORMATION_REQUIRED.name()),
-                "activeJobs", jobRepo.countByStatus(JobStatus.IN_PROGRESS)
-                        + jobRepo.countByStatus(JobStatus.AWAITING_PARTS)
-                        + jobRepo.countByStatus(JobStatus.ASSIGNED)
-                        + jobRepo.countByStatus(JobStatus.SCHEDULED));
+                "activeJobs", inProgress + awaitingParts + assigned + scheduled,
+                "unscheduledJobs", created + assigned);
     }
 }

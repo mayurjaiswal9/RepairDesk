@@ -15,6 +15,7 @@ import com.acetelecom.repairdesk.common.error.ErrorCode;
 import com.acetelecom.repairdesk.feature.attachment.domain.Attachment;
 import com.acetelecom.repairdesk.feature.attachment.dto.AttachmentResponse;
 import com.acetelecom.repairdesk.feature.attachment.repository.AttachmentRepository;
+import com.acetelecom.repairdesk.feature.request.repository.RepairRequestRepository;
 import com.acetelecom.repairdesk.security.AuthenticatedUser;
 
 /**
@@ -41,11 +42,14 @@ public class AttachmentService {
 
     private final AttachmentRepository attachmentRepo;
     private final StorageService storageService;
+    private final RepairRequestRepository requestRepo;
 
     public AttachmentService(AttachmentRepository attachmentRepo,
-            StorageService storageService) {
+            StorageService storageService,
+            RepairRequestRepository requestRepo) {
         this.attachmentRepo = attachmentRepo;
         this.storageService = storageService;
+        this.requestRepo = requestRepo;
     }
 
     public AttachmentResponse upload(String ownerType, UUID ownerId,
@@ -87,12 +91,19 @@ public class AttachmentService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
                         "Attachment not found"));
 
-        // Customers can only access their own request attachments
+        // Customers can only access attachments on their own requests
         if ("CUSTOMER".equals(actor.role())) {
             if (!"REPAIR_REQUEST".equals(att.getOwnerType())) {
                 throw new ApiException(ErrorCode.FORBIDDEN,
                         "Access denied to this attachment");
             }
+            // Verify the request belongs to this customer
+            requestRepo.findById(att.getOwnerId()).ifPresent(req -> {
+                if (!req.getCustomer().getId().equals(actor.id())) {
+                    throw new ApiException(ErrorCode.FORBIDDEN,
+                            "Access denied to this attachment");
+                }
+            });
         }
 
         try {
@@ -124,11 +135,15 @@ public class AttachmentService {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "File is empty");
         }
 
+        // Validate Content-Type header (primary check — trusts client declaration)
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_TYPES.contains(contentType.toLowerCase())) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR,
                     "File type not allowed. Accepted: JPEG, PNG, GIF, WEBP, HEIC");
         }
+
+        // Validate magic bytes (SEC-002): first few bytes must match image signatures
+        validateMagicBytes(file, contentType);
 
         long currentCount = attachmentRepo.countByOwnerTypeAndOwnerId(ownerType, ownerId);
         int maxFiles = "JOB".equals(ownerType) ? JOB_MAX_FILES : REQUEST_MAX_FILES;
@@ -149,6 +164,41 @@ public class AttachmentService {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR,
                         "Total attachment size would exceed 25 MB limit");
             }
+        }
+    }
+
+    /**
+     * Checks image magic bytes to prevent disguised executable uploads (SEC-002).
+     * Only checks the first 8 bytes — sufficient for common image formats.
+     */
+    private void validateMagicBytes(MultipartFile file, String contentType) {
+        try {
+            byte[] header = new byte[8];
+            int read = file.getInputStream().read(header);
+            if (read < 4) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "File too small to validate");
+            }
+            boolean valid = switch (contentType.toLowerCase()) {
+                case "image/jpeg", "image/jpg" ->
+                        header[0] == (byte) 0xFF && header[1] == (byte) 0xD8 && header[2] == (byte) 0xFF;
+                case "image/png" ->
+                        header[0] == (byte) 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
+                case "image/gif" ->
+                        header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46;
+                case "image/webp" ->
+                        read >= 8 && header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46
+                                && header[4] == 0x57 && header[5] == 0x45 && header[6] == 0x42 && header[7] == 0x50;
+                // HEIC/HEIF: ftyp box starts at byte 4; skip magic check for now
+                default -> true;
+            };
+            if (!valid) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "File content does not match declared type " + contentType);
+            }
+        } catch (IOException e) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Could not read file for validation");
         }
     }
 

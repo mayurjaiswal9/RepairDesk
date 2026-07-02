@@ -1,0 +1,90 @@
+version: "3.9"
+
+# RepairDesk V1 — Production Docker Compose (REL-001).
+# Copy to your server, fill in the .env file, then:
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-repairdesk}
+      POSTGRES_USER:     ${DB_USER:-repairdesk}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}         # required — set in .env
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # ── Spring Boot backend ────────────────────────────────────────────────────
+  api:
+    image: repairdesk-api:${API_VERSION:-latest}
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL:      jdbc:postgresql://db:5432/${DB_NAME:-repairdesk}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-repairdesk}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      APP_JWT_SECRET:             ${JWT_SECRET}        # required — min 32 chars
+      APP_STORAGE_LOCATION:       /app/uploads
+      APP_DEFAULT_ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      APP_DEFAULT_ADMIN_PASSWORD: ${ADMIN_PASSWORD}    # required
+      SERVER_PORT:                8080
+      SPRING_PROFILES_ACTIVE:     prod
+    volumes:
+      - uploads:/app/uploads
+    networks:
+      - internal
+      - public
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ── Nginx reverse-proxy + TLS termination ─────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    networks:
+      - public
+
+  # ── Certbot (Let's Encrypt TLS) ───────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done"
+
+volumes:
+  db_data:
+  uploads:
+
+networks:
+  internal:
+  public:
