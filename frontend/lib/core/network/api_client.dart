@@ -11,7 +11,7 @@ const _baseUrl = String.fromEnvironment(
   defaultValue: 'http://10.0.2.2:8080/api/v1', // Android emulator → host loopback
 );
 
-@riverpod
+@Riverpod(keepAlive: true)
 Dio apiClient(Ref ref) {
   final dio = Dio(BaseOptions(
     baseUrl: _baseUrl,

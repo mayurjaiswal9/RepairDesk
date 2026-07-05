@@ -44,6 +44,75 @@ class RequestSummary {
       );
 }
 
+class RequestDetail {
+  final String id;
+  final String referenceNumber;
+  final String customerUsername;
+  final String contactName;
+  final String? contactMobile;
+  final String? contactEmail;
+  final String deviceCategoryName;
+  final String? deviceBrand;
+  final String? deviceModel;
+  final String? deviceSerial;
+  final String? purchaseDate;
+  final String? warrantyStatus;
+  final String? issueDescription;
+  final String? preferredDate;
+  final String? preferredTime;
+  final String status;
+  final String priority;
+  final String? infoRequestedMessage;
+  final String? customerFacingMessage;
+  final String? submittedAt;
+
+  const RequestDetail({
+    required this.id,
+    required this.referenceNumber,
+    required this.customerUsername,
+    required this.contactName,
+    this.contactMobile,
+    this.contactEmail,
+    required this.deviceCategoryName,
+    this.deviceBrand,
+    this.deviceModel,
+    this.deviceSerial,
+    this.purchaseDate,
+    this.warrantyStatus,
+    this.issueDescription,
+    this.preferredDate,
+    this.preferredTime,
+    required this.status,
+    required this.priority,
+    this.infoRequestedMessage,
+    this.customerFacingMessage,
+    this.submittedAt,
+  });
+
+  factory RequestDetail.fromJson(Map<String, dynamic> json) => RequestDetail(
+        id: json['id'] as String,
+        referenceNumber: json['referenceNumber'] as String,
+        customerUsername: json['customerUsername'] as String,
+        contactName: json['contactName'] as String? ?? '',
+        contactMobile: json['contactMobile'] as String?,
+        contactEmail: json['contactEmail'] as String?,
+        deviceCategoryName: json['deviceCategoryName'] as String,
+        deviceBrand: json['deviceBrand'] as String?,
+        deviceModel: json['deviceModel'] as String?,
+        deviceSerial: json['deviceSerial'] as String?,
+        purchaseDate: json['purchaseDate'] as String?,
+        warrantyStatus: json['warrantyStatus'] as String?,
+        issueDescription: json['issueDescription'] as String?,
+        preferredDate: json['preferredDate'] as String?,
+        preferredTime: json['preferredTime'] as String?,
+        status: json['status'] as String,
+        priority: json['priority'] as String,
+        infoRequestedMessage: json['infoRequestedMessage'] as String?,
+        customerFacingMessage: json['customerFacingMessage'] as String?,
+        submittedAt: json['submittedAt'] as String?,
+      );
+}
+
 class RequestsRepository {
   RequestsRepository(this._dio);
   final Dio _dio;
@@ -90,6 +159,15 @@ class RequestsRepository {
     try {
       await _dio.post<void>('/requests/$requestId/request-info',
           data: {'message': message});
+    } on DioException catch (e) {
+      throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    }
+  }
+
+  Future<RequestDetail> getDetail(String requestId) async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/requests/$requestId');
+      return RequestDetail.fromJson(res.data!);
     } on DioException catch (e) {
       throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
     }

@@ -62,6 +62,13 @@ class AppException implements Exception {
       return const AppException(
           errorCode: 'NETWORK', message: 'No connection. Check your network and try again.');
     }
+    if (error.type == DioExceptionType.unknown && error.response == null) {
+      final cause = error.error?.toString() ?? '';
+      return AppException(
+        errorCode: 'NETWORK',
+        message: 'No connection. Check your network and try again.${ cause.isNotEmpty ? ' ($cause)' : ''}',
+      );
+    }
 
     return const AppException(
         errorCode: 'UNKNOWN', message: 'An unexpected error occurred.');

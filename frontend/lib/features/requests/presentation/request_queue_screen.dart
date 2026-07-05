@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../attachments/presentation/attachments_widget.dart';
 import '../data/requests_repository.dart';
+import 'request_detail_screen.dart';
 
 final _queueFamily = FutureProvider.autoDispose
     .family<List<RequestSummary>, String?>((ref, status) =>
@@ -128,7 +130,15 @@ class _RequestCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: EdgeInsets.zero,
-      child: Padding(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => RequestDetailScreen(
+            requestId: item.id,
+            onActionCompleted: onRefresh,
+          ),
+        )),
+        child: Padding(
         padding: const EdgeInsets.all(AppTheme.spaceM),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,6 +161,30 @@ class _RequestCard extends ConsumerWidget {
             Text(item.deviceCategoryName,
                 style:
                     const TextStyle(color: AppTheme.textSecondary)),
+            const SizedBox(height: AppTheme.spaceXS),
+            Theme(
+              data: Theme.of(context)
+                  .copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding:
+                    const EdgeInsets.only(bottom: AppTheme.spaceS),
+                dense: true,
+                leading: const Icon(Icons.photo_library_outlined,
+                    size: 20, color: AppTheme.secondary),
+                title: const Text('Photos & Attachments',
+                    style: TextStyle(fontSize: 13)),
+                children: [
+                  AttachmentsWidget(
+                    ownerType: 'REPAIR_REQUEST',
+                    ownerId: item.id,
+                    canUpload: false,
+                    canDelete: false,
+                    showHeader: false,
+                  ),
+                ],
+              ),
+            ),
             if (item.status == 'PENDING_REVIEW' ||
                 item.status == 'INFORMATION_REQUIRED') ...[
               const SizedBox(height: AppTheme.spaceM),
@@ -181,6 +215,7 @@ class _RequestCard extends ConsumerWidget {
             ],
           ],
         ),
+      ),
       ),
     );
   }

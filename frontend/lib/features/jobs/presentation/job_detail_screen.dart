@@ -170,7 +170,32 @@ class _JobDetailBody extends ConsumerWidget {
           _NotesSection(job: job, onRefresh: onRefresh),
           const SizedBox(height: AppTheme.spaceM),
 
-          // ── Attachments ───────────────────────────────────────────────
+          // ── Customer Photos (from original request) ───────────────────
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding:
+                  const EdgeInsets.only(bottom: AppTheme.spaceS),
+              leading: const Icon(Icons.photo_library_outlined,
+                  size: 20, color: AppTheme.secondary),
+              title: const Text('Customer Photos',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14)),
+              children: [
+                AttachmentsWidget(
+                  ownerType: 'REPAIR_REQUEST',
+                  ownerId: job.requestId,
+                  canUpload: false,
+                  canDelete: false,
+                  showHeader: false,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppTheme.spaceM),
+
+          // ── Job Attachments (internal) ─────────────────────────────────
           AttachmentsWidget(
             ownerType: 'JOB',
             ownerId: job.id,

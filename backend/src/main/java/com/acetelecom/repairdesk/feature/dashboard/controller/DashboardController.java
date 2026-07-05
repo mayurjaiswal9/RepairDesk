@@ -34,8 +34,8 @@ public class DashboardController {
         // Jobs with CREATED or ASSIGNED status have no appointment yet (SCH-023)
         long created = jobRepo.countByStatus(JobStatus.CREATED);
         return Map.of(
-                "pendingReview", requestRepo.countByStatus(RequestStatus.PENDING_REVIEW.name()),
-                "infoRequired", requestRepo.countByStatus(RequestStatus.INFORMATION_REQUIRED.name()),
+                "pendingReview", requestRepo.countByStatus(RequestStatus.PENDING_REVIEW),
+                "infoRequired", requestRepo.countByStatus(RequestStatus.INFORMATION_REQUIRED),
                 "activeJobs", inProgress + awaitingParts + assigned + scheduled,
                 "unscheduledJobs", created + assigned);
     }

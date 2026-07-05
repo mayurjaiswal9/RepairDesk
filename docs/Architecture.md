@@ -240,8 +240,8 @@ All navigation decisions are driven by the authenticated **role** (single role p
 | --- | --- | --- | --- |
 | **Customer** | **Customer Home** (repair list) — `repair_status_tracking` | Repair list, repair detail, notification inbox (bell), "+ New Repair Request", Account Settings | Only customer-owned routes; any operational/admin route redirects to Customer Home. |
 | **Technician** | **Personal Schedule** (today's appointments) — `scheduling` | Today/this-week schedule, my assigned jobs, transient alerts | Only assigned-work routes; cannot open other technicians' schedules, queues, or admin routes. |
-| **Staff Member** | **Requests & Jobs** — `request_review`/`jobs` | Dashboard hub → Requests & Jobs (Requests/Jobs/Schedule tabs), Customers (read-only); queue badges | Operational routes allowed; Staff Members/Products/Settings routes redirect away (admin-only). |
-| **Administrator** | **Requests & Jobs** — same as Staff | Dashboard hub → Requests & Jobs, Staff Members, Customers, Products, Shop Settings | Full app; standard auth guard only. |
+| **Staff Member** | **Jobs** — `jobs` | Dashboard hub → Jobs, Appointments, Customers (read-only); Staff Members/Products/Settings/Repair Requests routes redirect away (admin-only) | Operational routes for assigned work only; cannot access the pending-request review queue (admin-only). |
+| **Administrator** | **Requests & Jobs** — `request_review`/`jobs` | Dashboard hub → Repair Requests (review queue), Jobs, Appointments, Customers, Staff Members, Products, Shop Settings | Full app; standard auth guard only. |
 
 **Implementation notes:**
 - **Single guard, role-aware:** the GoRouter `redirect` reads `(isAuthenticated, role, accountStatus)` and resolves landing + access in one place (Dashboard spec: landing reflects *current* role/status).

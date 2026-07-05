@@ -59,9 +59,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             role: auth.role,
           );
     } on AppException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(() => _errorMessage = 'Unexpected error. Please try again.');
+      setState(() => _errorMessage = e.userMessage);
+    } catch (e) {
+      setState(() => _errorMessage = 'An unexpected error occurred.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

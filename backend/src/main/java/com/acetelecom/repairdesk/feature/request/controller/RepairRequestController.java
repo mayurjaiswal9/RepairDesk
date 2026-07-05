@@ -76,9 +76,9 @@ public class RepairRequestController {
         return service.getMyRequests(currentUser.get(), pageable);
     }
 
-    /** Staff / Admin queue. */
+    /** Admin-only: request queue for review and approval. */
     @GetMapping
-    @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
+    @Secured({ "ROLE_ADMIN" })
     public PageResponse<RepairRequestSummary> queue(
             @RequestParam(required = false) String status, Pageable pageable) {
         return service.getQueue(status, pageable);

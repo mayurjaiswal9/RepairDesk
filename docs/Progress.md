@@ -1,6 +1,6 @@
 # RepairDesk V1 — Implementation Progress
 
-**Last updated:** 2026-07-02 (Phase 8)
+**Last updated:** 2026-07-02 (Phase 8 + Post-launch fixes)
 **Source of truth:** [Tasks.md](Tasks.md)
 
 ---
@@ -254,7 +254,20 @@
 | Phase 5 — Release Prep | 14 | 14 | 0 |
 | **Total** | **129** | **123** | **6** |
 
-**Overall completion: ~95%**
+**Overall completion: ~97%**
+
+### Post-launch fixes applied
+
+| Fix | Area | Description |
+|---|---|---|
+| Dashboard loading | FE | Changed `_countersProvider` from `autoDispose` to persistent; eliminates the ~1-minute spinner on login |
+| Staff RBAC | FE+BE | Repair Request review queue restricted to **ADMIN only**; Staff dashboard no longer shows the queue tile |
+| Attachment viewer | FE | Photos now load as authenticated thumbnails and open in a full-screen `InteractiveViewer` |
+| Attachment stream | BE | `/attachments/{storageKey}` endpoint now requires authentication (`@Secured` for all roles) |
+| Debug cleanup | FE | Removed all temporary debug `debugPrint` and diagnostic URL display added during physical-device troubleshooting |
+| Architecture docs | DOCS | `Architecture.md` RBAC table updated: Staff landing is **Jobs** (not request queue); Repair Request queue is admin-only |
+| Customer respond panel | FE | Customer can reply with text + photos when a request is `INFORMATION_REQUIRED`; sticky bottom panel (fixed unbounded-height layout crash) |
+| Admin request photos | FE | Each Repair Request card now has a collapsible **Photos & Attachments** section so admins can view customer-attached images (lazily loaded, read-only) |
 
 ### Remaining deferred items (post-V1)
 

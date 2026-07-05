@@ -4,17 +4,20 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Customer repair detail — friendly view, no internal fields (TRACK-002).
  */
 public record RepairDetail(
+        UUID requestId,
         String referenceNumber,
         String deviceCategoryName,
         String deviceBrand,
         String deviceModel,
         String issueDescription,
         String friendlyStatus,
+        boolean canProvideInfo,
         AppointmentInfo appointment,
         String rejectionMessage,
         String infoRequestedMessage,

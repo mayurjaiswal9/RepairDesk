@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,12 +31,14 @@ class AttachmentsWidget extends ConsumerStatefulWidget {
     required this.ownerId,
     this.canUpload = true,
     this.canDelete = false,
+    this.showHeader = true,
   });
 
   final String ownerType;
   final String ownerId;
   final bool canUpload;
   final bool canDelete;
+  final bool showHeader;
 
   @override
   ConsumerState<AttachmentsWidget> createState() => _AttachmentsWidgetState();
@@ -53,30 +56,32 @@ class _AttachmentsWidgetState extends ConsumerState<AttachmentsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'Attachments',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(color: AppTheme.primary),
-            ),
-            const Spacer(),
-            if (widget.canUpload)
-              _uploading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : IconButton(
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
-                      tooltip: 'Add photo',
-                      onPressed: () => _pickAndUpload(),
-                    ),
-          ],
-        ),
-        const Divider(),
+        if (widget.showHeader) ...[
+          Row(
+            children: [
+              Text(
+                'Attachments',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(color: AppTheme.primary),
+              ),
+              const Spacer(),
+              if (widget.canUpload)
+                _uploading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : IconButton(
+                        icon: const Icon(Icons.add_photo_alternate_outlined),
+                        tooltip: 'Add photo',
+                        onPressed: () => _pickAndUpload(),
+                      ),
+            ],
+          ),
+          const Divider(),
+        ],
         attachmentsAsync.when(
           loading: () =>
               const Center(child: CircularProgressIndicator()),
@@ -157,13 +162,14 @@ class _AttachmentTile extends ConsumerWidget {
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.image_outlined, color: AppTheme.secondary),
+      leading: _Thumbnail(storageKey: attachment.storageKey, ref: ref),
       title: Text(attachment.displayName,
           style: const TextStyle(fontSize: 13),
           overflow: TextOverflow.ellipsis),
       subtitle: Text(attachment.sizeLabel,
           style:
               const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+      onTap: () => _viewImage(context, ref),
       trailing: canDelete
           ? IconButton(
               icon: const Icon(Icons.delete_outline,
@@ -171,8 +177,18 @@ class _AttachmentTile extends ConsumerWidget {
               tooltip: 'Delete',
               onPressed: () => _confirmDelete(context, ref),
             )
-          : null,
+          : const Icon(Icons.chevron_right, size: 18,
+              color: AppTheme.textSecondary),
     );
+  }
+
+  void _viewImage(BuildContext context, WidgetRef ref) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => _ImageViewerScreen(
+        attachment: attachment,
+        repo: ref.read(attachmentsRepositoryProvider),
+      ),
+    ));
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
@@ -205,5 +221,109 @@ class _AttachmentTile extends ConsumerWidget {
               backgroundColor: AppTheme.error));
       }
     }
+  }
+}
+
+// ── Thumbnail ─────────────────────────────────────────────────────────────────
+
+class _Thumbnail extends StatefulWidget {
+  const _Thumbnail({required this.storageKey, required this.ref});
+  final String storageKey;
+  final WidgetRef ref;
+
+  @override
+  State<_Thumbnail> createState() => _ThumbnailState();
+}
+
+class _ThumbnailState extends State<_Thumbnail> {
+  Uint8List? _bytes;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final bytes = await widget.ref
+          .read(attachmentsRepositoryProvider)
+          .fetchImageBytes(widget.storageKey);
+      if (mounted) setState(() { _bytes = bytes; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const SizedBox(
+          width: 40, height: 40,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+    }
+    if (_bytes == null) {
+      return const Icon(Icons.image_outlined, color: AppTheme.secondary, size: 36);
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Image.memory(_bytes!, width: 40, height: 40, fit: BoxFit.cover),
+    );
+  }
+}
+
+// ── Full-screen image viewer ──────────────────────────────────────────────────
+
+class _ImageViewerScreen extends StatefulWidget {
+  const _ImageViewerScreen({required this.attachment, required this.repo});
+  final AttachmentItem attachment;
+  final AttachmentsRepository repo;
+
+  @override
+  State<_ImageViewerScreen> createState() => _ImageViewerScreenState();
+}
+
+class _ImageViewerScreenState extends State<_ImageViewerScreen> {
+  Uint8List? _bytes;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final bytes =
+          await widget.repo.fetchImageBytes(widget.attachment.storageKey);
+      if (mounted) setState(() { _bytes = bytes; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(widget.attachment.displayName,
+            style: const TextStyle(color: Colors.white, fontSize: 14)),
+      ),
+      body: Center(
+        child: _loading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : _error != null
+                ? Text(_error!,
+                    style: const TextStyle(color: Colors.white))
+                : InteractiveViewer(
+                    child: Image.memory(_bytes!, fit: BoxFit.contain)),
+      ),
+    );
   }
 }

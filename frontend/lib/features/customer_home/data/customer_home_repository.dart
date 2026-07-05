@@ -59,15 +59,28 @@ class CustomerHomeRepository {
       throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
     }
   }
+
+  Future<void> provideInfo(String referenceNumber, String message) async {
+    try {
+      await _dio.post<void>(
+        '/me/repairs/$referenceNumber/provide-info',
+        data: {'message': message},
+      );
+    } on DioException catch (e) {
+      throw e.error is AppException ? e.error as AppException : AppException.fromDioError(e);
+    }
+  }
 }
 
 class RepairDetail {
+  final String? requestId;
   final String referenceNumber;
   final String deviceCategoryName;
   final String? deviceBrand;
   final String? deviceModel;
   final String? issueDescription;
   final String friendlyStatus;
+  final bool canProvideInfo;
   final String? rejectionMessage;
   final String? infoRequestedMessage;
   final List<StatusHistoryItem> statusHistory;
@@ -75,12 +88,14 @@ class RepairDetail {
   final String? updatedAt;
 
   const RepairDetail({
+    this.requestId,
     required this.referenceNumber,
     required this.deviceCategoryName,
     this.deviceBrand,
     this.deviceModel,
     this.issueDescription,
     required this.friendlyStatus,
+    required this.canProvideInfo,
     this.rejectionMessage,
     this.infoRequestedMessage,
     required this.statusHistory,
@@ -89,12 +104,14 @@ class RepairDetail {
   });
 
   factory RepairDetail.fromJson(Map<String, dynamic> json) => RepairDetail(
+        requestId: json['requestId'] as String?,
         referenceNumber: json['referenceNumber'] as String,
         deviceCategoryName: json['deviceCategoryName'] as String,
         deviceBrand: json['deviceBrand'] as String?,
         deviceModel: json['deviceModel'] as String?,
         issueDescription: json['issueDescription'] as String?,
         friendlyStatus: json['friendlyStatus'] as String,
+        canProvideInfo: json['canProvideInfo'] as bool? ?? false,
         rejectionMessage: json['rejectionMessage'] as String?,
         infoRequestedMessage: json['infoRequestedMessage'] as String?,
         statusHistory: (json['statusHistory'] as List<dynamic>? ?? [])

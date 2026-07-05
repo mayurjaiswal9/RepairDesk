@@ -2,9 +2,15 @@ package com.acetelecom.repairdesk.feature.tracking.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,4 +41,14 @@ public class TrackingController {
     public RepairDetail detail(@PathVariable String referenceNumber) {
         return service.detail(referenceNumber, currentUser.get().id());
     }
+
+    @PostMapping("/{referenceNumber}/provide-info")
+    public ResponseEntity<Void> provideInfo(
+            @PathVariable String referenceNumber,
+            @Valid @RequestBody ProvideInfoRequest body) {
+        service.provideInfo(referenceNumber, body.message(), currentUser.get());
+        return ResponseEntity.noContent().build();
+    }
+
+    record ProvideInfoRequest(@NotBlank String message) {}
 }

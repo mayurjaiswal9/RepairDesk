@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../attachments/data/attachments_repository.dart';
 import '../data/customer_home_repository.dart';
 
 final _detailFamily = FutureProvider.autoDispose
@@ -38,75 +42,265 @@ class RepairDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (detail) => RefreshIndicator(
-          onRefresh: () =>
-              ref.refresh(_detailFamily(referenceNumber).future),
-          child: ListView(
-            padding: const EdgeInsets.all(AppTheme.spaceM),
+        data: (detail) {
+          final showPanel =
+              detail.canProvideInfo && detail.requestId != null;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Status banner ────────────────────────────────────────
-              _StatusBanner(status: detail.friendlyStatus),
-              const SizedBox(height: AppTheme.spaceM),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () =>
+                      ref.refresh(_detailFamily(referenceNumber).future),
+                  child: ListView(
+                    padding: EdgeInsets.only(
+                      left: AppTheme.spaceM,
+                      right: AppTheme.spaceM,
+                      top: AppTheme.spaceM,
+                      bottom:
+                          showPanel ? AppTheme.spaceS : AppTheme.spaceM,
+                    ),
+                    children: [
+                      // ── Status banner ──────────────────────────────
+                      _StatusBanner(status: detail.friendlyStatus),
+                      const SizedBox(height: AppTheme.spaceM),
 
-              // ── Alerts ───────────────────────────────────────────────
-              if (detail.infoRequestedMessage != null)
-                _AlertCard(
-                  icon: Icons.help_outline,
-                  color: AppTheme.secondary,
-                  title: 'More information needed',
-                  body: detail.infoRequestedMessage!,
-                ),
-              if (detail.rejectionMessage != null)
-                _AlertCard(
-                  icon: Icons.cancel_outlined,
-                  color: AppTheme.error,
-                  title: 'Request not accepted',
-                  body: detail.rejectionMessage!,
-                ),
+                      // ── Alerts ─────────────────────────────────────
+                      if (detail.infoRequestedMessage != null)
+                        _AlertCard(
+                          icon: Icons.help_outline,
+                          color: AppTheme.secondary,
+                          title: 'More information needed',
+                          body: detail.infoRequestedMessage!,
+                        ),
+                      if (detail.rejectionMessage != null)
+                        _AlertCard(
+                          icon: Icons.cancel_outlined,
+                          color: AppTheme.error,
+                          title: 'Request not accepted',
+                          body: detail.rejectionMessage!,
+                        ),
 
-              // ── Device & Issue ───────────────────────────────────────
-              _Section(
-                title: 'Device',
-                children: [
-                  _InfoRow(label: 'Type', value: detail.deviceCategoryName),
-                  if (detail.deviceBrand != null || detail.deviceModel != null)
-                    _InfoRow(
-                        label: 'Model',
-                        value: [detail.deviceBrand, detail.deviceModel]
-                            .whereType<String>()
-                            .join(' ')),
-                ],
+                      // ── Device & Issue ─────────────────────────────
+                      _Section(
+                        title: 'Device',
+                        children: [
+                          _InfoRow(
+                              label: 'Type',
+                              value: detail.deviceCategoryName),
+                          if (detail.deviceBrand != null ||
+                              detail.deviceModel != null)
+                            _InfoRow(
+                                label: 'Model',
+                                value: [
+                                  detail.deviceBrand,
+                                  detail.deviceModel
+                                ].whereType<String>().join(' ')),
+                        ],
+                      ),
+                      const SizedBox(height: AppTheme.spaceM),
+
+                      if (detail.issueDescription != null)
+                        _Section(
+                          title: 'Issue Described',
+                          children: [
+                            Text(detail.issueDescription!,
+                                style: const TextStyle(
+                                    color: AppTheme.textPrimary)),
+                          ],
+                        ),
+                      const SizedBox(height: AppTheme.spaceM),
+
+                      // ── Timeline ───────────────────────────────────
+                      if (detail.statusHistory.isNotEmpty) ...[
+                        Text('Timeline',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(color: AppTheme.primary)),
+                        const Divider(),
+                        ...detail.statusHistory.asMap().entries.map((e) =>
+                            _TimelineItem(
+                              item: e.value,
+                              isLast:
+                                  e.key == detail.statusHistory.length - 1,
+                            )),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: AppTheme.spaceM),
 
-              if (detail.issueDescription != null)
-                _Section(
-                  title: 'Issue Described',
-                  children: [
-                    Text(detail.issueDescription!,
-                        style:
-                            const TextStyle(color: AppTheme.textPrimary)),
-                  ],
+              // ── Respond panel (sticky bottom, outside ListView) ───────
+              if (showPanel)
+                _RespondPanel(
+                  referenceNumber: referenceNumber,
+                  requestId: detail.requestId!,
+                  onSubmitted: () =>
+                      ref.invalidate(_detailFamily(referenceNumber)),
                 ),
-              const SizedBox(height: AppTheme.spaceM),
-
-              // ── Timeline ─────────────────────────────────────────────
-              if (detail.statusHistory.isNotEmpty) ...[
-                Text('Timeline',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: AppTheme.primary)),
-                const Divider(),
-                ...detail.statusHistory.asMap().entries.map((e) =>
-                    _TimelineItem(
-                      item: e.value,
-                      isLast: e.key == detail.statusHistory.length - 1,
-                    )),
-              ],
             ],
-          ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Respond panel ─────────────────────────────────────────────────────────────
+
+class _RespondPanel extends ConsumerStatefulWidget {
+  const _RespondPanel({
+    required this.referenceNumber,
+    required this.requestId,
+    required this.onSubmitted,
+  });
+
+  final String referenceNumber;
+  final String requestId;
+  final VoidCallback onSubmitted;
+
+  @override
+  ConsumerState<_RespondPanel> createState() => _RespondPanelState();
+}
+
+class _RespondPanelState extends ConsumerState<_RespondPanel> {
+  final _msgCtrl = TextEditingController();
+  final _picker = ImagePicker();
+  bool _submitting = false;
+  bool _uploadingPhoto = false;
+
+  @override
+  void dispose() {
+    _msgCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final picked = await _picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      await ref
+          .read(attachmentsRepositoryProvider)
+          .uploadToRequest(widget.requestId, File(picked.path));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Photo added')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Upload failed: $e'),
+                backgroundColor: AppTheme.error));
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
+  Future<void> _submit() async {
+    final msg = _msgCtrl.text.trim();
+    if (msg.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please add a message')));
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await ref
+          .read(customerHomeRepositoryProvider)
+          .provideInfo(widget.referenceNumber, msg);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Response submitted — your request is back under review')));
+        widget.onSubmitted();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error: $e'), backgroundColor: AppTheme.error));
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 4,
+      color: Theme.of(context).colorScheme.surface,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppTheme.spaceM, AppTheme.spaceS, AppTheme.spaceM, AppTheme.spaceM),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.reply_outlined,
+                    color: AppTheme.secondary, size: 18),
+                const SizedBox(width: AppTheme.spaceS),
+                Text('Your Response',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: AppTheme.secondary,
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: AppTheme.spaceS),
+            TextField(
+              controller: _msgCtrl,
+              maxLines: 4,
+              minLines: 2,
+              decoration: const InputDecoration(
+                hintText: 'Describe the additional information requested…',
+                border: OutlineInputBorder(),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
+            const SizedBox(height: AppTheme.spaceS),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: _uploadingPhoto
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.add_photo_alternate_outlined,
+                            size: 16),
+                    label: const Text('Add Photo'),
+                    onPressed: _uploadingPhoto ? null : _pickPhoto,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spaceM),
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: _submitting
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.send_outlined, size: 16),
+                    label: const Text('Submit'),
+                    onPressed: _submitting ? null : _submit,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
+      ),
       ),
     );
   }

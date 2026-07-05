@@ -50,7 +50,8 @@ class DashboardScreen extends ConsumerWidget {
 
 // ── Staff / Admin dashboard ───────────────────────────────────────────────
 
-final _countersProvider = FutureProvider.autoDispose(
+// Non-autoDispose so counters don't reload on every widget rebuild.
+final _countersProvider = FutureProvider<DashboardCounters>(
     (ref) => ref.watch(dashboardRepositoryProvider).counters());
 
 class _StaffDashboard extends ConsumerWidget {
@@ -106,19 +107,21 @@ class _StaffDashboard extends ConsumerWidget {
           Text('Quick Actions',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppTheme.spaceM),
-          _NavTile(
-            icon: Icons.inbox_outlined,
-            label: 'Repair Requests',
-            subtitle: 'Review and manage incoming requests',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                  builder: (_) => const RequestQueueScreen()),
+          // Repair Request queue is admin-only — only admins review & approve.
+          if (role == 'ADMIN')
+            _NavTile(
+              icon: Icons.inbox_outlined,
+              label: 'Repair Requests',
+              subtitle: 'Review and approve incoming requests',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const RequestQueueScreen()),
+              ),
             ),
-          ),
           _NavTile(
             icon: Icons.build_outlined,
             label: 'Jobs',
-            subtitle: 'Track ongoing repairs',
+            subtitle: 'Track and manage repair jobs',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const JobsListScreen()),
             ),

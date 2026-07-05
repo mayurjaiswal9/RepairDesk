@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -125,6 +126,21 @@ class AttachmentsRepository {
   Future<void> delete(String attachmentId) async {
     try {
       await _dio.delete<void>('/attachments/$attachmentId');
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  /// Downloads the raw image bytes for a given storageKey (requires auth).
+  Future<Uint8List> fetchImageBytes(String storageKey) async {
+    try {
+      final res = await _dio.get<List<int>>(
+        '/attachments/$storageKey',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return Uint8List.fromList(res.data!);
     } on DioException catch (e) {
       throw e.error is AppException
           ? e.error as AppException

@@ -71,6 +71,7 @@ public class AttachmentController {
 
     /** Stream / download an attachment by storage key (FILE-003). */
     @GetMapping("/attachments/{storageKey}")
+    @Secured({ "ROLE_CUSTOMER", "ROLE_STAFF", "ROLE_ADMIN", "ROLE_TECHNICIAN" })
     public ResponseEntity<InputStreamResource> stream(
             @PathVariable String storageKey) {
         InputStream is = attachmentService.stream(storageKey, currentUser.get());

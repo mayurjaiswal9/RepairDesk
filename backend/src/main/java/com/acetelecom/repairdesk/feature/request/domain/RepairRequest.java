@@ -94,6 +94,9 @@ public class RepairRequest extends BaseEntity {
     @Column(name = "info_requested_message", columnDefinition = "text")
     private String infoRequestedMessage;
 
+    @Column(name = "customer_info_response", columnDefinition = "text")
+    private String customerInfoResponse;
+
     @Column(name = "submitted_at", nullable = false, updatable = false)
     private Instant submittedAt = Instant.now();
 

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
+import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
 
 public interface RepairRequestRepository extends JpaRepository<RepairRequest, UUID> {
 
@@ -22,12 +23,12 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, UU
             WHERE (:status IS NULL OR r.status = :status)
             ORDER BY r.priority ASC, r.submittedAt ASC
             """)
-    Page<RepairRequest> findQueueFiltered(@Param("status") String status, Pageable pageable);
+    Page<RepairRequest> findQueueFiltered(@Param("status") RequestStatus status, Pageable pageable);
 
     Optional<RepairRequest> findByReferenceNumber(String referenceNumber);
 
     @Query("SELECT COUNT(r) FROM RepairRequest r WHERE r.status = :status")
-    long countByStatus(@Param("status") String status);
+    long countByStatus(@Param("status") RequestStatus status);
 
     java.util.List<RepairRequest> findByCustomerIdOrderByUpdatedAtDesc(UUID customerId);
 }

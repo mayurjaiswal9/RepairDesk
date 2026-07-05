@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Allows cleartext HTTP for local development.
+    Android <domain> tags do NOT support IP addresses — base-config is required.
+    Production traffic uses HTTPS enforced by the server/nginx layer.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
 import com.acetelecom.repairdesk.feature.audit.repository.AuditEventRepository;
+import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
@@ -20,6 +21,7 @@ import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
 import com.acetelecom.repairdesk.feature.request.repository.RepairRequestRepository;
 import com.acetelecom.repairdesk.feature.tracking.dto.RepairDetail;
 import com.acetelecom.repairdesk.feature.tracking.dto.RepairListItem;
+import com.acetelecom.repairdesk.security.AuthenticatedUser;
 
 @Service
 @Transactional(readOnly = true)
@@ -45,12 +47,14 @@ public class TrackingService {
     private final RepairRequestRepository requestRepo;
     private final JobRepository jobRepo;
     private final AuditEventRepository auditRepo;
+    private final AuditService auditService;
 
     public TrackingService(RepairRequestRepository requestRepo, JobRepository jobRepo,
-            AuditEventRepository auditRepo) {
+            AuditEventRepository auditRepo, AuditService auditService) {
         this.requestRepo = requestRepo;
         this.jobRepo = jobRepo;
         this.auditRepo = auditRepo;
+        this.auditService = auditService;
     }
 
     public List<RepairListItem> list(UUID customerId) {
@@ -69,7 +73,9 @@ public class TrackingService {
                     req.getSubmittedAt(),
                     req.getUpdatedAt()));
         }
-        items.sort(Comparator.comparing(RepairListItem::updatedAt).reversed());
+        // Sort newest-updated first; guard against null updatedAt on brand-new records.
+        items.sort(Comparator.comparing(RepairListItem::updatedAt,
+                Comparator.nullsFirst(Comparator.naturalOrder())).reversed());
         return items;
     }
 
@@ -111,12 +117,14 @@ public class TrackingService {
         history.sort(Comparator.comparing(RepairDetail.StatusHistoryItem::occurredAt));
 
         return new RepairDetail(
+                req.getId(),
                 req.getReferenceNumber(),
                 req.getDeviceCategory().getName(),
                 req.getDeviceBrand(),
                 req.getDeviceModel(),
                 req.getIssueDescription(),
                 label,
+                req.getStatus() == RequestStatus.INFORMATION_REQUIRED,
                 appointment,
                 req.getStatus() == RequestStatus.REJECTED ? req.getCustomerFacingMessage() : null,
                 req.getStatus() == RequestStatus.INFORMATION_REQUIRED
@@ -124,6 +132,27 @@ public class TrackingService {
                 history,
                 req.getSubmittedAt(),
                 req.getUpdatedAt());
+    }
+
+    /** Customer responds to an info request — re-queues the request for review. */
+    @Transactional
+    public void provideInfo(String referenceNumber, String message, AuthenticatedUser actor) {
+        RepairRequest req = requestRepo.findByReferenceNumber(referenceNumber)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Repair not found"));
+
+        if (!req.getCustomer().getId().equals(actor.id())) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "Access denied");
+        }
+        if (req.getStatus() != RequestStatus.INFORMATION_REQUIRED) {
+            throw new ApiException(ErrorCode.CONFLICT,
+                    "This request is not awaiting additional information");
+        }
+
+        req.setCustomerInfoResponse(message);
+        req.setStatus(RequestStatus.PENDING_REVIEW);
+        requestRepo.save(req);
+
+        auditService.record(actor, "REQUEST", req.getId(), "INFO_PROVIDED", message);
     }
 
     private String resolveLabel(RepairRequest req) {

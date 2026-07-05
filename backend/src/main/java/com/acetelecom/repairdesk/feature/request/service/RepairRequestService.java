@@ -104,7 +104,9 @@ public class RepairRequestService {
 
     @Transactional(readOnly = true)
     public PageResponse<RepairRequestSummary> getQueue(String status, Pageable pageable) {
-        Page<RepairRequest> page = requestRepo.findQueueFiltered(status, pageable);
+        RequestStatus statusEnum = (status == null || status.isBlank())
+                ? null : RequestStatus.valueOf(status.toUpperCase());
+        Page<RepairRequest> page = requestRepo.findQueueFiltered(statusEnum, pageable);
         return PageResponse.from(page.map(RepairRequestSummary::from));
     }
 
