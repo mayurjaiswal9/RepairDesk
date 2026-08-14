@@ -1,0 +1,99 @@
+<a class="skip-link" href="#content">Skip to content</a>
+
+<div class="shell" [class.is-rail]="collapsed()">
+  <aside class="sidebar" aria-label="Main navigation">
+    <a class="sidebar-brand" [routerLink]="landingLink()">
+      <span class="mark" aria-hidden="true">RD</span>
+      @if (!collapsed()) {
+        <span class="brand-text">
+          <span class="company">ACE Telecom</span>
+          <span class="product">RepairDesk</span>
+        </span>
+      }
+    </a>
+
+    <nav>
+      @for (group of groups(); track group.id) {
+        <div class="nav-group">
+          @if (!collapsed()) {
+            <div class="nav-group-label">{{ group.label }}</div>
+          }
+          @for (item of group.items; track item.id) {
+            <a
+              class="nav-item"
+              [routerLink]="item.path"
+              [class.active]="isActive(item.path)"
+              [attr.aria-current]="isActive(item.path) ? 'page' : null"
+              [matTooltip]="collapsed() ? item.label : ''"
+              matTooltipPosition="right"
+            >
+              <mat-icon class="ico" aria-hidden="true">{{ item.icon }}</mat-icon>
+              @if (!collapsed()) {
+                <span class="label">{{ item.label }}</span>
+              }
+            </a>
+          }
+        </div>
+      }
+    </nav>
+
+    <button
+      type="button"
+      class="collapse-btn"
+      (click)="toggleSidebar()"
+      [attr.aria-expanded]="!collapsed()"
+      [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+    >
+      <mat-icon aria-hidden="true">{{ collapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      @if (!collapsed()) {
+        <span class="collapse-label">Collapse</span>
+      }
+    </button>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="breadcrumb">
+        <strong>{{ pageTitle() }}</strong>
+      </div>
+      <div class="topbar-spacer"></div>
+
+      <a
+        routerLink="/notifications"
+        class="bell"
+        [attr.aria-label]="unreadLabel()"
+      >
+        <mat-icon aria-hidden="true">notifications</mat-icon>
+        @if (badgeText()) {
+          <span class="badge">{{ badgeText() }}</span>
+        }
+      </a>
+
+      <button
+        type="button"
+        class="avatar-btn"
+        [matMenuTriggerFor]="userMenu"
+        [attr.aria-label]="'Account menu for ' + (user()?.name || user()?.username || 'user')"
+      >
+        <span class="avatar">{{ initials() }}</span>
+      </button>
+      <mat-menu #userMenu="matMenu">
+        <div class="menu-who" (click)="$event.stopPropagation()">
+          <div class="name">{{ user()?.name || user()?.username }}</div>
+          <div class="user">{{ '@' + (user()?.username || '') }}</div>
+          <span class="role-pill">{{ roleLabel(role()) }}</span>
+        </div>
+        <a mat-menu-item routerLink="/account">My account</a>
+        <a mat-menu-item routerLink="/account" [queryParams]="{ changePassword: '1' }">
+          Change password
+        </a>
+        <a mat-menu-item routerLink="/notifications">Notifications</a>
+        <button mat-menu-item class="danger" type="button" (click)="signOut()">Sign out</button>
+      </mat-menu>
+    </header>
+
+    <main id="content" class="content" tabindex="-1">
+      <router-outlet />
+    </main>
+  </div>
+</div>

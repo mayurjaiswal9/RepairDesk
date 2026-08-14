@@ -19,6 +19,7 @@ dependencies:
 
   # HTTP client (Constitution mandate)
   dio: ^5.8.0+1
+  http_parser: ^4.1.2
 
   # Immutable models & JSON serialization (Constitution mandate)
   freezed_annotation: ^3.1.0
@@ -49,3 +50,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/branding/

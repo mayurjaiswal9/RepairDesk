@@ -44,6 +44,10 @@ public class Notification {
     @Column(name = "reference_number", length = 30)
     private String referenceNumber;
 
+    /** REPAIR_REQUEST | JOB | APPOINTMENT — see notifications_related_type_check. */
+    @Column(name = "related_type", length = 20)
+    private String relatedType;
+
     @Column(name = "related_id")
     private UUID relatedEntityId;
 

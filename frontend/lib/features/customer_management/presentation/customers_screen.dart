@@ -1,9 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/roles.dart';
+import '../../../core/auth/session_controller.dart';
+import '../../../core/error/app_exception.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../account/data/profile_repository.dart';
+import '../../jobs/presentation/job_detail_screen.dart';
+import '../../requests/presentation/request_detail_screen.dart';
 import '../data/customer_management_repository.dart';
+
+/// Renders a user-friendly message for any error, instead of the raw
+/// exception dump (BUG-6: customers page "fails with exception").
+String _friendlyError(Object e) =>
+    e is AppException ? e.userMessage : 'Something went wrong. Please try again.';
 
 final _searchProvider =
     FutureProvider.autoDispose.family<List<CustomerSummary>, String>(
@@ -25,15 +38,43 @@ class CustomersScreen extends ConsumerStatefulWidget {
 class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
+  Timer? _debounce;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  // Debounce keystrokes so we don't fire a search request per character,
+  // which made the list feel like it was "loading for a long time" (BUG-6).
+  void _onSearchChanged(String v) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => _query = v.trim());
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final role = ref.watch(sessionControllerProvider).role;
+    if (!Roles.canAccessCustomers(role)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Customers')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(AppTheme.spaceL),
+            child: Text(
+              'Customer Management is only available to staff and administrators.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ),
+        ),
+      );
+    }
+
     final customersAsync = ref.watch(_searchProvider(_query));
 
     return Scaffold(
@@ -52,12 +93,13 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
+                          _debounce?.cancel();
                           _searchCtrl.clear();
                           setState(() => _query = '');
                         })
                     : null,
               ),
-              onChanged: (v) => setState(() => _query = v.trim()),
+              onChanged: _onSearchChanged,
             ),
           ),
           Expanded(
@@ -70,9 +112,11 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                   children: [
                     const Icon(Icons.error_outline,
                         size: 48, color: AppTheme.error),
-                    Text(e.toString(),
+                    const SizedBox(height: AppTheme.spaceM),
+                    Text(_friendlyError(e),
                         style: const TextStyle(color: AppTheme.error),
                         textAlign: TextAlign.center),
+                    const SizedBox(height: AppTheme.spaceM),
                     FilledButton(
                         onPressed: () =>
                             ref.invalidate(_searchProvider(_query)),
@@ -98,6 +142,8 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                           const SizedBox(height: AppTheme.spaceS),
                       itemBuilder: (_, i) => _CustomerCard(
                             customer: customers[i],
+                            onChanged: () =>
+                                ref.invalidate(_searchProvider(_query)),
                           ),
                     ),
             ),
@@ -108,12 +154,13 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   }
 }
 
-class _CustomerCard extends StatelessWidget {
-  const _CustomerCard({required this.customer});
+class _CustomerCard extends ConsumerWidget {
+  const _CustomerCard({required this.customer, required this.onChanged});
   final CustomerSummary customer;
+  final VoidCallback onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final initial =
         ((customer.name?.isNotEmpty == true ? customer.name![0] : customer.username[0]))
             .toUpperCase();
@@ -129,11 +176,15 @@ class _CustomerCard extends StatelessWidget {
                   color: AppTheme.primary, fontWeight: FontWeight.bold)),
         ),
         title: Text(customer.name ?? customer.username,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('@${customer.username}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 12)),
             Text(customer.mobile,
                 style: const TextStyle(fontSize: 12)),
@@ -147,7 +198,34 @@ class _CustomerCard extends StatelessWidget {
               size: 14,
               color: isActive ? AppTheme.success : AppTheme.error,
             ),
-            const SizedBox(width: 4),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert,
+                  color: AppTheme.textSecondary),
+              onSelected: (action) async {
+                switch (action) {
+                  case 'reset':
+                    await _showResetPasswordDialog(context, ref, customer);
+                    break;
+                  case 'delete':
+                    await _confirmDelete(context, ref, customer, onChanged);
+                    break;
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                    value: 'reset',
+                    child: ListTile(
+                        leading: Icon(Icons.lock_reset_outlined),
+                        title: Text('Reset Password'))),
+                PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                        leading:
+                            Icon(Icons.delete_outline, color: AppTheme.error),
+                        title: Text('Delete',
+                            style: TextStyle(color: AppTheme.error)))),
+              ],
+            ),
             const Icon(Icons.chevron_right),
           ],
         ),
@@ -157,6 +235,98 @@ class _CustomerCard extends StatelessWidget {
         )),
       ),
     );
+  }
+
+  Future<void> _showResetPasswordDialog(
+      BuildContext context, WidgetRef ref, CustomerSummary customer) async {
+    final passCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dlg) => AlertDialog(
+        title: Text('Reset Password — ${customer.name ?? customer.username}'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: passCtrl,
+            obscureText: true,
+            autofocus: true,
+            decoration: const InputDecoration(
+                labelText: 'New password (min 8) *',
+                border: OutlineInputBorder()),
+            validator: (v) =>
+                (v == null || v.length < 8) ? 'Minimum 8 characters' : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dlg, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(dlg, true);
+              }
+            },
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await ref
+          .read(profileRepositoryProvider)
+          .resetUserPassword(customer.id, passCtrl.text);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content:
+                Text('Password reset — customer must change it on next login')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(_friendlyError(e)), backgroundColor: AppTheme.error));
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref,
+      CustomerSummary customer, VoidCallback onChanged) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dlg) => AlertDialog(
+        title: const Text('Delete Customer'),
+        content: Text(
+            'Delete ${customer.name ?? customer.username}\'s account? '
+            'They will no longer be able to sign in. Their repair history is kept.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dlg, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+            onPressed: () => Navigator.pop(dlg, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(profileRepositoryProvider).deleteUser(customer.id);
+      onChanged();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Customer deleted')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(_friendlyError(e)), backgroundColor: AppTheme.error));
+      }
+    }
   }
 }
 
@@ -180,9 +350,11 @@ class CustomerHistoryScreen extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline,
                   size: 48, color: AppTheme.error),
-              Text(e.toString(),
+              const SizedBox(height: AppTheme.spaceM),
+              Text(_friendlyError(e),
                   style: const TextStyle(color: AppTheme.error),
                   textAlign: TextAlign.center),
+              const SizedBox(height: AppTheme.spaceM),
               FilledButton(
                   onPressed: () =>
                       ref.invalidate(_historyProvider(customerId)),
@@ -226,7 +398,8 @@ class CustomerHistoryScreen extends ConsumerWidget {
               const Text('No requests',
                   style: TextStyle(color: AppTheme.textSecondary))
             else
-              ...history.requests.map((r) => _RepairRow(record: r)),
+              ...history.requests
+                  .map((r) => _RepairRow(record: r, type: _RecordType.request)),
             const SizedBox(height: AppTheme.spaceM),
 
             // Jobs
@@ -240,7 +413,8 @@ class CustomerHistoryScreen extends ConsumerWidget {
               const Text('No jobs',
                   style: TextStyle(color: AppTheme.textSecondary))
             else
-              ...history.jobs.map((j) => _RepairRow(record: j)),
+              ...history.jobs
+                  .map((j) => _RepairRow(record: j, type: _RecordType.job)),
           ],
         ),
       ),
@@ -273,13 +447,17 @@ class _Row extends StatelessWidget {
   }
 }
 
+enum _RecordType { request, job }
+
 class _RepairRow extends StatelessWidget {
-  const _RepairRow({required this.record});
+  const _RepairRow({required this.record, required this.type});
   final Map<String, dynamic> record;
+  final _RecordType type;
 
   @override
   Widget build(BuildContext context) {
-    final ref = record['referenceNumber'] as String? ?? '—';
+    final id = record['id'] as String?;
+    final refNumber = record['referenceNumber'] as String? ?? '—';
     final status = record['status'] as String? ?? '—';
     final category = record['deviceCategoryName'] as String? ?? '—';
     final updatedRaw = record['updatedAt'] as String?;
@@ -290,16 +468,29 @@ class _RepairRow extends StatelessWidget {
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(ref,
+      title: Text(refNumber,
           style: const TextStyle(
               fontWeight: FontWeight.w600, color: AppTheme.primary)),
       subtitle: Text('$category • $status',
           style: const TextStyle(fontSize: 12)),
-      trailing: updatedAt != null
-          ? Text(updatedAt,
-              style: const TextStyle(
-                  fontSize: 11, color: AppTheme.textSecondary))
-          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (updatedAt != null)
+            Text(updatedAt,
+                style: const TextStyle(
+                    fontSize: 11, color: AppTheme.textSecondary)),
+          if (id != null) const Icon(Icons.chevron_right, size: 18),
+        ],
+      ),
+      onTap: id == null
+          ? null
+          : () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => type == _RecordType.request
+                    ? RequestDetailScreen(
+                        requestId: id, onActionCompleted: () {})
+                    : JobDetailScreen(jobId: id),
+              )),
     );
   }
 }

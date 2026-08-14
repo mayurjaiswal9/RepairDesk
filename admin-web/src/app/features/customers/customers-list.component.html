@@ -1,0 +1,160 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Customers</h1>
+    <p>Customer lookup is limited to staff and administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Customers</h1>
+      @if (summary()) {
+        <p class="meta" aria-live="polite">{{ summary() }}</p>
+      }
+    </div>
+    <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="refetching()" aria-label="Refresh">
+      @if (refetching()) {
+        <mat-spinner diameter="18"></mat-spinner>
+      } @else {
+        <mat-icon>refresh</mat-icon>
+      }
+      Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-field">
+      <mat-icon class="prefix" aria-hidden="true">search</mat-icon>
+      <input
+        type="search"
+        [formControl]="searchCtrl"
+        placeholder="Search name, username, or mobile"
+        aria-label="Search customers"
+      />
+      @if (searchCtrl.value) {
+        <button type="button" class="clear-x" (click)="clearSearch()" aria-label="Clear search">×</button>
+      }
+    </div>
+  </div>
+
+  @if (refetching()) {
+    <mat-progress-bar mode="indeterminate" class="top-bar"></mat-progress-bar>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel error" role="alert">
+      <h2>Couldn't load customers</h2>
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <div class="table-wrap" aria-busy="true">
+      @for (_ of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track $index) {
+        <div class="skel-row"></div>
+      }
+    </div>
+  } @else if (empty()) {
+    <div class="state-panel">
+      <div class="icon" aria-hidden="true">👥</div>
+      <h2>No customers yet</h2>
+      <p>Customers appear here once they register in the mobile app.</p>
+    </div>
+  } @else if (filteredEmpty()) {
+    <div class="state-panel">
+      <h2>No customers match “{{ q() }}”</h2>
+      <p>Try a different name, username, or mobile number.</p>
+      <button type="button" class="primary-btn" (click)="clearSearch()">Clear search</button>
+    </div>
+  } @else {
+    <div class="table-wrap" [class.dimmed]="refetching()">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Username</th>
+            <th scope="col">Mobile</th>
+            <th scope="col">Status</th>
+            @if (isAdmin()) {
+              <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of rows(); track c.id) {
+            <tr [class.stale]="isStale(c.id)">
+              <td>
+                <a
+                  class="name"
+                  [routerLink]="['/customers', c.id]"
+                  [state]="detailNavState()"
+                  [matTooltip]="displayName(c)"
+                  [attr.aria-label]="'Open ' + displayName(c)"
+                >
+                  {{ displayName(c) }}
+                </a>
+                @if (isStale(c.id)) {
+                  <span class="stale-mark">Updated elsewhere</span>
+                }
+              </td>
+              <td>
+                <span class="mono truncate" [matTooltip]="'@' + c.username">{{ '@' + c.username }}</span>
+              </td>
+              <td>{{ c.mobile || '—' }}</td>
+              <td>
+                <span class="chip-status {{ accountStatusChip(c.status) }}">
+                  {{ accountStatusLabel(c.status) }}
+                </span>
+              </td>
+              @if (isAdmin()) {
+                <td class="actions">
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    [matMenuTriggerFor]="menu"
+                    aria-label="Row actions"
+                  >
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    <a mat-menu-item [routerLink]="['/customers', c.id]" [state]="detailNavState()">
+                      Open detail
+                    </a>
+                    <button mat-menu-item type="button" (click)="openReset(c)">Reset password</button>
+                    <button mat-menu-item type="button" class="danger" (click)="openDelete(c)">
+                      Delete customer
+                    </button>
+                  </mat-menu>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span>
+        Page {{ page() + 1 }} of {{ totalPages() }} · {{ total() }} customers
+      </span>
+      <select class="select" [value]="size()" (change)="changeSize($event)" aria-label="Page size">
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+      <div class="pager-btns">
+        <button type="button" class="ghost-btn" [disabled]="page() <= 0" (click)="changePage(-1)">‹ Prev</button>
+        <button
+          type="button"
+          class="ghost-btn"
+          [disabled]="page() + 1 >= totalPages()"
+          (click)="changePage(1)"
+        >
+          Next ›
+        </button>
+      </div>
+    </div>
+  }
+}

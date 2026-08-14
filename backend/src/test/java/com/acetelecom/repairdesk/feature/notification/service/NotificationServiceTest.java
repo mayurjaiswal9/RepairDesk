@@ -51,7 +51,7 @@ class NotificationServiceTest {
         when(notifRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         notificationService.send(recipientId, "JOB_APPROVED",
-                "Your repair was approved", "RD-2026000001", relatedId);
+                "Your repair was approved", "RD-2026000001", "JOB", relatedId);
 
         ArgumentCaptor<Notification> cap = ArgumentCaptor.forClass(Notification.class);
         verify(notifRepo).save(cap.capture());
@@ -59,6 +59,8 @@ class NotificationServiceTest {
         assertThat(saved.getType()).isEqualTo("JOB_APPROVED");
         assertThat(saved.getMessage()).isEqualTo("Your repair was approved");
         assertThat(saved.getReferenceNumber()).isEqualTo("RD-2026000001");
+        assertThat(saved.getRelatedType()).isEqualTo("JOB");
+        assertThat(saved.getRelatedEntityId()).isEqualTo(relatedId);
         assertThat(saved.isRead()).isFalse();
     }
 
@@ -68,7 +70,7 @@ class NotificationServiceTest {
         when(userRepo.findById(unknownId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> notificationService.send(
-                unknownId, "TYPE", "msg", "REF", UUID.randomUUID()))
+                unknownId, "TYPE", "msg", "REF", "JOB", UUID.randomUUID()))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining("Recipient not found");
     }

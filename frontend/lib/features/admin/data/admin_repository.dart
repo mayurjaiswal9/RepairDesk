@@ -12,23 +12,61 @@ AdminRepository adminRepository(Ref ref) =>
 
 // ── Device categories ──────────────────────────────────────────────────────
 
+/// Whether a category offers a curated, searchable brand list ([configured])
+/// or falls back to "Others"/free-text entry ([freeText]) on the New
+/// Request screen (PROD-004).
+enum BrandMode {
+  configured,
+  freeText;
+
+  String get apiValue => this == configured ? 'CONFIGURED' : 'FREE_TEXT';
+
+  static BrandMode fromApi(String? raw) =>
+      raw == 'CONFIGURED' ? BrandMode.configured : BrandMode.freeText;
+}
+
 class AdminCategory {
   final String id;
   final String name;
   final String? description;
   final bool archived;
+  final BrandMode brandMode;
 
   const AdminCategory({
     required this.id,
     required this.name,
     this.description,
     required this.archived,
+    this.brandMode = BrandMode.freeText,
   });
 
   factory AdminCategory.fromJson(Map<String, dynamic> json) => AdminCategory(
         id: json['id'] as String,
         name: json['name'] as String,
         description: json['description'] as String?,
+        archived: json['archived'] as bool? ?? false,
+        brandMode: BrandMode.fromApi(json['brandMode'] as String?),
+      );
+}
+
+/// A brand curated by an admin under a device category.
+class AdminBrand {
+  final String id;
+  final String deviceCategoryId;
+  final String name;
+  final bool archived;
+
+  const AdminBrand({
+    required this.id,
+    required this.deviceCategoryId,
+    required this.name,
+    required this.archived,
+  });
+
+  factory AdminBrand.fromJson(Map<String, dynamic> json) => AdminBrand(
+        id: json['id'] as String,
+        deviceCategoryId: json['deviceCategoryId'] as String,
+        name: json['name'] as String,
         archived: json['archived'] as bool? ?? false,
       );
 }
@@ -56,8 +94,13 @@ class WorkingHoursConfig {
         closeTime: json['closeTime'] as String?,
       );
 
+  // Backend `dayOfWeek` is 0=Monday .. 6=Sunday (see WorkingHours.java).
+  // A stray leading '' entry here previously shifted every label by one day
+  // (Sunday showed as "Saturday", Monday showed blank) — this is what
+  // actually caused the "misaligned" Working Hours row that looked like a
+  // spacing bug but was really a day-name mapping bug.
   static const dayNames = [
-    '', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
   ];
 
   String get dayName => dayOfWeek < dayNames.length ? dayNames[dayOfWeek] : 'Day $dayOfWeek';
@@ -108,11 +151,33 @@ class AdminRepository {
   }
 
   Future<AdminCategory> createCategory(
-      String name, String? description) async {
+      String name, String? description, BrandMode brandMode) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
           '/device-categories',
-          data: {'name': name, 'description': description});
+          data: {
+            'name': name,
+            'description': description,
+            'brandMode': brandMode.apiValue,
+          });
+      return AdminCategory.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<AdminCategory> updateCategory(
+      String id, String name, String? description, BrandMode brandMode) async {
+    try {
+      final res = await _dio.put<Map<String, dynamic>>(
+          '/device-categories/$id',
+          data: {
+            'name': name,
+            'description': description,
+            'brandMode': brandMode.apiValue,
+          });
       return AdminCategory.fromJson(res.data!);
     } on DioException catch (e) {
       throw e.error is AppException
@@ -134,6 +199,71 @@ class AdminRepository {
   Future<void> unarchiveCategory(String id) async {
     try {
       await _dio.post<void>('/device-categories/$id/unarchive');
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  // ── Brands (per category) ────────────────────────────────────────────────
+
+  Future<List<AdminBrand>> allBrands(String categoryId) async {
+    try {
+      final res = await _dio
+          .get<List<dynamic>>('/device-categories/$categoryId/brands/all');
+      return res.data!
+          .cast<Map<String, dynamic>>()
+          .map(AdminBrand.fromJson)
+          .toList();
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<AdminBrand> createBrand(String categoryId, String name) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+          '/device-categories/$categoryId/brands', data: {'name': name});
+      return AdminBrand.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<AdminBrand> updateBrand(
+      String categoryId, String brandId, String name) async {
+    try {
+      final res = await _dio.put<Map<String, dynamic>>(
+          '/device-categories/$categoryId/brands/$brandId',
+          data: {'name': name});
+      return AdminBrand.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> archiveBrand(String categoryId, String brandId) async {
+    try {
+      await _dio
+          .post<void>('/device-categories/$categoryId/brands/$brandId/archive');
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> unarchiveBrand(String categoryId, String brandId) async {
+    try {
+      await _dio.post<void>(
+          '/device-categories/$categoryId/brands/$brandId/unarchive');
     } on DioException catch (e) {
       throw e.error is AppException
           ? e.error as AppException

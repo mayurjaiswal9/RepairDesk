@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/auth/roles.dart';
+import '../../../core/auth/session_controller.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../attachments/presentation/attachments_widget.dart';
 import '../../scheduling/presentation/schedule_appointment_screen.dart';
@@ -71,13 +74,22 @@ class _JobDetailBody extends ConsumerWidget {
               _StatusBadge(status: job.status),
             ],
           ),
+          if (job.createdAt != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Created ${_formatCreatedAt(job.createdAt!)}',
+              style: const TextStyle(
+                  fontSize: 12, color: AppTheme.textSecondary),
+            ),
+          ],
           const SizedBox(height: AppTheme.spaceS),
 
           // ── Device & Contact ──────────────────────────────────────────
           _Section(
             title: 'Device & Contact',
             children: [
-              _InfoRow(label: 'Customer', value: '@${job.customerUsername}'),
+              _InfoRow(label: 'Customer', value: job.customerDisplayName),
+              _InfoRow(label: 'Username', value: '@${job.customerUsername}'),
               _InfoRow(label: 'Contact', value: job.contactName),
               _InfoRow(label: 'Mobile', value: job.contactMobile),
               _InfoRow(label: 'Category', value: job.deviceCategoryName),
@@ -208,6 +220,15 @@ class _JobDetailBody extends ConsumerWidget {
     );
   }
 
+  static String _formatCreatedAt(String iso) {
+    try {
+      return DateFormat('MMM d, yyyy • h:mm a')
+          .format(DateTime.parse(iso).toLocal());
+    } catch (_) {
+      return iso;
+    }
+  }
+
   static List<_JobAction> _availableActions(String status) {
     return switch (status) {
       'ASSIGNED' || 'SCHEDULED' => [_JobAction.start],
@@ -230,6 +251,11 @@ class _AssignTechnicianButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(sessionControllerProvider).role;
+    // Technicians work assigned jobs; they cannot reassign the roster.
+    if (Roles.isTechnician(role) || Roles.normalize(role) == Roles.customer) {
+      return const SizedBox.shrink();
+    }
     if (!_assignableStatuses.contains(job.status)) return const SizedBox.shrink();
 
     return OutlinedButton.icon(

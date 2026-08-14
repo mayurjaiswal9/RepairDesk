@@ -1,12 +1,12 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/utils/image_source_picker.dart';
 import '../../attachments/data/attachments_repository.dart';
+import '../../attachments/presentation/attachments_widget.dart';
 import '../data/customer_home_repository.dart';
 
 final _detailFamily = FutureProvider.autoDispose
@@ -111,6 +111,26 @@ class RepairDetailScreen extends ConsumerWidget {
                         ),
                       const SizedBox(height: AppTheme.spaceM),
 
+                      // ── Photos ──────────────────────────────────────
+                      // Previously there was no way to see photos you'd
+                      // already attached (at submission or via "Add Photo"
+                      // below) — this screen only ever let you add more.
+                      if (detail.requestId != null) ...[
+                        _Section(
+                          title: 'Photos',
+                          children: [
+                            AttachmentsWidget(
+                              ownerType: 'REPAIR_REQUEST',
+                              ownerId: detail.requestId!,
+                              canUpload: true,
+                              canDelete: false,
+                              showHeader: false,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppTheme.spaceM),
+                      ],
+
                       // ── Timeline ───────────────────────────────────
                       if (detail.statusHistory.isNotEmpty) ...[
                         Text('Timeline',
@@ -177,15 +197,19 @@ class _RespondPanelState extends ConsumerState<_RespondPanel> {
   }
 
   Future<void> _pickPhoto() async {
-    final picked = await _picker.pickImage(
-        source: ImageSource.gallery, imageQuality: 85);
+    final picked = await pickImageWithSourceChoice(context, _picker);
     if (picked == null) return;
 
     setState(() => _uploadingPhoto = true);
     try {
       await ref
           .read(attachmentsRepositoryProvider)
-          .uploadToRequest(widget.requestId, File(picked.path));
+          .uploadToRequest(widget.requestId, picked);
+      // Refresh the read-only Photos section above, which uses its own
+      // provider keyed by (ownerType, ownerId) — invalidating `onSubmitted`'s
+      // target (the repair detail itself) doesn't touch it.
+      ref.invalidate(attachmentsProvider(
+          (ownerType: 'REPAIR_REQUEST', ownerId: widget.requestId)));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Photo added')));

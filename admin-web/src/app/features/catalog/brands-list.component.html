@@ -1,0 +1,191 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Brands</h1>
+    <p>Catalog management is limited to administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else if (state() === 'notfound') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Category not found</h1>
+    <p>That device category no longer exists.</p>
+    <a routerLink="/catalog/categories" class="primary-btn">Back to Device Categories</a>
+  </div>
+} @else {
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a routerLink="/catalog/categories">Device Categories</a>
+    <span class="sep" aria-hidden="true">›</span>
+    @if (category()) {
+      <span>{{ categoryName() }}</span>
+    } @else {
+      <span class="skel-crumb" aria-hidden="true"></span>
+    }
+    <span class="sep" aria-hidden="true">›</span>
+    <span class="current">Brands</span>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Brands · {{ categoryName() }}</h1>
+      @if (summary()) {
+        <p class="meta" aria-live="polite">{{ summary() }}</p>
+      }
+    </div>
+    <div class="header-actions">
+      <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="refetching()">
+        @if (refetching()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon>refresh</mat-icon>
+        }
+        Refresh
+      </button>
+      <button type="button" class="primary-btn" (click)="openCreate()">
+        <mat-icon>add</mat-icon>
+        Add brand
+      </button>
+    </div>
+  </div>
+
+  @if (state() === 'ready' && isFreeText()) {
+    <div class="banner" role="status">
+      <div>
+        <strong>{{ categoryName() }} uses free-text brand entry.</strong>
+        The brands below are not shown to customers — they type their own brand instead. Switch this
+        category to a configured list to start using them.
+      </div>
+      <div class="banner-actions">
+        <button
+          type="button"
+          class="primary-btn"
+          [disabled]="activeTotal() === 0"
+          [matTooltip]="
+            activeTotal() === 0
+              ? 'Add at least one brand first — customers would otherwise have nothing to choose from.'
+              : ''
+          "
+          [matTooltipDisabled]="activeTotal() > 0"
+          (click)="switchToConfigured()"
+        >
+          Switch to configured list
+        </button>
+        <button type="button" class="ghost-btn" (click)="editCategory()">Edit category</button>
+      </div>
+    </div>
+  }
+
+  @if (state() === 'ready' && isParentArchived()) {
+    <div class="info-banner" role="status">
+      {{ categoryName() }} is archived, so customers can't submit requests for it at all. Restoring
+      the category will bring these brands back with it.
+    </div>
+  }
+
+  <div class="filter-bar">
+    <div class="search-field">
+      <mat-icon class="prefix" aria-hidden="true">search</mat-icon>
+      <input
+        type="search"
+        [formControl]="searchCtrl"
+        placeholder="Search brands"
+        aria-label="Search brands"
+      />
+      @if (searchCtrl.value) {
+        <button type="button" class="clear-x" (click)="clearSearch()" aria-label="Clear search">×</button>
+      }
+    </div>
+    <mat-checkbox [formControl]="archivedCtrl">Show archived</mat-checkbox>
+  </div>
+
+  @if (refetching()) {
+    <mat-progress-bar mode="indeterminate" class="top-bar"></mat-progress-bar>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel error" role="alert">
+      <h2>Couldn't load brands</h2>
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <div class="table-wrap" aria-busy="true">
+      @for (_ of [1, 2, 3, 4, 5, 6]; track $index) {
+        <div class="skel-row"></div>
+      }
+    </div>
+  } @else if (empty()) {
+    <div class="state-panel">
+      <div class="icon" aria-hidden="true">🏷️</div>
+      <h2>No brands yet for {{ categoryName() }}</h2>
+      <p>Add the brands customers should be able to choose from for this category.</p>
+      <button type="button" class="primary-btn" (click)="openCreate()">Add brand</button>
+    </div>
+  } @else if (emptyActiveOnly()) {
+    <div class="state-panel" [class.warn]="!isFreeText()">
+      <h2>All brands for {{ categoryName() }} are archived.</h2>
+      @if (!isFreeText()) {
+        <p>Customers currently see only <strong>Others</strong>.</p>
+      }
+      <button type="button" class="primary-btn" (click)="showArchived()">Show archived</button>
+    </div>
+  } @else if (filteredEmpty()) {
+    <div class="state-panel">
+      <h2>No brands match “{{ q() }}”</h2>
+      <button type="button" class="primary-btn" (click)="clearSearch()">Clear search</button>
+    </div>
+  } @else {
+    <div class="table-wrap" [class.dimmed]="refetching()">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Brand name</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (b of filtered(); track b.id) {
+            <tr
+              class="clickable"
+              [class.archived-row]="b.archived"
+              (click)="openEdit(b)"
+            >
+              <td>
+                <span class="name" [class.strike]="b.archived" [matTooltip]="b.name">{{ b.name }}</span>
+              </td>
+              <td>
+                <span class="chip-status {{ b.archived ? 'chip-neutral' : 'chip-success' }}">
+                  {{ b.archived ? 'Archived' : 'Active' }}
+                </span>
+              </td>
+              <td class="actions" (click)="$event.stopPropagation()">
+                @if (!refetching()) {
+                  <button type="button" class="icon-btn" [matMenuTriggerFor]="menu" aria-label="Row actions">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    @if (!b.archived) {
+                      <button mat-menu-item type="button" (click)="openEdit(b)">Edit</button>
+                      <button mat-menu-item type="button" (click)="openArchive(b)">Archive</button>
+                    } @else {
+                      <button mat-menu-item type="button" (click)="restore(b)">Restore</button>
+                    }
+                  </mat-menu>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (state() === 'ready') {
+    <p class="footer-note">
+      Customers can always choose <strong>Others</strong> and type their own brand, whether or not
+      this list is configured. Don't add an 'Others' row here.
+    </p>
+  }
+}

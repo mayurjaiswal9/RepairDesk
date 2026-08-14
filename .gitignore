@@ -12,6 +12,11 @@ Thumbs.db
 .env
 .env.*
 *.local
+deploy/azure/.secrets.*
+
+# ---- Runtime data ----
+backend/data/
+.gradle-home/
 
 # ============ Backend (Spring Boot / Java) ============
 backend/target/

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP-03 · Dashboard — Mockup (Signed off)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="mockup.css" />
+</head>
+<body>
+
+  <!-- Mockup review chrome — not part of the product UI -->
+  <div class="review-bar">
+    <span class="tag">Signed off</span>
+    <strong>AP-03 · Dashboard</strong>
+    <span style="opacity:.7">Spec: <a href="../pages/AP-03-dashboard.md">AP-03-dashboard.md</a></span>
+    <div class="controls">
+      <label>
+        State
+        <select id="stateSelect" aria-label="Preview page state">
+          <option value="loaded">Loaded (happy path)</option>
+          <option value="loading">Loading skeletons</option>
+          <option value="error">Counter failure</option>
+          <option value="zero">All counters zero</option>
+        </select>
+      </label>
+      <label>
+        Role
+        <select id="roleSelect" aria-label="Preview role">
+          <option value="admin">ADMIN</option>
+          <option value="staff">STAFF</option>
+        </select>
+      </label>
+      <a href="index.html">← All mockups</a>
+    </div>
+  </div>
+
+  <div class="shell">
+    <!-- Simplified shell frame (full shell is AP-02; included for context) -->
+    <aside class="sidebar" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <div class="mark">RD</div>
+        <span>RepairDesk</span>
+      </div>
+      <nav>
+        <div class="nav-group">
+          <div class="nav-group-label">Work</div>
+          <a class="nav-item active" href="#"><span class="ico">▣</span><span class="label">Dashboard</span></a>
+          <a class="nav-item admin-only" href="#"><span class="ico">📥</span><span class="label">Repair Requests</span></a>
+          <a class="nav-item" href="#"><span class="ico">🔧</span><span class="label">Jobs</span></a>
+          <a class="nav-item" href="#"><span class="ico">📅</span><span class="label">Appointments</span></a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-label">People</div>
+          <a class="nav-item" href="#"><span class="ico">👤</span><span class="label">Customers</span></a>
+          <a class="nav-item admin-only" href="#"><span class="ico">👥</span><span class="label">Staff</span></a>
+        </div>
+        <div class="nav-group admin-only">
+          <div class="nav-group-label">Catalog</div>
+          <a class="nav-item" href="#"><span class="ico">📱</span><span class="label">Device Categories</span></a>
+        </div>
+        <div class="nav-group admin-only">
+          <div class="nav-group-label">Configuration</div>
+          <a class="nav-item" href="#"><span class="ico">⚙</span><span class="label">Business Settings</span></a>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="breadcrumb">Work / <strong>Dashboard</strong></div>
+        <div class="topbar-spacer"></div>
+        <button class="bell" type="button" aria-label="Notifications, 3 unread">
+          🔔<span class="badge">3</span>
+        </button>
+        <div class="avatar" title="Anita Sharma · ADMIN">AS</div>
+      </header>
+
+      <main class="content" id="page">
+        <div class="page-header">
+          <div>
+            <h1 class="display" tabindex="-1">Dashboard</h1>
+            <p class="greeting body-medium" id="greeting">Welcome back, Anita</p>
+            <p class="zero-note" id="zeroNote" hidden>Nothing is waiting for review right now.</p>
+          </div>
+          <button class="btn btn-ghost" type="button" id="refreshBtn" aria-label="Refresh counters">
+            <span id="refreshIcon">⟳</span> Refresh
+          </button>
+        </div>
+
+        <!-- Counter area: swapped by state -->
+        <section aria-label="Work counts" id="counterArea">
+          <!-- Populated by script -->
+        </section>
+
+        <!-- Unscheduled banner -->
+        <div class="banner-warning" id="unscheduledBanner" role="status">
+          <span class="icon" aria-hidden="true">⚠</span>
+          <div class="text"><strong>3 jobs</strong> are not yet scheduled.</div>
+          <a class="btn btn-secondary" href="#/jobs?scheduled=false">Schedule them →</a>
+        </div>
+
+        <!-- Quick links -->
+        <h2 class="section-title">Go to</h2>
+        <div class="quick-grid" id="quickLinks">
+          <a class="quick-card admin-only" href="#/requests">
+            <div class="q-ico" aria-hidden="true">📥</div>
+            <div>
+              <div class="q-title">Repair Requests</div>
+              <div class="q-desc">Review and approve incoming requests</div>
+            </div>
+          </a>
+          <a class="quick-card" href="#/jobs">
+            <div class="q-ico" aria-hidden="true">🔧</div>
+            <div>
+              <div class="q-title">Jobs</div>
+              <div class="q-desc">Track and manage repair jobs</div>
+            </div>
+          </a>
+          <a class="quick-card" href="#/appointments">
+            <div class="q-ico" aria-hidden="true">📅</div>
+            <div>
+              <div class="q-title">Appointments</div>
+              <div class="q-desc">Weekly calendar view</div>
+            </div>
+          </a>
+          <a class="quick-card" href="#/customers">
+            <div class="q-ico" aria-hidden="true">👤</div>
+            <div>
+              <div class="q-title">Customers</div>
+              <div class="q-desc">Search customer profiles and history</div>
+            </div>
+          </a>
+          <a class="quick-card admin-only" href="#/staff">
+            <div class="q-ico" aria-hidden="true">👥</div>
+            <div>
+              <div class="q-title">Staff</div>
+              <div class="q-desc">Manage team members</div>
+            </div>
+          </a>
+          <a class="quick-card admin-only" href="#/catalog/categories">
+            <div class="q-ico" aria-hidden="true">📱</div>
+            <div>
+              <div class="q-title">Device Categories</div>
+              <div class="q-desc">Manage the device catalog</div>
+            </div>
+          </a>
+          <a class="quick-card admin-only" href="#/settings">
+            <div class="q-ico" aria-hidden="true">⚙</div>
+            <div>
+              <div class="q-title">Business Settings</div>
+              <div class="q-desc">Business details and working hours</div>
+            </div>
+          </a>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const countersLoaded = `
+      <div class="counter-grid">
+        <a class="counter-card tone-warning" href="#/requests?status=PENDING_REVIEW"
+           aria-label="Pending review: 5 requests">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">5</div>
+          <div class="label">Pending review</div>
+          <div class="dest">→ /requests?status=PENDING_REVIEW</div>
+        </a>
+        <a class="counter-card tone-secondary" href="#/requests?status=INFORMATION_REQUIRED"
+           aria-label="Needs info: 2 requests">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">2</div>
+          <div class="label">Needs info</div>
+          <div class="dest">→ /requests?status=INFORMATION_REQUIRED</div>
+        </a>
+        <a class="counter-card tone-primary" href="#/jobs?active=true"
+           aria-label="Active jobs: 11"
+           title="Deep link blocked until multi-status filter lands (AP-03 §10 Q2)">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">11</div>
+          <div class="label">Active jobs</div>
+          <div class="dest">→ /jobs (active work) · link TBD</div>
+        </a>
+        <a class="counter-card tone-warning" href="#/jobs?scheduled=false"
+           aria-label="Unscheduled jobs: 3"
+           title="Deep link blocked until scheduled=false lands (AP-03 §10 Q3)">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">3</div>
+          <div class="label">Unscheduled jobs</div>
+          <div class="dest">→ /jobs?scheduled=false · link TBD</div>
+        </a>
+      </div>`;
+
+    const countersStaff = `
+      <div class="counter-grid">
+        <div class="counter-card tone-warning is-static"
+             aria-label="Pending review: 5 requests"
+             title="Only administrators can review requests.">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">5</div>
+          <div class="label">Pending review</div>
+          <div class="dest">Shop-wide · not clickable for Staff</div>
+        </div>
+        <div class="counter-card tone-secondary is-static"
+             aria-label="Needs info: 2 requests"
+             title="Only administrators can review requests.">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">2</div>
+          <div class="label">Needs info</div>
+          <div class="dest">Shop-wide · not clickable for Staff</div>
+        </div>
+        <a class="counter-card tone-primary" href="#/jobs?active=true"
+           aria-label="Active jobs: 11">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">11</div>
+          <div class="label">Active jobs</div>
+          <div class="dest">→ /jobs (active work) · link TBD</div>
+        </a>
+        <a class="counter-card tone-warning" href="#/jobs?scheduled=false"
+           aria-label="Unscheduled jobs: 3">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">3</div>
+          <div class="label">Unscheduled jobs</div>
+          <div class="dest">→ /jobs?scheduled=false · link TBD</div>
+        </a>
+      </div>`;
+
+    const countersLoading = `
+      <div class="counter-grid" aria-busy="true" aria-label="Loading work counts">
+        ${[1,2,3,4].map(() => `
+          <div class="counter-card skeleton">
+            <div class="skeleton-block" style="width:48px;height:32px;margin-bottom:12px"></div>
+            <div class="skeleton-block" style="width:70%;height:14px;margin-bottom:8px"></div>
+            <div class="skeleton-block" style="width:50%;height:12px"></div>
+          </div>`).join('')}
+      </div>`;
+
+    const countersError = `
+      <div class="counter-grid">
+        <div class="counter-failure" role="alert">
+          <div class="dash-row">
+            <div class="dash-cell"><div class="value">—</div><div class="label">Pending review</div></div>
+            <div class="dash-cell"><div class="value">—</div><div class="label">Needs info</div></div>
+            <div class="dash-cell"><div class="value">—</div><div class="label">Active jobs</div></div>
+            <div class="dash-cell"><div class="value">—</div><div class="label">Unscheduled jobs</div></div>
+          </div>
+          <div>
+            <div class="msg">Couldn't load counts</div>
+            <div class="body-small" style="margin:4px 0 12px">Something went wrong. Please try again.</div>
+            <div class="cid">correlationId: 7f3a2c1e-9b04-4d11-a8e0-12ab34cd56ef</div>
+            <button class="btn btn-primary" type="button" style="margin-top:12px" onclick="document.getElementById('stateSelect').value='loaded'; apply()">Retry</button>
+          </div>
+        </div>
+      </div>`;
+
+    const countersZero = `
+      <div class="counter-grid">
+        <a class="counter-card tone-warning" href="#/requests?status=PENDING_REVIEW"
+           aria-label="Pending review: 0 requests">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">0</div>
+          <div class="label">Pending review</div>
+          <div class="dest">→ /requests?status=PENDING_REVIEW</div>
+        </a>
+        <a class="counter-card tone-secondary" href="#/requests?status=INFORMATION_REQUIRED"
+           aria-label="Needs info: 0 requests">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">0</div>
+          <div class="label">Needs info</div>
+          <div class="dest">→ /requests?status=INFORMATION_REQUIRED</div>
+        </a>
+        <a class="counter-card tone-primary" href="#/jobs?active=true"
+           aria-label="Active jobs: 0">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">0</div>
+          <div class="label">Active jobs</div>
+          <div class="dest">→ /jobs (active work) · link TBD</div>
+        </a>
+        <a class="counter-card tone-warning" href="#/jobs?scheduled=false"
+           aria-label="Unscheduled jobs: 0">
+          <span class="tone" aria-hidden="true"></span>
+          <div class="value">0</div>
+          <div class="label">Unscheduled jobs</div>
+          <div class="dest">→ /jobs?scheduled=false · link TBD</div>
+        </a>
+      </div>`;
+
+    function apply() {
+      const state = document.getElementById('stateSelect').value;
+      const role = document.getElementById('roleSelect').value;
+      const area = document.getElementById('counterArea');
+      const banner = document.getElementById('unscheduledBanner');
+      const zeroNote = document.getElementById('zeroNote');
+      const greeting = document.getElementById('greeting');
+
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = role === 'admin' ? '' : 'none';
+      });
+
+      greeting.textContent = role === 'admin'
+        ? 'Welcome back, Anita'
+        : 'Welcome back, Ravi';
+
+      zeroNote.hidden = true;
+      banner.hidden = true;
+
+      if (state === 'loaded') {
+        area.innerHTML = role === 'staff' ? countersStaff : countersLoaded;
+        banner.hidden = false;
+        banner.querySelector('.text').innerHTML = '<strong>3 jobs</strong> are not yet scheduled.';
+      } else if (state === 'loading') {
+        area.innerHTML = countersLoading;
+      } else if (state === 'error') {
+        area.innerHTML = countersError;
+      } else if (state === 'zero') {
+        area.innerHTML = role === 'staff'
+          ? countersZero.replace(/href="#\/requests[^"]*"/g, '').replace(/<a /g, '<div ').replace(/<\/a>/g, '</div>')
+            .replace(/counter-card tone-warning"/, 'counter-card tone-warning is-static"')
+            .replace(/counter-card tone-secondary"/, 'counter-card tone-secondary is-static"')
+          : countersZero;
+        // For staff zero: keep first two non-clickable — simpler: just use countersZero for admin and a note for staff
+        if (role === 'staff') {
+          area.innerHTML = `
+            <div class="counter-grid">
+              <div class="counter-card tone-warning is-static" aria-label="Pending review: 0 requests" title="Only administrators can review requests.">
+                <span class="tone" aria-hidden="true"></span>
+                <div class="value">0</div><div class="label">Pending review</div>
+                <div class="dest">Shop-wide · not clickable for Staff</div>
+              </div>
+              <div class="counter-card tone-secondary is-static" aria-label="Needs info: 0 requests" title="Only administrators can review requests.">
+                <span class="tone" aria-hidden="true"></span>
+                <div class="value">0</div><div class="label">Needs info</div>
+                <div class="dest">Shop-wide · not clickable for Staff</div>
+              </div>
+              <a class="counter-card tone-primary" href="#/jobs?active=true" aria-label="Active jobs: 0">
+                <span class="tone" aria-hidden="true"></span>
+                <div class="value">0</div><div class="label">Active jobs</div>
+                <div class="dest">→ /jobs (active work) · link TBD</div>
+              </a>
+              <a class="counter-card tone-warning" href="#/jobs?scheduled=false" aria-label="Unscheduled jobs: 0">
+                <span class="tone" aria-hidden="true"></span>
+                <div class="value">0</div><div class="label">Unscheduled jobs</div>
+                <div class="dest">→ /jobs?scheduled=false · link TBD</div>
+              </a>
+            </div>`;
+        }
+        zeroNote.hidden = false;
+      }
+    }
+
+    document.getElementById('stateSelect').addEventListener('change', apply);
+    document.getElementById('roleSelect').addEventListener('change', apply);
+    apply();
+  </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Repair Requests</h1>
+    <p>Repair request review is limited to administrators.</p>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Repair Requests</h1>
+      @if (summary()) {
+        <p class="meta">{{ summary() }}</p>
+      }
+    </div>
+    <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="refetching()" aria-label="Refresh">
+      @if (refetching()) {
+        <mat-spinner diameter="18"></mat-spinner>
+      } @else {
+        <mat-icon aria-hidden="true">refresh</mat-icon>
+      }
+      Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="seg" role="group" aria-label="Status filter">
+      @for (f of statusFilters; track f.key) {
+        <button
+          type="button"
+          [class.active]="isStatusActive(f.status)"
+          (click)="setStatusFilter(f.status)"
+        >
+          {{ f.label }}
+        </button>
+      }
+    </div>
+
+    <div class="search-field">
+      <mat-icon class="prefix" aria-hidden="true">search</mat-icon>
+      <input
+        type="search"
+        [formControl]="searchCtrl"
+        placeholder="Search reference, customer, mobile…"
+        aria-label="Search requests"
+      />
+      @if (searchCtrl.value) {
+        <button type="button" class="clear-x" (click)="clearSearch()" aria-label="Clear search">×</button>
+      }
+    </div>
+
+    <select
+      class="select"
+      [value]="activeCategory()"
+      (change)="onCategoryChange($event)"
+      aria-label="Category filter"
+    >
+      <option value="">All categories</option>
+      @for (c of categories(); track c.id) {
+        <option [value]="c.id">{{ c.name }}</option>
+      }
+    </select>
+
+    <select class="select" [value]="activeSort()" (change)="onSortChange($event)" aria-label="Sort">
+      <option value="submittedAt,desc">Submitted (newest)</option>
+      <option value="submittedAt,asc">Submitted (oldest)</option>
+      <option value="referenceNumber,asc">Reference</option>
+      <option value="status,asc">Status</option>
+    </select>
+  </div>
+
+  @if (activeStatus() || activeQ() || activeCategory()) {
+    <div class="filter-chips">
+      @if (activeStatus()) {
+        <span class="chip">Status: {{ statusLabel(activeStatus()!) }}
+          <button type="button" (click)="setStatusFilter(undefined)" aria-label="Remove status filter">×</button>
+        </span>
+      }
+      @if (activeQ()) {
+        <span class="chip">Search: {{ activeQ() }}
+          <button type="button" (click)="clearSearch()" aria-label="Remove search">×</button>
+        </span>
+      }
+      @if (activeCategory()) {
+        <span class="chip">Category
+          <button type="button" (click)="clearCategory()" aria-label="Remove category">×</button>
+        </span>
+      }
+      <button type="button" class="clear-all" (click)="clearFilters()">Clear all</button>
+    </div>
+  }
+
+  @if (refetching()) {
+    <mat-progress-bar mode="indeterminate" class="top-bar"></mat-progress-bar>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel error" role="alert">
+      <h2>Couldn't load requests</h2>
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <div class="table-wrap" aria-busy="true">
+      @for (_ of [1,2,3,4,5,6,7,8,9,10]; track $index) {
+        <div class="skel-row"></div>
+      }
+    </div>
+  } @else if (empty()) {
+    <div class="state-panel">
+      <div class="icon" aria-hidden="true">📥</div>
+      <h2>No repair requests yet</h2>
+      <p>Customer submissions will appear here for review.</p>
+    </div>
+  } @else if (filteredEmpty()) {
+    <div class="state-panel">
+      <h2>No requests match your filters</h2>
+      <p>
+        @if (activeQ()) {
+          Nothing matched “{{ activeQ() }}”.
+        } @else {
+          Try a different status or clear filters.
+        }
+      </p>
+      <button type="button" class="primary-btn" (click)="clearFilters()">Clear filters</button>
+    </div>
+  } @else {
+    <div class="table-wrap" [class.dimmed]="refetching()">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Customer</th>
+            <th>Device</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th>Job</th>
+            <th class="actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.id) {
+            <tr [class.stale]="isStale(row.id)">
+              <td>
+                <a
+                  class="ref"
+                  [routerLink]="['/requests', row.id]"
+                  [state]="{ returnQuery: returnQuery() }"
+                  [attr.aria-label]="'Open ' + row.referenceNumber"
+                >
+                  {{ row.referenceNumber }}
+                </a>
+                @if (isStale(row.id)) {
+                  <span class="stale-mark">Updated elsewhere</span>
+                }
+              </td>
+              <td>
+                <div class="two-line">
+                  <div class="primary" [matTooltip]="row.contactName || '—'">{{ row.contactName || '—' }}</div>
+                  <div class="secondary" [matTooltip]="'@' + row.customerUsername">{{ '@' + row.customerUsername }}</div>
+                </div>
+              </td>
+              <td>
+                <div class="two-line">
+                  <div class="primary" [matTooltip]="row.deviceCategoryName">{{ row.deviceCategoryName }}</div>
+                  <div class="secondary" [matTooltip]="deviceLine(row)">{{ deviceLine(row) }}</div>
+                </div>
+              </td>
+              <td>
+                <span [matTooltip]="submitted(row).absolute">{{ submitted(row).relative }}</span>
+              </td>
+              <td>
+                <span class="chip-status {{ statusChipClass(row.status) }}">{{ statusLabel(row.status) }}</span>
+              </td>
+              <td>
+                @if (row.status === 'APPROVED' && row.jobId) {
+                  <a class="job-link" [routerLink]="['/jobs', row.jobId]">
+                    <span class="chip-status {{ statusChipClass(row.jobStatus || 'CREATED') }}">
+                      {{ statusLabel(row.jobStatus || 'CREATED') }}
+                    </span>
+                    <span class="tech">{{ row.assignedTechnicianName || 'Unassigned' }}</span>
+                  </a>
+                } @else {
+                  —
+                }
+              </td>
+              <td class="actions">
+                <button
+                  type="button"
+                  class="icon-btn"
+                  [matMenuTriggerFor]="menu"
+                  [disabled]="refetching()"
+                  [attr.aria-label]="'Actions for ' + row.referenceNumber"
+                >
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #menu="matMenu">
+                  @if (canDecide(row)) {
+                    <button mat-menu-item type="button" (click)="openApprove(row)">Approve</button>
+                    @if (canRequestInfo(row)) {
+                      <button mat-menu-item type="button" (click)="openInfo(row)">Request info</button>
+                    }
+                    <button mat-menu-item type="button" class="danger" (click)="openReject(row)">Reject</button>
+                  }
+                  <a mat-menu-item [routerLink]="['/requests', row.id]" [state]="{ returnQuery: returnQuery() }">
+                    Open detail
+                  </a>
+                </mat-menu>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span>
+        Page {{ page() + 1 }} of {{ totalPages() || 1 }} · {{ total() }} requests
+      </span>
+      <select class="select sm" [value]="size()" (change)="changeSize($event)" aria-label="Page size">
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+      <button type="button" class="ghost-btn" (click)="changePage(-1)" [disabled]="page() <= 0">‹ Prev</button>
+      <button
+        type="button"
+        class="ghost-btn"
+        (click)="changePage(1)"
+        [disabled]="page() + 1 >= totalPages()"
+      >
+        Next ›
+      </button>
+    </div>
+  }
+}

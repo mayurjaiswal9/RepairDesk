@@ -10,5 +10,8 @@ public record DeviceCategoryRequest(
         String name,
 
         @Size(max = 500)
-        String description) {
+        String description,
+
+        /** "CONFIGURED" or "FREE_TEXT". Optional; defaults to FREE_TEXT when absent/blank. */
+        String brandMode) {
 }

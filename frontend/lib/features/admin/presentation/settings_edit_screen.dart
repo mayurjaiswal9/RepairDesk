@@ -34,11 +34,16 @@ class _SettingsEditScreenState extends ConsumerState<SettingsEditScreen> {
       );
     }).toList();
     if (_days.isEmpty) {
+      // Backend `dayOfWeek` is 0=Monday .. 6=Sunday (see WorkingHours.java) —
+      // this fallback (used when no scheduling config exists yet) previously
+      // generated 1..7 and indexed `dayNames[i + 1]`, which both mismatched
+      // the backend convention and (after fixing `dayNames` to 7 entries)
+      // would have thrown a RangeError on index 7.
       _days = List.generate(
           7,
           (i) => _DayEdit(
-              dayOfWeek: i + 1,
-              dayName: WorkingHoursConfig.dayNames[i + 1],
+              dayOfWeek: i,
+              dayName: WorkingHoursConfig.dayNames[i],
               isClosed: i == 5 || i == 6));
     }
   }

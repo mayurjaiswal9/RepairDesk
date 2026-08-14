@@ -54,9 +54,9 @@ public class AttachmentService {
 
     public AttachmentResponse upload(String ownerType, UUID ownerId,
             MultipartFile file, AuthenticatedUser actor) {
-        validateFile(file, ownerType, ownerId);
+        String resolvedType = resolveAndValidate(file, ownerType, ownerId);
 
-        String ext = extensionFor(file.getContentType());
+        String ext = extensionFor(resolvedType);
         String storageKey;
         try {
             storageKey = storageService.store(file.getInputStream(), ext);
@@ -69,7 +69,7 @@ public class AttachmentService {
         att.setOwnerType(ownerType);
         att.setOwnerId(ownerId);
         att.setUploadedBy(actor.id());
-        att.setContentType(file.getContentType());
+        att.setContentType(resolvedType);
         att.setFileSizeBytes(file.getSize());
         att.setOriginalFilename(file.getOriginalFilename());
         att.setStorageKey(storageKey);
@@ -85,19 +85,35 @@ public class AttachmentService {
                 .stream().map(AttachmentResponse::from).toList();
     }
 
+    /** Opened attachment stream plus metadata for Content-Type on download. */
+    public record OpenedAttachment(Attachment attachment, InputStream stream) {}
+
     @Transactional(readOnly = true)
-    public InputStream stream(String storageKey, AuthenticatedUser actor) {
-        Attachment att = attachmentRepo.findByStorageKey(storageKey)
+    public OpenedAttachment streamById(UUID attachmentId, AuthenticatedUser actor) {
+        Attachment att = attachmentRepo.findById(attachmentId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
                         "Attachment not found"));
+        return openStream(att, actor);
+    }
 
+    @Transactional(readOnly = true)
+    public OpenedAttachment stream(String storageKey, AuthenticatedUser actor) {
+        // Clients may URI-encode keys (e.g. uuid.jpg); normalize before lookup.
+        String key = storageKey == null ? "" : java.net.URLDecoder.decode(
+                storageKey, java.nio.charset.StandardCharsets.UTF_8);
+        Attachment att = attachmentRepo.findByStorageKey(key)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
+                        "Attachment not found"));
+        return openStream(att, actor);
+    }
+
+    private OpenedAttachment openStream(Attachment att, AuthenticatedUser actor) {
         // Customers can only access attachments on their own requests
         if ("CUSTOMER".equals(actor.role())) {
             if (!"REPAIR_REQUEST".equals(att.getOwnerType())) {
                 throw new ApiException(ErrorCode.FORBIDDEN,
                         "Access denied to this attachment");
             }
-            // Verify the request belongs to this customer
             requestRepo.findById(att.getOwnerId()).ifPresent(req -> {
                 if (!req.getCustomer().getId().equals(actor.id())) {
                     throw new ApiException(ErrorCode.FORBIDDEN,
@@ -107,7 +123,12 @@ public class AttachmentService {
         }
 
         try {
-            return storageService.load(storageKey);
+            return new OpenedAttachment(att, storageService.load(att.getStorageKey()));
+        } catch (java.io.FileNotFoundException e) {
+            // Ephemeral container disks lose files across restarts — surface as
+            // NOT_FOUND so clients show a clear re-upload message.
+            throw new ApiException(ErrorCode.NOT_FOUND,
+                    "Photo file is missing from storage. Please upload it again.");
         } catch (IOException e) {
             throw new ApiException(ErrorCode.INTERNAL_ERROR,
                     "File retrieval failed: " + e.getMessage());
@@ -130,20 +151,41 @@ public class AttachmentService {
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    private void validateFile(MultipartFile file, String ownerType, UUID ownerId) {
+    /**
+     * Validates limits + magic bytes and returns a canonical stored content type
+     * (never {@code application/octet-stream}). Mobile camera uploads often omit
+     * or mis-declare the part MIME type.
+     */
+    private String resolveAndValidate(MultipartFile file, String ownerType, UUID ownerId) {
         if (file.isEmpty()) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "File is empty");
         }
 
-        // Validate Content-Type header (primary check — trusts client declaration)
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_TYPES.contains(contentType.toLowerCase())) {
+        byte[] header = readHeader(file, 12);
+        String declared = normalizeDeclaredType(file.getContentType());
+        String sniffed = sniffImageType(header);
+
+        String contentType;
+        if (declared != null && ALLOWED_TYPES.contains(declared)) {
+            contentType = "image/jpg".equals(declared) ? "image/jpeg" : declared;
+            if (contentType.startsWith("image/hei")) {
+                // HEIC/HEIF: allow declaration; magic check skipped.
+            } else if (magicMatches(contentType, header)) {
+                // Declared type matches file bytes.
+            } else if (sniffed != null) {
+                // Wrong/missing client MIME (common on mobile camera) — trust magic.
+                contentType = sniffed;
+            } else {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "File content does not match declared type " + contentType);
+            }
+        } else if (sniffed != null) {
+            // Camera / Dio often sends application/octet-stream — accept via magic.
+            contentType = sniffed;
+        } else {
             throw new ApiException(ErrorCode.VALIDATION_ERROR,
                     "File type not allowed. Accepted: JPEG, PNG, GIF, WEBP, HEIC");
         }
-
-        // Validate magic bytes (SEC-002): first few bytes must match image signatures
-        validateMagicBytes(file, contentType);
 
         long currentCount = attachmentRepo.countByOwnerTypeAndOwnerId(ownerType, ownerId);
         int maxFiles = "JOB".equals(ownerType) ? JOB_MAX_FILES : REQUEST_MAX_FILES;
@@ -165,41 +207,77 @@ public class AttachmentService {
                         "Total attachment size would exceed 25 MB limit");
             }
         }
+        return contentType;
     }
 
-    /**
-     * Checks image magic bytes to prevent disguised executable uploads (SEC-002).
-     * Only checks the first 8 bytes — sufficient for common image formats.
-     */
-    private void validateMagicBytes(MultipartFile file, String contentType) {
-        try {
-            byte[] header = new byte[8];
-            int read = file.getInputStream().read(header);
+    private static String normalizeDeclaredType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return null;
+        }
+        // Strip "; charset=..." if present
+        String type = contentType.split(";")[0].trim().toLowerCase();
+        if ("application/octet-stream".equals(type) || "binary/octet-stream".equals(type)) {
+            return null;
+        }
+        return type;
+    }
+
+    private static byte[] readHeader(MultipartFile file, int length) {
+        try (InputStream in = file.getInputStream()) {
+            byte[] header = new byte[length];
+            int read = in.read(header);
             if (read < 4) {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR,
                         "File too small to validate");
             }
-            boolean valid = switch (contentType.toLowerCase()) {
-                case "image/jpeg", "image/jpg" ->
-                        header[0] == (byte) 0xFF && header[1] == (byte) 0xD8 && header[2] == (byte) 0xFF;
-                case "image/png" ->
-                        header[0] == (byte) 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
-                case "image/gif" ->
-                        header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46;
-                case "image/webp" ->
-                        read >= 8 && header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46
-                                && header[4] == 0x57 && header[5] == 0x45 && header[6] == 0x42 && header[7] == 0x50;
-                // HEIC/HEIF: ftyp box starts at byte 4; skip magic check for now
-                default -> true;
-            };
-            if (!valid) {
-                throw new ApiException(ErrorCode.VALIDATION_ERROR,
-                        "File content does not match declared type " + contentType);
+            if (read < length) {
+                byte[] trimmed = new byte[read];
+                System.arraycopy(header, 0, trimmed, 0, read);
+                return trimmed;
             }
+            return header;
+        } catch (ApiException e) {
+            throw e;
         } catch (IOException e) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR,
                     "Could not read file for validation");
         }
+    }
+
+    /** SEC-002 — sniff common image signatures from the first bytes. */
+    private static String sniffImageType(byte[] header) {
+        if (header.length >= 3
+                && header[0] == (byte) 0xFF && header[1] == (byte) 0xD8 && header[2] == (byte) 0xFF) {
+            return "image/jpeg";
+        }
+        if (header.length >= 4
+                && header[0] == (byte) 0x89 && header[1] == 0x50
+                && header[2] == 0x4E && header[3] == 0x47) {
+            return "image/png";
+        }
+        if (header.length >= 3
+                && header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46) {
+            return "image/gif";
+        }
+        // RIFF....WEBP — "WEBP" is at bytes 8–11, not 4–7
+        if (header.length >= 12
+                && header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46
+                && header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50) {
+            return "image/webp";
+        }
+        return null;
+    }
+
+    private static boolean magicMatches(String contentType, byte[] header) {
+        String sniffed = sniffImageType(header);
+        return switch (contentType.toLowerCase()) {
+            case "image/jpeg", "image/jpg" -> "image/jpeg".equals(sniffed);
+            case "image/png" -> "image/png".equals(sniffed);
+            case "image/gif" -> "image/gif".equals(sniffed);
+            case "image/webp" -> "image/webp".equals(sniffed);
+            case "image/heic", "image/heif" -> true; // ftyp box; skip strict check
+            default -> false;
+        };
     }
 
     private static String extensionFor(String contentType) {

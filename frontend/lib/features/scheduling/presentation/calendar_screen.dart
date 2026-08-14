@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/roles.dart';
 import '../../../core/auth/session_controller.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../data/scheduling_repository.dart';
@@ -12,7 +13,7 @@ final _calendarProvider = FutureProvider.autoDispose
   final endStr = DateFormat('yyyy-MM-dd').format(end);
   final session = ref.watch(sessionControllerProvider);
   final repo = ref.watch(schedulingRepositoryProvider);
-  if (session.role == 'TECHNICIAN') {
+  if (Roles.isTechnician(session.role)) {
     return repo.mySchedule(weekStart, endStr);
   }
   return repo.calendar(weekStart, endStr);

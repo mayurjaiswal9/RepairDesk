@@ -1,5 +1,7 @@
 # RepairDesk V1 — Deployment & Operations Runbook (DOC-003)
 
+> **Azure deployment:** For hosting the backend on **Azure Container Apps** (with PostgreSQL, ACR, secrets, and security configuration), see [Azure-Container-Apps-Deployment.md](Azure-Container-Apps-Deployment.md).
+
 ## Overview
 
 RepairDesk runs as a set of Docker Compose services on a single Ubuntu 22.04 LTS server:

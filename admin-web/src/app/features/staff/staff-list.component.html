@@ -1,0 +1,234 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Staff</h1>
+    <p>Staff management is limited to administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Staff</h1>
+      @if (summary()) {
+        <p class="meta" aria-live="polite">{{ summary() }}</p>
+      }
+    </div>
+    <div class="header-actions">
+      <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="refetching()" aria-label="Refresh">
+        @if (refetching()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon>refresh</mat-icon>
+        }
+        Refresh
+      </button>
+      <button type="button" class="primary-btn" (click)="openCreate()">
+        <mat-icon>person_add</mat-icon>
+        Add user
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="seg" role="group" aria-label="Role filter">
+      @for (t of roleTabs; track t.key) {
+        <button type="button" [class.active]="role() === t.key" (click)="setRole(t.key)">
+          {{ t.label }}
+        </button>
+      }
+    </div>
+
+    <select class="select" [value]="status()" (change)="onStatusChange($event)" aria-label="Status filter">
+      <option value="">All statuses</option>
+      <option value="ACTIVE">Active</option>
+      <option value="DISABLED">Disabled</option>
+    </select>
+
+    <div class="search-field">
+      <mat-icon class="prefix" aria-hidden="true">search</mat-icon>
+      <input
+        type="search"
+        [formControl]="searchCtrl"
+        placeholder="Search name, username, or mobile"
+        aria-label="Search staff"
+      />
+      @if (searchCtrl.value) {
+        <button type="button" class="clear-x" (click)="clearSearch()" aria-label="Clear search">×</button>
+      }
+    </div>
+  </div>
+
+  @if (hasFilters()) {
+    <div class="filter-chips">
+      @if (role()) {
+        <span class="chip">
+          Role: {{ roleLabel(role()) }}
+          <button type="button" (click)="clearRole()" aria-label="Remove role filter">×</button>
+        </span>
+      }
+      @if (status()) {
+        <span class="chip">
+          Status: {{ accountStatusLabel(status()) }}
+          <button type="button" (click)="clearStatus()" aria-label="Remove status filter">×</button>
+        </span>
+      }
+      @if (q()) {
+        <span class="chip">
+          Search: {{ q() }}
+          <button type="button" (click)="clearSearch()" aria-label="Remove search">×</button>
+        </span>
+      }
+      <button type="button" class="clear-all" (click)="clearFilters()">Clear all</button>
+    </div>
+  }
+
+  @if (refetching()) {
+    <mat-progress-bar mode="indeterminate" class="top-bar"></mat-progress-bar>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel error" role="alert">
+      <h2>Couldn't load staff</h2>
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <div class="table-wrap" aria-busy="true">
+      @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+        <div class="skel-row"></div>
+      }
+    </div>
+  } @else if (empty()) {
+    <div class="state-panel">
+      <div class="icon" aria-hidden="true">👥</div>
+      <h2>No internal users yet</h2>
+      <p>Add the technicians, staff, and administrators who work in the shop.</p>
+      <button type="button" class="primary-btn" (click)="openCreate()">Add user</button>
+    </div>
+  } @else if (filteredEmpty()) {
+    <div class="state-panel">
+      <h2>No users match your filters</h2>
+      <p>
+        @if (role()) {
+          Role {{ roleLabel(role()) }}
+        }
+        @if (status()) {
+          · {{ accountStatusLabel(status()) }}
+        }
+        @if (q()) {
+          · “{{ q() }}”
+        }
+      </p>
+      <button type="button" class="primary-btn" (click)="clearFilters()">Clear filters</button>
+    </div>
+  } @else {
+    <div class="table-wrap" [class.dimmed]="refetching()">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Username</th>
+            <th scope="col">Mobile</th>
+            <th scope="col">Role</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of rows(); track u.id) {
+            <tr (click)="openEdit(u)" class="clickable">
+              <td>
+                <span class="name" [matTooltip]="displayName(u)">
+                  {{ displayName(u) }}
+                  @if (isSelf(u)) {
+                    <span class="you">(you)</span>
+                  }
+                  @if (isSoleAdmin(u)) {
+                    <span class="sole" matTooltip="This is the only active administrator">sole admin</span>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="mono truncate" [matTooltip]="'@' + u.username">{{ '@' + u.username }}</span>
+              </td>
+              <td>{{ u.mobile || '—' }}</td>
+              <td>
+                <span class="role-badge {{ roleBadgeClass(u.role) }}">{{ roleLabel(u.role) }}</span>
+              </td>
+              <td>
+                <span class="chip-status {{ accountStatusChip(u.status) }}">
+                  {{ accountStatusLabel(u.status) }}
+                </span>
+              </td>
+              <td class="actions" (click)="$event.stopPropagation()">
+                @if (!refetching()) {
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    [matMenuTriggerFor]="menu"
+                    aria-label="Row actions"
+                  >
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    <button mat-menu-item type="button" (click)="openEdit(u)">Edit</button>
+                    @if (u.status === 'ACTIVE') {
+                      <button
+                        mat-menu-item
+                        type="button"
+                        [disabled]="!!disableDisabledReason(u)"
+                        [matTooltip]="disableDisabledReason(u) || ''"
+                        [matTooltipDisabled]="!disableDisabledReason(u)"
+                        (click)="openDisable(u)"
+                      >
+                        Disable
+                      </button>
+                    } @else if (u.status === 'DISABLED') {
+                      <button mat-menu-item type="button" (click)="openEnable(u)">Enable</button>
+                    }
+                    <button mat-menu-item type="button" (click)="openReset(u)">Reset password</button>
+                    <button
+                      mat-menu-item
+                      type="button"
+                      class="danger"
+                      [disabled]="!!deleteDisabledReason(u)"
+                      [matTooltip]="deleteDisabledReason(u) || ''"
+                      [matTooltipDisabled]="!deleteDisabledReason(u)"
+                      (click)="openDelete(u)"
+                    >
+                      Delete
+                    </button>
+                  </mat-menu>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span>Page {{ page() + 1 }} of {{ totalPages() }} · {{ total() }} users</span>
+      <select class="select compact" [value]="size()" (change)="changeSize($event)" aria-label="Page size">
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+      <div class="pager-btns">
+        <button type="button" class="ghost-btn" [disabled]="page() <= 0" (click)="changePage(-1)">
+          ‹ Prev
+        </button>
+        <button
+          type="button"
+          class="ghost-btn"
+          [disabled]="page() + 1 >= totalPages()"
+          (click)="changePage(1)"
+        >
+          Next ›
+        </button>
+      </div>
+    </div>
+  }
+}

@@ -1,5 +1,6 @@
 package com.acetelecom.repairdesk.feature.user.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import com.acetelecom.repairdesk.feature.user.domain.User;
@@ -11,9 +12,15 @@ public record UserProfile(
         String mobile,
         String role,
         String status,
-        boolean mustChangePassword) {
+        boolean mustChangePassword,
+        Instant createdAt,
+        Integer repairCount) {
 
     public static UserProfile from(User u) {
+        return from(u, null);
+    }
+
+    public static UserProfile from(User u, Integer repairCount) {
         return new UserProfile(
                 u.getId(),
                 u.getUsername(),
@@ -21,6 +28,8 @@ public record UserProfile(
                 u.getMobile(),
                 u.getRole().name(),
                 u.getStatus().name(),
-                u.isMustChangePassword());
+                u.isMustChangePassword(),
+                u.getCreatedAt(),
+                repairCount);
     }
 }

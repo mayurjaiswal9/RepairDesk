@@ -80,17 +80,24 @@ public class RepairRequestController {
     @GetMapping
     @Secured({ "ROLE_ADMIN" })
     public PageResponse<RepairRequestSummary> queue(
-            @RequestParam(required = false) String status, Pageable pageable) {
-        return service.getQueue(status, pageable);
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID deviceCategoryId,
+            @RequestParam(required = false) String q,
+            Pageable pageable) {
+        return service.getQueue(status, deviceCategoryId, q, pageable);
     }
 
     // ── Review actions (RV-002, RV-003, RV-004) ───────────────────────────
 
     @PostMapping("/{id}/approve")
     @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
-    public ResponseEntity<JobResponse> approve(@PathVariable UUID id) {
+    public ResponseEntity<JobResponse> approve(
+            @PathVariable UUID id,
+            @RequestBody(required = false) ApproveRequest body) {
+        String priority = body != null ? body.priority() : null;
+        String note = body != null ? body.note() : null;
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(jobService.approve(id, currentUser.get()));
+                .body(jobService.approve(id, currentUser.get(), priority, note));
     }
 
     @PostMapping("/{id}/reject")
@@ -125,6 +132,7 @@ public class RepairRequestController {
         return service.appendNote(id, body.note(), currentUser.get());
     }
 
+    record ApproveRequest(String priority, String note) {}
     record RejectRequest(String reasonCode, String customerMessage) {}
     record InfoRequest(String message) {}
     record PriorityRequest(String priority) {}

@@ -1,0 +1,283 @@
+@if (refetching()) {
+  <mat-progress-bar mode="indeterminate" class="refetch-bar" aria-label="Refreshing request"></mat-progress-bar>
+}
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a routerLink="/requests" [queryParams]="returnQuery()">Requests</a>
+  <span class="sep" aria-hidden="true">›</span>
+  <span class="current">{{ detail()?.referenceNumber || '…' }}</span>
+</nav>
+
+@if (state() === 'forbidden') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Restricted</h1>
+    <p>Repair request review is limited to administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else if (state() === 'notfound') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Request not found</h1>
+    <p>This request no longer exists or was never visible to you.</p>
+    <a routerLink="/requests" class="primary-btn">Back to requests</a>
+  </div>
+} @else if (state() === 'error') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Couldn’t load request</h1>
+    <p>{{ error()?.message }}</p>
+    @if (error()?.correlationId) {
+      <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+    }
+    <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+  </div>
+} @else if (state() === 'loading') {
+  <div class="detail-layout" aria-busy="true">
+    <div class="main-col">
+      <div class="skel skel-title"></div>
+      <div class="skel skel-line"></div>
+      <div class="skel skel-block"></div>
+      <div class="skel skel-block tall"></div>
+      <div class="photo-grid">
+        @for (_ of [1, 2, 3]; track $index) {
+          <div class="skel skel-photo"></div>
+        }
+      </div>
+    </div>
+    <aside class="side-col">
+      <div class="skel skel-card"></div>
+      <div class="skel skel-card"></div>
+    </aside>
+  </div>
+}
+
+@if (detail(); as d) {
+  <header class="record-header">
+    <div class="titles">
+      <h1 class="display mono" tabindex="-1">{{ d.referenceNumber }}</h1>
+      <div class="chips">
+        <span class="chip-status {{ statusChipClass(d.status) }}">{{ statusLabel(d.status) }}</span>
+        @if (showPriority()) {
+          <span class="chip-status chip-priority">{{ priorityLabel(d.priority) }}</span>
+        }
+        @if (staleMark()) {
+          <span class="stale-mark">Updated elsewhere</span>
+        }
+      </div>
+      <p class="submitted">Submitted {{ formatAbsolute(d.submittedAt) }}</p>
+    </div>
+    <button
+      type="button"
+      class="icon-btn"
+      aria-label="Refresh request"
+      [disabled]="refetching()"
+      (click)="refresh()"
+    >
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </header>
+
+  @if (error() && refetching() === false && state() === 'ready' && error()?.status) {
+    <div class="inline-error" role="status">
+      {{ error()?.message }}
+      <button type="button" class="link-btn" (click)="refresh()">Retry</button>
+    </div>
+  }
+
+  @if (canDecide()) {
+    <div class="action-bar" [class.disabled]="refetching()">
+      @if (canRequestInfo()) {
+        <button type="button" class="ghost-btn" [disabled]="refetching()" (click)="openInfo()">
+          Request info
+        </button>
+      }
+      <button type="button" class="ghost-btn danger" [disabled]="refetching()" (click)="openReject()">
+        Reject
+      </button>
+      <button type="button" class="primary-btn" [disabled]="refetching()" (click)="openApprove()">
+        Approve &amp; create job
+      </button>
+    </div>
+  } @else if (resolvedLine()) {
+    <p class="resolved-line">{{ resolvedLine() }}</p>
+  }
+
+  <div class="detail-layout">
+    <div class="main-col">
+      @if (d.infoRequestedMessage) {
+        <section class="card info-exchange" aria-labelledby="info-ex-heading">
+          <h2 id="info-ex-heading" class="section-title">Information exchange</h2>
+          <div class="exchange-slot ask">
+            <div class="slot-label">Requested from customer</div>
+            <p class="slot-body">{{ d.infoRequestedMessage }}</p>
+          </div>
+          <div class="exchange-slot reply">
+            <div class="slot-label">Provided by customer</div>
+            @if (d.customerInfoResponse) {
+              <p class="slot-body">{{ d.customerInfoResponse }}</p>
+            } @else {
+              <p class="slot-body muted">Awaiting the customer's reply</p>
+            }
+          </div>
+        </section>
+      }
+
+      @if (d.customerFacingMessage) {
+        <section class="card rejection" aria-labelledby="reject-heading">
+          <h2 id="reject-heading" class="section-title">Rejection message sent to customer</h2>
+          <p class="slot-body">{{ d.customerFacingMessage }}</p>
+        </section>
+      }
+
+      <section class="card" aria-labelledby="device-heading">
+        <h2 id="device-heading" class="section-title">Device</h2>
+        <dl class="kv">
+          <div class="kv-row">
+            <dt>Category</dt>
+            <dd>{{ d.deviceCategoryName }}</dd>
+          </div>
+          <div class="kv-row">
+            <dt>Model</dt>
+            <dd>{{ deviceModel() }}</dd>
+          </div>
+          @if (d.deviceSerial) {
+            <div class="kv-row serial-row">
+              <dt>Serial</dt>
+              <dd>
+                <span class="mono serial-value">{{ serialDisplay() }}</span>
+                <button type="button" class="link-btn" (click)="toggleSerial()">
+                  {{ serialRevealed() ? 'Hide' : 'Reveal' }}
+                </button>
+              </dd>
+            </div>
+          }
+          <div class="kv-row">
+            <dt>Purchased</dt>
+            <dd>{{ formatDateOnly(d.purchaseDate) }}</dd>
+          </div>
+          <div class="kv-row">
+            <dt>Warranty</dt>
+            <dd>
+              <span class="chip-status chip-neutral">{{ warrantyLabel(d.warrantyStatus) }}</span>
+              <span class="hint">Customer-indicated</span>
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="card" aria-labelledby="issue-heading">
+        <h2 id="issue-heading" class="section-title">Issue description</h2>
+        <p class="issue-body">{{ d.issueDescription }}</p>
+      </section>
+
+      <section class="card" aria-labelledby="photos-heading">
+        <h2 id="photos-heading" class="section-title">
+          Customer photos
+          @if (photos().length) {
+            <span class="count">· {{ photos().length }}</span>
+          }
+        </h2>
+        @if (!photos().length) {
+          <p class="muted">No photos were submitted with this request.</p>
+        } @else {
+          <div class="photo-grid">
+            @for (tile of photos(); track tile.meta.id; let i = $index) {
+              <div class="photo-tile">
+                @if (tile.loading) {
+                  <div class="skel skel-photo" aria-hidden="true"></div>
+                } @else if (tile.error) {
+                  <button type="button" class="photo-fail" (click)="retryPhoto(i)">
+                    <mat-icon>refresh</mat-icon>
+                    Retry
+                  </button>
+                } @else if (tile.objectUrl) {
+                  <button
+                    type="button"
+                    class="photo-btn"
+                    (click)="openLightbox(i)"
+                    [attr.aria-label]="'Open photo ' + (i + 1)"
+                  >
+                    <img [src]="tile.objectUrl" alt="" />
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </div>
+
+    <aside class="side-col">
+      @if (d.status === 'APPROVED') {
+        <section class="card" aria-labelledby="job-heading">
+          <h2 id="job-heading" class="section-title">Job</h2>
+          <div class="job-meta">
+            <span class="chip-status {{ statusChipClass(d.jobStatus || 'CREATED') }}">
+              {{ statusLabel(d.jobStatus || 'CREATED') }}
+            </span>
+            <span class="tech">{{ d.assignedTechnicianName || 'Unassigned' }}</span>
+          </div>
+          @if (d.jobId) {
+            <a class="text-link" [routerLink]="['/jobs', d.jobId]">Open job →</a>
+          }
+        </section>
+      }
+
+      <section class="card" aria-labelledby="contact-heading">
+        <h2 id="contact-heading" class="section-title">Customer &amp; contact</h2>
+        <p class="helper">Contact details from this request — not the account profile.</p>
+        <dl class="kv">
+          <div class="kv-row">
+            <dt>Contact</dt>
+            <dd>{{ d.contactName || '—' }}</dd>
+          </div>
+          <div class="kv-row">
+            <dt>Username</dt>
+            <dd>
+              <a class="text-link" [routerLink]="['/customers', d.customerId]">{{ '@' + d.customerUsername }}</a>
+            </dd>
+          </div>
+          <div class="kv-row">
+            <dt>Mobile</dt>
+            <dd>{{ d.contactMobile || '—' }}</dd>
+          </div>
+          <div class="kv-row">
+            <dt>Email</dt>
+            <dd>{{ d.contactEmail || '—' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      @if (d.preferredDate) {
+        <section class="card" aria-labelledby="appt-heading">
+          <h2 id="appt-heading" class="section-title">Preferred appointment</h2>
+          <p class="appt-line">
+            {{ formatDateOnly(d.preferredDate) }}
+            @if (d.preferredTime) {
+              <span>· {{ formatTimeOnly(d.preferredTime) }}</span>
+            }
+          </p>
+          <p class="helper">Customer preference — not a confirmed booking.</p>
+        </section>
+      }
+    </aside>
+  </div>
+}
+
+@if (lightboxPhoto(); as lb) {
+  <div class="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" (click)="closeLightbox()">
+    <button type="button" class="lightbox-close" aria-label="Close" (click)="closeLightbox(); $event.stopPropagation()">
+      <mat-icon>close</mat-icon>
+    </button>
+    <button type="button" class="lightbox-nav prev" aria-label="Previous photo" (click)="lightboxPrev(); $event.stopPropagation()">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <img
+      class="lightbox-img"
+      [src]="lb.objectUrl!"
+      [alt]="lb.meta.originalFilename || 'Customer photo'"
+      (click)="$event.stopPropagation()"
+    />
+    <button type="button" class="lightbox-nav next" aria-label="Next photo" (click)="lightboxNext(); $event.stopPropagation()">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+}

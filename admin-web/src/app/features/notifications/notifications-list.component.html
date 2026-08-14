@@ -1,0 +1,156 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Notifications</h1>
+      @if (summary()) {
+        <p class="meta" aria-live="polite">{{ summary() }}</p>
+      }
+    </div>
+    <button
+      type="button"
+      class="ghost-btn"
+      [disabled]="markingAll() || unreadInList() === 0 || state() !== 'ready'"
+      (click)="markAllRead()"
+    >
+      @if (markingAll()) {
+        <mat-spinner diameter="18"></mat-spinner>
+      }
+      Mark all read
+    </button>
+  </div>
+
+  <div class="seg" role="group" aria-label="Filter">
+    <button type="button" [class.active]="filter() === 'all'" (click)="setFilter('all')">All</button>
+    <button type="button" [class.active]="filter() === 'unread'" (click)="setFilter('unread')">
+      Unread
+    </button>
+  </div>
+
+  @if (staleBar()) {
+    <div class="stale-bar" role="status">
+      <span>New notifications</span>
+      <button type="button" class="text-btn" (click)="refresh()">Refresh</button>
+    </div>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel error" role="alert">
+      <h2>Couldn't load notifications</h2>
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <div class="list" aria-busy="true">
+      @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+        <div class="skel-item">
+          <div class="skel skel-dot"></div>
+          <div class="skel-lines">
+            <div class="skel skel-line"></div>
+            <div class="skel skel-line short"></div>
+          </div>
+          <div class="skel skel-time"></div>
+        </div>
+      }
+    </div>
+  } @else if (empty()) {
+    <div class="state-panel">
+      <div class="icon" aria-hidden="true">🔔</div>
+      <h2>No notifications</h2>
+      <p>You'll be notified here when something needs your attention.</p>
+    </div>
+  } @else if (filteredEmpty()) {
+    <div class="state-panel">
+      <h2>Nothing unread</h2>
+      <p>You're all caught up.</p>
+      <button type="button" class="primary-btn" (click)="setFilter('all')">Show all</button>
+    </div>
+  } @else {
+    <ul class="list">
+      @for (n of rows(); track n.id) {
+        <li class="item" [class.unread]="!n.read">
+          @if (recordLink(n); as href) {
+            <a
+              class="row"
+              [routerLink]="href"
+              [attr.aria-label]="ariaLabel(n)"
+              (click)="markReadOnly(n)"
+              (auxclick)="markReadOnly(n)"
+            >
+              <span class="gutter" aria-hidden="true">
+                @if (!n.read) {
+                  <span class="dot"></span>
+                }
+              </span>
+              <span class="body">
+                <span class="message">{{ n.message }}</span>
+                @if (n.referenceNumber) {
+                  <span class="ref mono">{{ n.referenceNumber }}</span>
+                }
+              </span>
+              <span
+                class="time"
+                [matTooltip]="formatNotificationTime(n.createdAt).absolute"
+                [attr.title]="formatNotificationTime(n.createdAt).absolute"
+              >
+                {{ formatNotificationTime(n.createdAt).label }}
+              </span>
+            </a>
+          } @else {
+            <button
+              type="button"
+              class="row"
+              [attr.aria-label]="ariaLabel(n)"
+              (click)="onRowActivate(n)"
+            >
+              <span class="gutter" aria-hidden="true">
+                @if (!n.read) {
+                  <span class="dot"></span>
+                }
+              </span>
+              <span class="body">
+                <span class="message">{{ n.message }}</span>
+                @if (n.referenceNumber) {
+                  <span class="ref mono">{{ n.referenceNumber }}</span>
+                }
+              </span>
+              <span
+                class="time"
+                [matTooltip]="formatNotificationTime(n.createdAt).absolute"
+                [attr.title]="formatNotificationTime(n.createdAt).absolute"
+              >
+                {{ formatNotificationTime(n.createdAt).label }}
+              </span>
+            </button>
+          }
+
+          @if (!n.read || recordLink(n)) {
+            <button
+              type="button"
+              class="icon-btn"
+              [matMenuTriggerFor]="menu"
+              aria-label="Notification actions"
+              (click)="$event.stopPropagation()"
+            >
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu">
+              @if (!n.read) {
+                <button mat-menu-item type="button" (click)="markReadOnly(n)">Mark as read</button>
+              }
+              @if (recordLink(n); as href) {
+                <a mat-menu-item [routerLink]="href" (click)="markReadOnly(n)">Open record</a>
+              }
+            </mat-menu>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (showCapNote()) {
+      <p class="footer-note">Showing your 30 most recent notifications.</p>
+    }
+  }
+</div>

@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import com.acetelecom.repairdesk.feature.job.domain.Job;
+import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
@@ -33,11 +35,16 @@ public record RepairRequestResponse(
         String rejectionReasonCode,
         String customerFacingMessage,
         String infoRequestedMessage,
+        String customerInfoResponse,
         Instant submittedAt,
         Instant updatedAt,
-        long version) {
+        long version,
+        UUID jobId,
+        JobStatus jobStatus,
+        String assignedTechnicianName) {
 
-    public static RepairRequestResponse from(RepairRequest r) {
+    /** @param job the Job created on approval (1:1), or null if not yet approved. */
+    public static RepairRequestResponse from(RepairRequest r, Job job) {
         return new RepairRequestResponse(
                 r.getId(),
                 r.getReferenceNumber(),
@@ -61,8 +68,13 @@ public record RepairRequestResponse(
                 r.getRejectionReasonCode(),
                 r.getCustomerFacingMessage(),
                 r.getInfoRequestedMessage(),
+                r.getCustomerInfoResponse(),
                 r.getSubmittedAt(),
                 r.getUpdatedAt(),
-                r.getVersion());
+                r.getVersion(),
+                job != null ? job.getId() : null,
+                job != null ? job.getStatus() : null,
+                job != null && job.getAssignedTechnician() != null
+                        ? job.getAssignedTechnician().getName() : null);
     }
 }

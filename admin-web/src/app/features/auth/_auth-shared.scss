@@ -1,0 +1,270 @@
+// Shared look for every unauthenticated screen (login, change password).
+// Mirrors the Flutter login screen 1:1 — same gradient, wave footer, blended
+// logo, text hierarchy, field and button shapes.
+
+.auth-page {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) var(--space-l) 96px;
+  background: linear-gradient(180deg, #f4f9ff 0%, #ffffff 45%, #eef5ff 100%);
+}
+
+// Minimal dot pattern, tucked into opposite corners.
+.auth-dots {
+  position: absolute;
+  z-index: 0;
+  width: 118px;
+  height: 82px;
+  background-image: radial-gradient(#b9d0f2 1.5px, transparent 1.6px);
+  background-size: 16px 16px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.auth-dots--start {
+  top: 26px;
+  left: 26px;
+}
+
+.auth-dots--end {
+  right: 26px;
+  bottom: 118px;
+}
+
+// Layered waves along the bottom edge.
+.auth-page::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 190px;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'%3E%3Cpath fill='%23e4eefb' d='M0,192L60,197.3C120,203,240,213,360,208C480,203,600,181,720,181.3C840,181,960,203,1080,208C1200,213,1320,203,1380,197.3L1440,192L1440,320L0,320Z'/%3E%3Cpath fill='%23d0e2f7' fill-opacity='0.75' d='M0,256L80,240C160,224,320,192,480,197.3C640,203,800,245,960,256C1120,267,1280,245,1360,234.7L1440,224L1440,320L0,320Z'/%3E%3C/svg%3E");
+}
+
+.auth-brand,
+.auth-card,
+.auth-powered {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: var(--space-xl);
+}
+
+.auth-logo {
+  display: block;
+  width: min(260px, 78%);
+  height: auto;
+  margin: 0 auto 10px;
+  background: transparent;
+  object-fit: contain;
+  object-position: center;
+}
+
+.auth-title {
+  margin: 0;
+  width: 100%;
+  font-size: clamp(23px, 4.4vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-brand-navy);
+  overflow-wrap: break-word;
+  text-align: center;
+}
+
+.auth-tagline {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border: 1px solid #e4ecf8;
+  border-radius: 18px;
+  padding: 30px 28px;
+  box-shadow: 0 12px 36px rgba(20, 48, 110, 0.08);
+
+  h1 {
+    margin: 0 0 var(--space-l);
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-brand-navy);
+  }
+}
+
+.hint {
+  margin: 0 0 var(--space-m);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.full {
+  width: 100%;
+}
+
+.submit {
+  height: 52px;
+  margin-top: var(--space-s);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  --mdc-filled-button-container-shape: 12px;
+  border-radius: 12px !important;
+}
+
+.forgot {
+  text-align: center;
+  margin: var(--space-m) 0 0;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    color: var(--color-primary-dark);
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  margin-bottom: var(--space-m);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+
+  mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
+}
+
+.banner-info {
+  background: #eef4fe;
+  border: 1px solid #d6e4fa;
+  color: #23406f;
+
+  mat-icon {
+    color: var(--color-primary);
+  }
+}
+
+.banner-error {
+  background: #fff1f0;
+  border: 1px solid #ffc9c4;
+  color: #b71c1c;
+}
+
+.cid {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.auth-powered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: var(--space-xl) 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+  text-align: center;
+
+  &::before,
+  &::after {
+    content: '';
+    width: 22px;
+    height: 1px;
+    background: var(--color-divider);
+  }
+}
+
+// Fields: white plate, soft blue outline, blue leading icon.
+.auth-page .mat-mdc-form-field {
+  --mdc-outlined-text-field-container-shape: 12px;
+  --mdc-outlined-text-field-outline-color: #dbe6f7;
+  --mdc-outlined-text-field-hover-outline-color: var(--color-primary-light);
+  --mdc-outlined-text-field-focus-outline-color: var(--color-primary);
+
+  .mat-mdc-form-field-icon-prefix > mat-icon {
+    color: var(--color-primary);
+    padding-right: 4px;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-page {
+    justify-content: flex-start;
+    padding: var(--space-l) var(--space-m) 72px;
+  }
+
+  .auth-dots {
+    display: none;
+  }
+
+  .auth-page::after {
+    height: 130px;
+  }
+
+  .auth-brand {
+    margin-bottom: var(--space-l);
+  }
+
+  .auth-card {
+    padding: 24px 20px;
+  }
+}
+
+@media (max-height: 720px) {
+  .auth-page {
+    justify-content: flex-start;
+  }
+}

@@ -1,7 +1,7 @@
 # RepairDesk V1 — Implementation Progress
 
-**Last updated:** 2026-07-02 (Phase 8 + Post-launch fixes)
-**Source of truth:** [Tasks.md](Tasks.md)
+**Last updated:** 2026-08-11 (Admin panel: AP-10 Customers directory implemented)
+**Source of truth:** [Tasks.md](Tasks.md) · [admin-panel/Tasks.md](admin-panel/Tasks.md)
 
 ---
 
@@ -163,6 +163,8 @@
 |---|---|---|---|
 | PROD-002 | Category management endpoints | BE | ✅ |
 | PROD-020 | Product management UI | FE | ✅ |
+| PROD-003 | Per-category brand mode & `device_brands` CRUD (post-launch) | BE | ✅ |
+| PROD-004 | Brand management UI + searchable brand picker on request form (post-launch) | FE | ✅ |
 
 ### Staff Management
 
@@ -252,11 +254,12 @@
 | Phase 3 — Operational | 22 | 22 | 0 |
 | Phase 4 — Quality | 16 | 10 | 6 (frontend widget tests deferred) |
 | Phase 5 — Release Prep | 14 | 14 | 0 |
-| **Total** | **129** | **123** | **6** |
+| Phase 6 — Post-launch (PROD-003/004 + bugs 1–17) | 2 | 2 | 0 |
+| **Total** | **131** | **125** | **6** |
 
-**Overall completion: ~97%**
+**Overall completion: ~97%** (V1 scope). Post-launch hardening (Phase 6) is additive and tracked separately in [Bugs.md](Bugs.md).
 
-### Post-launch fixes applied
+### Post-launch fixes applied (round 1)
 
 | Fix | Area | Description |
 |---|---|---|
@@ -269,7 +272,90 @@
 | Customer respond panel | FE | Customer can reply with text + photos when a request is `INFORMATION_REQUIRED`; sticky bottom panel (fixed unbounded-height layout crash) |
 | Admin request photos | FE | Each Repair Request card now has a collapsible **Photos & Attachments** section so admins can view customer-attached images (lazily loaded, read-only) |
 
+---
+
+## Phase 6 — Post-Launch Bug Fixes & Device Brand Configuration (PROD-004)
+
+Full root-cause/fix detail for every bug below lives in **[Bugs.md](Bugs.md)** (the live tracker); this section is the progress-log summary. All items are frontend-analyze-clean / backend-test-green; see Bugs.md status column for on-device verification state.
+
+### Bugs 1–4 (Admin gaps — first triage pass)
+
+| # | Title | Status |
+|---|---|---|
+| 1 | Product edit/delete missing in Admin | ✅ Fixed |
+| 2/3 | Customer's "Info Provided" response not visible to Admin (`customerInfoResponse` never serialized) | ✅ Fixed |
+| 4 | Admin couldn't reset password / edit / delete staff accounts (endpoints existed, UI didn't call them) | ✅ Fixed |
+
+### Bugs 5–8 (second triage pass)
+
+| # | Title | Status |
+|---|---|---|
+| 5 | Working Days label/value alignment in Business Settings | ✅ Fixed (superseded by bug 14 — real root cause was a day-name mapping bug) |
+| 6 | Customers page slow-load + exception (missing `@Transactional` → `LazyInitializationException`, plus un-debounced search) | ✅ Fixed |
+| 7 | Job Details page missing Job Creation Date (`createdAt` not serialized) | ✅ Fixed |
+| 8 | Technician notes not bumping `updatedAt`; technicians silently 403'd on customer request photos | ✅ Fixed |
+
+### Device Type / Brand Configuration — PROD-004 (new feature)
+
+Requested after a design review of how device categories/brands worked (flat categories + always-free-text brand, no search on the request form). Implemented the agreed hybrid design:
+
+- **Backend:** `BrandMode` enum (`CONFIGURED` / `FREE_TEXT`) added to `device_categories` (migration `V10__device_brands.sql`); new `device_brands` entity/repository/service/`DeviceBrandController` (`/device-categories/{id}/brands`, full CRUD + archive/unarchive, active-name-per-category uniqueness).
+- **Frontend:** `CategoriesScreen` category dialog now picks a brand mode; new **Brand Management** screen per category; the New Request form's brand field is a mode-aware `_BrandSelector` — searchable `Autocomplete` of curated brands + always-on "Others" when `CONFIGURED`, or "Custom (Free Text)" / "Others" when `FREE_TEXT`. `deviceBrand` on the wire stays a plain string snapshot either way (no API contract break).
+- **Docs:** [Database.md §3.2/§3.2a](Database.md), [API.md §10/§10a](API.md), [Tasks.md PROD-003/PROD-004](Tasks.md) updated.
+
+### Bugs 9–10 (found via live post-deploy API smoke testing, not user-reported)
+
+| # | Title | Status |
+|---|---|---|
+| 9 | `GET /customers` 500s when the search box is empty (`null` bind param → `lower(bytea)` PG error) | ✅ Verified live (repro'd 500 → shipped `1.1.1-dev` → confirmed 200) |
+| 10 | Wrong HTTP method on a valid path fell through to a generic 500 instead of 405 | ✅ Verified live (repro'd 500 → shipped `1.1.2-dev` → confirmed 405) |
+
+Both shipped with new regression tests (`CustomerControllerTest`, `GlobalExceptionHandlerTest`).
+
+### Bugs 11–17 (user-reported batch, frontend-only)
+
+| # | Title | Status |
+|---|---|---|
+| 11 | Staff Management listed customers alongside staff | ✅ Fixed |
+| 12 | Admin couldn't reset password / delete a customer from the Customers screen | ✅ Fixed |
+| 13 | Customer history's request/job rows weren't clickable | ✅ Fixed |
+| 14 | Working Hours day names off by one (real root cause of bug 5) | ✅ Fixed |
+| 15 | "Manage Brands" entry point existed but was hard to find | ✅ Fixed |
+| 16 | Photo upload had no "take picture" option; customer couldn't see their own uploaded photos | ✅ Fixed |
+| 17 | Staff/Customer names wrapped vertically letter-by-letter under a role chip | ✅ Fixed |
+
+### Cloud deployment (Azure)
+
+- Backend deployed to **Azure Container Apps** (ACR + PostgreSQL Flexible Server + Container Apps), with local-Docker-build fallback when ACR cloud build is denied by subscription policy. See [Azure-Container-Apps-Deployment.md](Azure-Container-Apps-Deployment.md).
+- Admin panel (`admin-web/`) deployed to **Azure Static Web Apps** in `repair-desk-test`: `repairdesk-admin-dev` → https://black-cliff-0c84a7c00.7.azurestaticapps.net (API CORS includes this origin + localhost:4200).
+- Bugs 9 and 10 were both discovered by smoke-testing the live deployed API and shipped as `1.1.1-dev` / `1.1.2-dev` images.
+- Latest Flutter APK rebuilt with all bug-11–17 fixes (camera permission, brand picker, alignment fixes) pointed at the deployed backend URL.
+
+---
+
+## Phase 7 — Admin Panel (Angular web client)
+
+A **new** Angular web admin panel (`admin-web/`) consuming the same unchanged `/api/v1` backend. Feature parity with the existing admin capabilities; no new backend features. The Flutter app remains the mobile client.
+
+| Deliverable | Status | Notes |
+|---|---|---|
+| UI specification set | ✅ Specified | [`docs/admin-panel/`](admin-panel/README.md) — IA/route map, design system, and 17 per-page specs (AP-01 … AP-17) with element inventories and **282 acceptance criteria** |
+| API contract verification | ✅ Complete | [API-Contract-Gaps.md](admin-panel/API-Contract-Gaps.md) — every cited endpoint checked against backend source |
+| Batch 1 task plan (AP-01 … AP-04) | ✅ Planned | [admin-panel/Tasks.md](admin-panel/Tasks.md) — 43 tasks: mockups → sign-off gate → foundation → implementation → verification |
+| Batch 1 mockups | ✅ Signed off | Gate `AP00-M3` closed 2026-08-07 — [`admin-panel/mockups/`](admin-panel/mockups/index.html) |
+| Angular application scaffold | ✅ Done | `admin-web/` — Angular 19 + Material; APS-001…004, APS-006 done (APS-005 kit & APS-007 CI still open) |
+| Implementation (AP-01 … AP-04) | 🔄 In progress | **AP-01…AP-04 implemented**; Batch 1 verification (V tasks) still open |
+| Implementation (AP-05 … AP-17) | ✅ Done | **AP-01…AP-17 implemented**; Batch verification (`*-V1`, `APV-*`) still open |
+
+**Findings that need action before implementation:**
+
+- **API.md has drifted from the backend** in ~13 places, including wrong paths/verbs for user edit (`PATCH` not `PUT`), enable/disable (`/activate`, `/deactivate`), all appointment mutations, and a documented-but-nonexistent `GET /technicians`. Correcting API.md is step 1 of the sequencing plan.
+- **`POST /auth/reset-password` accepts `{ username, newPassword }` with no proof of account ownership** and is public and unthrottled — anyone knowing a username (the seeded admin is `admin`) can take that account over. Flagged as a release blocker for internet exposure, independent of the panel.
+- Gaps the panel needs closed: technician/"Unassigned" filtering on jobs (an unmet [Tasks.md](Tasks.md) JOB-020 requirement), multi-status filtering, `relatedType` on notifications for deep links, and server-side working-hours validation (currently client-only, i.e. unenforced).
+
+---
+
 ### Remaining deferred items (post-V1)
 
-- **TEST-009 / TEST-020–024** — Flutter widget tests and repository-level integration tests. Deferred to post-launch; the backend is covered by 55 unit + integration tests.
+- **TEST-009 / TEST-020–024** — Flutter widget tests and repository-level integration tests. Deferred to post-launch; the backend is covered by 55+ unit + integration tests (plus `CustomerControllerTest` / `GlobalExceptionHandlerTest` added for bugs 9–10).
 - These items do not block a production V1 launch.

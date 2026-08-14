@@ -14,10 +14,12 @@ class JobSummary {
   final String id;
   final String referenceNumber;
   final String customerUsername;
+  final String? customerName;
   final String deviceCategoryName;
   final String contactName;
   final String status;
   final String priority;
+  final String? assignedTechnicianId;
   final String? assignedTechnicianName;
   final String? updatedAt;
 
@@ -25,22 +27,33 @@ class JobSummary {
     required this.id,
     required this.referenceNumber,
     required this.customerUsername,
+    this.customerName,
     required this.deviceCategoryName,
     required this.contactName,
     required this.status,
     required this.priority,
+    this.assignedTechnicianId,
     this.assignedTechnicianName,
     this.updatedAt,
   });
+
+  /// Prefer account display name; fall back to username (never contact person).
+  String get customerDisplayName {
+    final name = customerName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return customerUsername;
+  }
 
   factory JobSummary.fromJson(Map<String, dynamic> json) => JobSummary(
         id: json['id'] as String,
         referenceNumber: json['referenceNumber'] as String,
         customerUsername: json['customerUsername'] as String,
+        customerName: json['customerName'] as String?,
         deviceCategoryName: json['deviceCategoryName'] as String,
         contactName: json['contactName'] as String? ?? '',
         status: json['status'] as String,
         priority: json['priority'] as String,
+        assignedTechnicianId: json['assignedTechnicianId']?.toString(),
         assignedTechnicianName: json['assignedTechnicianName'] as String?,
         updatedAt: json['updatedAt'] as String?,
       );
@@ -52,6 +65,7 @@ class JobDetail {
   final String requestId;
   final String customerId;
   final String customerUsername;
+  final String? customerName;
   final String deviceCategoryName;
   final String contactName;
   final String contactMobile;
@@ -66,6 +80,7 @@ class JobDetail {
   final String? resolutionSummary;
   final String? cancelReason;
   final String? internalNotes;
+  final String? createdAt;
   final int version;
 
   const JobDetail({
@@ -74,6 +89,7 @@ class JobDetail {
     required this.requestId,
     required this.customerId,
     required this.customerUsername,
+    this.customerName,
     required this.deviceCategoryName,
     required this.contactName,
     required this.contactMobile,
@@ -88,8 +104,15 @@ class JobDetail {
     this.resolutionSummary,
     this.cancelReason,
     this.internalNotes,
+    this.createdAt,
     required this.version,
   });
+
+  String get customerDisplayName {
+    final name = customerName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return customerUsername;
+  }
 
   factory JobDetail.fromJson(Map<String, dynamic> json) => JobDetail(
         id: json['id'] as String,
@@ -97,6 +120,7 @@ class JobDetail {
         requestId: json['requestId'] as String,
         customerId: json['customerId'] as String,
         customerUsername: json['customerUsername'] as String,
+        customerName: json['customerName'] as String?,
         deviceCategoryName: json['deviceCategoryName'] as String,
         contactName: json['contactName'] as String? ?? '',
         contactMobile: json['contactMobile'] as String? ?? '',
@@ -111,6 +135,7 @@ class JobDetail {
         resolutionSummary: json['resolutionSummary'] as String?,
         cancelReason: json['cancelReason'] as String?,
         internalNotes: json['internalNotes'] as String?,
+        createdAt: json['createdAt'] as String?,
         version: (json['version'] as num).toInt(),
       );
 }
@@ -119,10 +144,15 @@ class JobsRepository {
   JobsRepository(this._dio);
   final Dio _dio;
 
-  Future<List<JobSummary>> list({String? status, int page = 0}) async {
+  Future<List<JobSummary>> list({
+    String? status,
+    String? technicianId,
+    int page = 0,
+  }) async {
     try {
       final params = <String, dynamic>{'page': page, 'size': 20};
       if (status != null) params['status'] = status;
+      if (technicianId != null) params['technicianId'] = technicianId;
       final res = await _dio.get<Map<String, dynamic>>('/jobs',
           queryParameters: params);
       final content = res.data!['content'] as List<dynamic>;

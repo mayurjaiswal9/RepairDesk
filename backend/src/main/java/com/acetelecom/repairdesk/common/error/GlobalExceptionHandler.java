@@ -8,12 +8,16 @@ import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -50,6 +54,37 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
         return build(ErrorCode.CONFLICT,
                 "The record was modified by another request. Please reload and try again.", List.of());
+    }
+
+    /**
+     * BUG-10: without this, a request that hits a known path with the wrong
+     * HTTP verb (e.g. {@code DELETE} on an endpoint that only supports
+     * {@code POST .../archive}) fell through to {@link #handleGeneric}, which
+     * logged it as an "unhandled exception" and returned a misleading 500
+     * instead of the correct 405.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiError> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return build(ErrorCode.METHOD_NOT_ALLOWED, ex.getMessage(), List.of());
+    }
+
+    /** BUG-10: same reasoning as {@link #handleMethodNotSupported} but for unknown paths. */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoResourceFound(NoResourceFoundException ex) {
+        return build(ErrorCode.NOT_FOUND, "No endpoint found for this request", List.of());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleUploadTooLarge(MaxUploadSizeExceededException ex) {
+        return build(ErrorCode.VALIDATION_ERROR,
+                "Photo is too large. Maximum size is 10 MB.", List.of());
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiError> handleMultipart(MultipartException ex) {
+        log.warn("Multipart request failed: {}", ex.getMessage());
+        return build(ErrorCode.VALIDATION_ERROR,
+                "Could not read the photo. Please try taking or choosing it again.", List.of());
     }
 
     @ExceptionHandler(Exception.class)

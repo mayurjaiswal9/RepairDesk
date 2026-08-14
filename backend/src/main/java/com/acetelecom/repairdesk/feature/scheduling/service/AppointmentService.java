@@ -105,7 +105,7 @@ public class AppointmentService {
 
         notifService.send(job.getCustomer().getId(), "APPOINTMENT_SCHEDULED",
                 "Your repair appointment is scheduled for " + date + " at " + startTime + ".",
-                job.getReferenceNumber(), job.getId());
+                job.getReferenceNumber(), "JOB", job.getId());
 
         auditService.record(actor, "JOB", jobId, "APPOINTMENT_SCHEDULED",
                 "Appointment " + appt.getId() + " on " + date + " at " + startTime
@@ -165,7 +165,7 @@ public class AppointmentService {
 
         notifService.send(job.getCustomer().getId(), "APPOINTMENT_RESCHEDULED",
                 "Your appointment has been rescheduled to " + newDate + " at " + newStartTime + ".",
-                job.getReferenceNumber(), job.getId());
+                job.getReferenceNumber(), "JOB", job.getId());
 
         auditService.record(actor, "JOB", jobId, "APPOINTMENT_RESCHEDULED",
                 "Rescheduled from " + old.getScheduledDate() + " to " + newDate);
@@ -208,7 +208,7 @@ public class AppointmentService {
 
         notifService.send(job.getCustomer().getId(), "APPOINTMENT_CANCELLED",
                 "Your appointment on " + appt.getScheduledDate() + " has been cancelled. " + reason,
-                job.getReferenceNumber(), job.getId());
+                job.getReferenceNumber(), "JOB", job.getId());
 
         auditService.record(actor, "JOB", jobId, "APPOINTMENT_CANCELLED", reason);
     }

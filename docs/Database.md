@@ -38,6 +38,7 @@ priority        : LOW | NORMAL | HIGH | URGENT
 warranty_status : IN_WARRANTY | OUT_OF_WARRANTY | UNKNOWN
 attachment_owner_type : REPAIR_REQUEST | JOB
 notification_related_type : REPAIR_REQUEST | JOB | APPOINTMENT
+brand_mode      : CONFIGURED | FREE_TEXT
 ```
 
 ---
@@ -53,6 +54,7 @@ erDiagram
     USERS ||--o{ AUDIT_EVENTS : "actor_id"
     DEVICE_CATEGORIES ||--o{ REPAIR_REQUESTS : "device_category_id"
     DEVICE_CATEGORIES ||--o{ JOBS : "device_category_id"
+    DEVICE_CATEGORIES ||--o{ DEVICE_BRANDS : "device_category_id"
     REPAIR_REQUESTS ||--|| JOBS : "1:1 (request_id)"
     JOBS ||--o{ APPOINTMENTS : "job_id"
     REPAIR_REQUESTS ||--o{ ATTACHMENTS : "owner (REPAIR_REQUEST)"
@@ -66,6 +68,7 @@ erDiagram
 - `repair_requests (1) ↔ jobs (1)` — job created on approval, shares `reference_number`.
 - `jobs (1) → appointments (N)` — at most **one active** (`SCHEDULED`/`IN_PROGRESS`) at a time; reschedules retained as history.
 - `device_categories (1) → repair_requests/jobs (N)`.
+- `device_categories (1) → device_brands (N)` — curated brand list, only consulted by the request form when `brand_mode = 'CONFIGURED'` (PROD-004).
 - `attachments` polymorphic to a request **or** a job (`owner_type` + `owner_id`); no DB FK (integrity enforced in service).
 - `notifications (N) → users (1)` recipient.
 - `audit_events` polymorphic to any entity.
@@ -107,6 +110,7 @@ Each table lists columns with type, nullability, default, and notes. PK = `id UU
 | name | varchar(100) | No | | Category name (e.g., Mobile Phone). |
 | description | varchar(500) | Yes | | Optional. |
 | archived | boolean | No | `false` | Soft delete; archived categories hidden from new requests, retained on existing records. |
+| brand_mode | varchar(20) | No | `'FREE_TEXT'` | `CONFIGURED` \| `FREE_TEXT` (PROD-004, added V10). `CONFIGURED` = customer picks from this category's curated `device_brands` list (+ always-on "Others"); `FREE_TEXT` = customer picks "Others" or types a custom brand — no curated list. **Note:** unlike other enum columns in this schema, V10 does not add a `CHECK` constraint here — validity is enforced only at the JPA (`@Enumerated(STRING)`) / service layer. A DB-level `CHECK (brand_mode IN ('CONFIGURED','FREE_TEXT'))` would be a small follow-up to match the §1 convention. |
 | created_at | timestamptz | No | now() | |
 | updated_at | timestamptz | Yes | | |
 | version | bigint | No | 0 | |
@@ -114,6 +118,24 @@ Each table lists columns with type, nullability, default, and notes. PK = `id UU
 **Constraints / indexes:**
 - Partial unique: `UNIQUE (lower(name)) WHERE archived = false` — active names unique; archived names freed.
 - Index `(archived)` for active-list filtering.
+
+## 3.2a `device_brands` — Curated brand list per category (Admin-managed, PROD-004)
+
+| Column | Type | Null | Default | Notes |
+| --- | --- | --- | --- | --- |
+| id | uuid | No | (app) | PK. |
+| device_category_id | uuid | No | | FK → device_categories(id). |
+| name | varchar(100) | No | | Brand name (e.g., Samsung). |
+| archived | boolean | No | `false` | Soft delete; archived brands hidden from the request form, retained on existing records. |
+| created_at | timestamptz | No | now() | |
+| updated_at | timestamptz | Yes | | |
+| version | bigint | No | 0 | |
+
+**Constraints / indexes:**
+- Partial unique: `UNIQUE (device_category_id, lower(name)) WHERE archived = false` — active brand names unique per category; archived names freed.
+- Index `(device_category_id)` for the per-category active-list lookup.
+- Only meaningful for customers when the parent category's `brand_mode = 'CONFIGURED'`, but brands can be curated ahead of switching a category's mode.
+- The "Others" option is **always** available on the request form regardless of `brand_mode` or curated brands — it is a UI sentinel, not a row in this table.
 
 ## 3.3 `repair_requests` — Customer intake + review lifecycle
 
@@ -309,6 +331,7 @@ Each table lists columns with type, nullability, default, and notes. PK = `id UU
 | --- | --- | --- |
 | `users` | `status = DELETED` (logical) + access revoked via status check; optional PII scrub. `DISABLED` = reversible. | Partial unique indexes free username/mobile after delete; FKs from requests/jobs/audit stay valid; `audit_events.actor_username` snapshot preserves attributability. |
 | `device_categories` | `archived = true`. | Hidden from new requests; existing requests/jobs retain the reference. Active-name uniqueness is partial. |
+| `device_brands` | `archived = true`. | Hidden from the request form's curated picker; existing requests keep their free-text brand snapshot regardless. Active-name uniqueness is partial, per category. |
 | `repair_requests` / `jobs` | **Not deleted.** Terminal statuses (`REJECTED`/`CANCELLED`/`COMPLETED`) are the logical archive; retained indefinitely. | N/A. |
 | `attachments` | **Hard delete** (row + binary) on removal or when an owning request is deleted. | Service deletes file via `StorageService` then row in one transaction-of-intent. |
 | `notifications` | Retained; inbox returns last 30. Optional age-based pruning is a future op. | N/A. |
@@ -363,8 +386,11 @@ Forward-only, versioned migrations (Constitution). Applied on startup. Suggested
 | `V3__jobs.sql` | `jobs` + indexes/FKs (FK `request_id`). |
 | `V4__appointments.sql` | `appointments` + indexes/FKs; then add `jobs.current_appointment_id` FK. |
 | `V5__attachments_notifications_audit.sql` | `attachments`, `notifications`, `audit_events` + indexes. |
-| `V6__seed_reference_data.sql` | Default `business_settings` row, `working_hours` (Mon–Sat 09:00–18:00, Sun closed), starter `device_categories`. Idempotent. |
-| `V7__seed_default_admin.sql` | Idempotent default admin (existence check before insert), `must_change_password = true`. |
+| `V6__seed_reference_data.sql` | Default `business_settings` row, `working_hours` (Mon–Sat 09:00–18:00, Sun closed), starter `device_categories`. Idempotent. Also seeds the default admin (idempotent, existence check before insert), `must_change_password = true`. |
+| `V7__jobs_snapshot_columns.sql` | Adds `jobs.contact_name`, `contact_mobile` (request-time snapshot), `internal_notes` (technician-only), `warranty_confirmed`. |
+| `V8__performance_indexes.sql` | Missing indexes identified in the pre-release performance review (PERF-001). |
+| `V9__customer_info_response.sql` | Adds `repair_requests.customer_info_response` — the customer's written reply when staff request more info (fixed the "info provided" not rendering to Admin, see Bugs.md #2/#3). |
+| `V10__device_brands.sql` | Adds `device_categories.brand_mode` (varchar, default `'FREE_TEXT'`, no DB `CHECK` — see §3.2 note); creates `device_brands` + partial unique index + FK to `device_categories` (PROD-004). |
 
 **Migration rules:** applied migrations are immutable; new changes get new versioned files; repeatable migrations (`R__`) only for safe, idempotent reference data; no Hibernate auto-DDL in any environment.
 

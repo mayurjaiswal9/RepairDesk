@@ -16,9 +16,9 @@ class AuthResponse {
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
       token: json['token'] as String,
-      userId: json['userId'] as String,
+      userId: '${json['userId']}',
       username: json['username'] as String,
-      role: json['role'] as String,
+      role: '${json['role']}'.trim().toUpperCase().replaceFirst(RegExp(r'^ROLE_'), ''),
       mustChangePassword: json['mustChangePassword'] as bool? ?? false,
     );
   }

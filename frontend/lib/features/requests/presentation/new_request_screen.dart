@@ -6,9 +6,20 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/utils/image_source_picker.dart';
 import '../../attachments/data/attachments_repository.dart';
 import '../../catalog/data/catalog_repository.dart';
 import '../data/requests_repository.dart';
+
+/// Sentinel values for [_BrandSelector]'s resolved selection, alongside real
+/// catalog brand names (PROD-004).
+const _othersSentinel = '__OTHERS__';
+const _customSentinel = '__CUSTOM__';
+const _othersLabel = 'Others';
+
+final _brandsProvider = FutureProvider.autoDispose.family<List<DeviceBrand>, String>(
+    (ref, categoryId) =>
+        ref.watch(catalogRepositoryProvider).activeBrands(categoryId));
 
 class NewRequestScreen extends ConsumerStatefulWidget {
   const NewRequestScreen({super.key});
@@ -22,11 +33,14 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
 
   final _contactNameCtrl = TextEditingController();
   final _contactMobileCtrl = TextEditingController();
-  final _deviceBrandCtrl = TextEditingController();
+  final _customBrandCtrl = TextEditingController();
   final _deviceModelCtrl = TextEditingController();
   final _issueCtrl = TextEditingController();
 
   String? _selectedCategoryId;
+  // A catalog brand name, [_othersSentinel], [_customSentinel], or null
+  // (not yet chosen) — see [_BrandSelector].
+  String? _brandSelection;
   DateTime? _preferredDate;
   TimeOfDay? _preferredTime;
   bool _submitting = false;
@@ -38,10 +52,26 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   void dispose() {
     _contactNameCtrl.dispose();
     _contactMobileCtrl.dispose();
-    _deviceBrandCtrl.dispose();
+    _customBrandCtrl.dispose();
     _deviceModelCtrl.dispose();
     _issueCtrl.dispose();
     super.dispose();
+  }
+
+  /// Resolves the brand chip/autocomplete selection to the string sent to
+  /// the API: the catalog brand name, "Others", the typed custom text, or
+  /// blank if the customer left brand unset entirely.
+  String _resolveBrand() {
+    switch (_brandSelection) {
+      case _customSentinel:
+        return _customBrandCtrl.text.trim();
+      case _othersSentinel:
+        return _othersLabel;
+      case null:
+        return '';
+      default:
+        return _brandSelection!;
+    }
   }
 
   Future<void> _submit(List<DeviceCategory> categories) async {
@@ -61,7 +91,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
             categoryId: _selectedCategoryId!,
             contactName: _contactNameCtrl.text.trim(),
             contactMobile: _contactMobileCtrl.text.trim(),
-            deviceBrand: _deviceBrandCtrl.text.trim(),
+            deviceBrand: _resolveBrand(),
             deviceModel: _deviceModelCtrl.text.trim(),
             issueDescription: _issueCtrl.text.trim(),
             preferredDate: _preferredDate!,
@@ -75,7 +105,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
         if (requestId.isNotEmpty) {
           for (final xfile in _pickedPhotos) {
             try {
-              await attRepo.uploadToRequest(requestId, File(xfile.path));
+              await attRepo.uploadToRequest(requestId, xfile);
             } catch (_) {
               // Non-fatal: continue on upload errors
             }
@@ -94,6 +124,13 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  DeviceCategory? _selectedCategoryOrNull(List<DeviceCategory> categories) {
+    for (final c in categories) {
+      if (c.id == _selectedCategoryId) return c;
+    }
+    return null;
   }
 
   Future<void> _pickDate() async {
@@ -160,18 +197,23 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                       .map((c) => DropdownMenuItem(
                           value: c.id, child: Text(c.name)))
                       .toList(),
-                  onChanged: (v) =>
-                      setState(() => _selectedCategoryId = v),
+                  onChanged: (v) => setState(() {
+                    _selectedCategoryId = v;
+                    // Brand choices depend on the selected device type's
+                    // brand mode, so reset when it changes.
+                    _brandSelection = null;
+                    _customBrandCtrl.clear();
+                  }),
                   validator: (v) =>
                       v == null ? 'Please select a device type' : null,
                 ),
                 const SizedBox(height: AppTheme.spaceM),
-                TextFormField(
-                  controller: _deviceBrandCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Brand (e.g. Samsung)',
-                    border: OutlineInputBorder(),
-                  ),
+                _BrandSelector(
+                  category: _selectedCategoryOrNull(categories),
+                  selection: _brandSelection,
+                  customBrandCtrl: _customBrandCtrl,
+                  onSelectionChanged: (v) =>
+                      setState(() => _brandSelection = v),
                 ),
                 const SizedBox(height: AppTheme.spaceM),
                 TextFormField(
@@ -310,10 +352,8 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                     icon: const Icon(Icons.add_a_photo_outlined, size: 18),
                     label: const Text('Add Photo'),
                     onPressed: () async {
-                      final xfile = await _picker.pickImage(
-                        source: ImageSource.gallery,
-                        imageQuality: 85,
-                      );
+                      final xfile =
+                          await pickImageWithSourceChoice(context, _picker);
                       if (xfile != null) {
                         setState(() => _pickedPhotos.add(xfile));
                       }
@@ -355,6 +395,118 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Brand picker driven by the selected device type's [BrandMode] (PROD-004):
+/// a searchable catalog + "Others" when [BrandMode.configured], or a choice
+/// between "Others" and typed "Custom" text when [BrandMode.freeText].
+class _BrandSelector extends ConsumerWidget {
+  const _BrandSelector({
+    required this.category,
+    required this.selection,
+    required this.customBrandCtrl,
+    required this.onSelectionChanged,
+  });
+
+  final DeviceCategory? category;
+  final String? selection;
+  final TextEditingController customBrandCtrl;
+  final ValueChanged<String?> onSelectionChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cat = category;
+    if (cat == null) {
+      return const InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Brand',
+          border: OutlineInputBorder(),
+          enabled: false,
+        ),
+        child: Text('Select a device type first',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+      );
+    }
+
+    if (cat.brandMode == BrandMode.freeText) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Brand',
+              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: AppTheme.spaceS,
+            children: [
+              ChoiceChip(
+                label: const Text(_othersLabel),
+                selected: selection == _othersSentinel,
+                onSelected: (_) => onSelectionChanged(_othersSentinel),
+              ),
+              ChoiceChip(
+                label: const Text('Custom (Free Text)'),
+                selected: selection == _customSentinel,
+                onSelected: (_) => onSelectionChanged(_customSentinel),
+              ),
+            ],
+          ),
+          if (selection == _customSentinel) ...[
+            const SizedBox(height: AppTheme.spaceM),
+            TextFormField(
+              controller: customBrandCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Brand (e.g. Samsung) *',
+                border: OutlineInputBorder(),
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Please enter a brand, or choose Others'
+                  : null,
+            ),
+          ],
+        ],
+      );
+    }
+
+    // BrandMode.configured — searchable list of curated brands + Others.
+    final brandsAsync = ref.watch(_brandsProvider(cat.id));
+    return brandsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppTheme.spaceM),
+        child: LinearProgressIndicator(),
+      ),
+      error: (e, _) => Text('Could not load brands: $e',
+          style: const TextStyle(color: AppTheme.error, fontSize: 12)),
+      data: (brands) {
+        final options = [...brands.map((b) => b.name), _othersLabel];
+        final currentLabel =
+            selection == _othersSentinel ? _othersLabel : (selection ?? '');
+        return Autocomplete<String>(
+          key: ValueKey('brand-autocomplete-${cat.id}'),
+          initialValue: TextEditingValue(text: currentLabel),
+          optionsBuilder: (textEditingValue) {
+            if (textEditingValue.text.isEmpty) return options;
+            final query = textEditingValue.text.toLowerCase();
+            return options.where((o) => o.toLowerCase().contains(query));
+          },
+          onSelected: (value) => onSelectionChanged(
+              value == _othersLabel ? _othersSentinel : value),
+          fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+            return TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: const InputDecoration(
+                labelText: 'Brand',
+                hintText: 'Search brand, or choose Others',
+                border: OutlineInputBorder(),
+                suffixIcon: Icon(Icons.search, size: 18),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -10,26 +10,21 @@ COPY pom.xml .
 RUN ./mvnw dependency:go-offline -q
 
 COPY src src
-RUN ./mvnw package -DskipTests -q && \
-    mkdir -p target/extracted && \
-    java -Djarmode=layertools -jar target/*.jar extract --destination target/extracted
+# maven.test.skip skips test compilation too (-DskipTests still compiles tests).
+RUN ./mvnw package -Dmaven.test.skip=true -q && \
+    cp target/repairdesk-*.jar /workspace/app.jar
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Create a non-root user for security
-RUN addgroup -S repairdesk && adduser -S repairdesk -G repairdesk
+RUN addgroup -S repairdesk && adduser -S repairdesk -G repairdesk && \
+    mkdir -p /app/uploads && \
+    chown -R repairdesk:repairdesk /app
 USER repairdesk
 
-# Copy layered jar (better Docker cache utilisation)
-COPY --from=build /workspace/target/extracted/dependencies/ ./
-COPY --from=build /workspace/target/extracted/spring-boot-loader/ ./
-COPY --from=build /workspace/target/extracted/snapshot-dependencies/ ./
-COPY --from=build /workspace/target/extracted/application/ ./
-
-# Default storage directory (override via APP_STORAGE_LOCATION env var)
-RUN mkdir -p /app/uploads
+COPY --from=build /workspace/app.jar app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -109,9 +109,22 @@ public class UserService {
 
     public UserProfile setStatus(UUID userId, AccountStatus newStatus, AuthenticatedUser actor) {
         User user = requireUser(userId);
-        if (user.getId().equals(actor.id())) {
+        // Self-activate is refused (no recovery path mid-session); self-deactivate is allowed
+        // so an admin can suspend themselves and be signed out on the next request.
+        if (user.getId().equals(actor.id()) && newStatus == AccountStatus.ACTIVE) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR,
                     "Cannot change your own account status");
+        }
+        if (newStatus == AccountStatus.DISABLED && user.getRole() == Role.ADMIN
+                && user.getStatus() == AccountStatus.ACTIVE) {
+            long otherActiveAdmins = userRepo.findActiveByRole(Role.ADMIN).stream()
+                    .filter(u -> u.getStatus() == AccountStatus.ACTIVE)
+                    .filter(u -> !u.getId().equals(userId))
+                    .count();
+            if (otherActiveAdmins == 0) {
+                throw new ApiException(ErrorCode.CONFLICT,
+                        "Cannot disable the last active admin");
+            }
         }
         user.setStatus(newStatus);
         user.setUpdatedAt(Instant.now());
@@ -145,10 +158,13 @@ public class UserService {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR,
                         "Cannot assign CUSTOMER role via admin");
             }
-            if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN) {
-                long activeAdmins = userRepo.findActiveByRole(Role.ADMIN).stream()
-                        .filter(u -> !u.getId().equals(userId)).count();
-                if (activeAdmins == 0) {
+            if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN
+                    && user.getStatus() == AccountStatus.ACTIVE) {
+                long otherActiveAdmins = userRepo.findActiveByRole(Role.ADMIN).stream()
+                        .filter(u -> u.getStatus() == AccountStatus.ACTIVE)
+                        .filter(u -> !u.getId().equals(userId))
+                        .count();
+                if (otherActiveAdmins == 0) {
                     throw new ApiException(ErrorCode.CONFLICT,
                             "Cannot demote the last active admin");
                 }
@@ -181,10 +197,12 @@ public class UserService {
             throw new ApiException(ErrorCode.VALIDATION_ERROR,
                     "Cannot delete your own account");
         }
-        if (user.getRole() == Role.ADMIN) {
-            long activeAdmins = userRepo.findActiveByRole(Role.ADMIN).stream()
-                    .filter(u -> !u.getId().equals(userId)).count();
-            if (activeAdmins == 0) {
+        if (user.getRole() == Role.ADMIN && user.getStatus() == AccountStatus.ACTIVE) {
+            long otherActiveAdmins = userRepo.findActiveByRole(Role.ADMIN).stream()
+                    .filter(u -> u.getStatus() == AccountStatus.ACTIVE)
+                    .filter(u -> !u.getId().equals(userId))
+                    .count();
+            if (otherActiveAdmins == 0) {
                 throw new ApiException(ErrorCode.CONFLICT,
                         "Cannot delete the last active admin");
             }

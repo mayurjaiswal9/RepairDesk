@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../storage/secure_storage.dart';
+import 'roles.dart';
 
 part 'session_controller.g.dart';
 
@@ -51,7 +52,11 @@ class SessionController extends _$SessionController {
     final role   = await storage.read(key: StorageKeys.userRole);
 
     if (token != null && userId != null && role != null) {
-      state = SessionState(token: token, userId: userId, role: role);
+      state = SessionState(
+        token: token,
+        userId: userId,
+        role: Roles.normalize(role),
+      );
     } else {
       state = SessionState.unauthenticated;
     }
@@ -63,11 +68,21 @@ class SessionController extends _$SessionController {
     required String userId,
     required String role,
   }) async {
+    final normalized = Roles.normalize(role);
     final storage = ref.read(secureStorageProvider);
     await storage.write(key: StorageKeys.authToken, value: token);
-    await storage.write(key: StorageKeys.userId,    value: userId);
-    await storage.write(key: StorageKeys.userRole,  value: role);
-    state = SessionState(token: token, userId: userId, role: role);
+    await storage.write(key: StorageKeys.userId, value: userId);
+    await storage.write(key: StorageKeys.userRole, value: normalized);
+    state = SessionState(token: token, userId: userId, role: normalized);
+  }
+
+  /// Refresh role/id from a `/me` (or similar) profile payload.
+  Future<void> syncRole(String role) async {
+    final normalized = Roles.normalize(role);
+    if (normalized.isEmpty || normalized == state.role) return;
+    final storage = ref.read(secureStorageProvider);
+    await storage.write(key: StorageKeys.userRole, value: normalized);
+    state = state.copyWith(role: normalized);
   }
 
   /// Clears session on logout or account disable.

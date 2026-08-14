@@ -1,0 +1,123 @@
+<div class="page-header">
+  <div>
+    <h1 class="display" tabindex="-1">Dashboard</h1>
+    <p class="greeting">{{ greeting() }}</p>
+    @if (allZero()) {
+      <p class="zero-note">Nothing is waiting for review right now.</p>
+    }
+  </div>
+  <button
+    type="button"
+    class="refresh-btn"
+    (click)="refresh()"
+    [disabled]="refreshing() || state() === 'loading'"
+    aria-label="Refresh counters"
+  >
+    @if (refreshing()) {
+      <mat-spinner diameter="18"></mat-spinner>
+    } @else {
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+    }
+    Refresh
+  </button>
+</div>
+
+<section aria-label="Work counts" class="counter-area">
+  @if (state() === 'loading') {
+    <div class="counter-grid">
+      @for (_ of [1, 2, 3, 4]; track $index) {
+        <div class="counter-card skeleton" aria-hidden="true">
+          <div class="skel-num"></div>
+          <div class="skel-label"></div>
+        </div>
+      }
+    </div>
+  } @else if (state() === 'error') {
+    <div class="failure-panel" role="alert">
+      <div class="failure-grid">
+        @for (card of cards(); track card.key) {
+          @if (card.link) {
+            <a class="counter-card dashed" [routerLink]="card.link.split('?')[0]" [queryParams]="linkQuery(card.link)" [attr.aria-label]="ariaName(card)">
+              <div class="tone tone-{{ card.tone }}"></div>
+              <div class="value">—</div>
+              <div class="label">{{ card.label }}</div>
+            </a>
+          } @else {
+            <div
+              class="counter-card dashed static"
+              [attr.aria-label]="ariaName(card)"
+              [matTooltip]="card.staffBlocked ? 'Only administrators can review requests.' : ''"
+            >
+              <div class="tone tone-{{ card.tone }}"></div>
+              <div class="value">—</div>
+              <div class="label">{{ card.label }}</div>
+            </div>
+          }
+        }
+      </div>
+      <div class="failure-msg">
+        <strong>Couldn't load counts</strong>
+        <p>{{ error()?.message }}</p>
+        @if (error()?.correlationId) {
+          <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+        }
+        <button type="button" class="retry-btn" (click)="retry()">Retry</button>
+      </div>
+    </div>
+  } @else if (state() === 'forbidden') {
+    <p class="forbidden-note" role="status">Work counts aren't available for your role</p>
+  } @else {
+    <div class="counter-grid">
+      @for (card of cards(); track card.key) {
+        @if (card.link) {
+          <a
+            class="counter-card"
+            [routerLink]="card.link.split('?')[0]"
+            [queryParams]="linkQuery(card.link)"
+            [attr.aria-label]="ariaName(card)"
+          >
+            <div class="tone tone-{{ card.tone }}"></div>
+            <div class="value">{{ displayValue(card.key) }}</div>
+            <div class="label">{{ card.label }}</div>
+          </a>
+        } @else {
+          <div
+            class="counter-card static"
+            [attr.aria-label]="ariaName(card)"
+            [matTooltip]="'Only administrators can review requests.'"
+            matTooltipPosition="above"
+          >
+            <div class="tone tone-{{ card.tone }}"></div>
+            <div class="value">{{ displayValue(card.key) }}</div>
+            <div class="label">{{ card.label }}</div>
+          </div>
+        }
+      }
+    </div>
+  }
+</section>
+
+@if (showBanner()) {
+  <div class="banner-warning" role="status">
+    <mat-icon class="icon" aria-hidden="true">warning</mat-icon>
+    <div class="text">{{ bannerText() }}</div>
+    <a class="schedule-btn" routerLink="/jobs" [queryParams]="{ scheduled: 'false' }">
+      Schedule them →
+    </a>
+  </div>
+}
+
+<h2 class="section-title">Go to</h2>
+<div class="quick-grid">
+  @for (link of quickLinks(); track link.id) {
+    <a class="quick-card" [routerLink]="link.path" [attr.aria-label]="link.label">
+      <div class="q-ico" aria-hidden="true">
+        <mat-icon>{{ link.icon }}</mat-icon>
+      </div>
+      <div>
+        <div class="q-title">{{ link.label }}</div>
+        <div class="q-desc">{{ link.description }}</div>
+      </div>
+    </a>
+  }
+</div>

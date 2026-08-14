@@ -36,13 +36,20 @@ public class JobController {
 
     @GetMapping
     @Secured({ "ROLE_STAFF", "ROLE_ADMIN", "ROLE_TECHNICIAN" })
-    public PageResponse<JobSummary> list(@RequestParam(required = false) String status,
+    public PageResponse<JobSummary> list(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) Boolean scheduled,
+            @RequestParam(required = false) UUID technicianId,
+            @RequestParam(required = false) Boolean unassigned,
+            @RequestParam(required = false) String q,
             Pageable pageable) {
         AuthenticatedUser caller = currentUser.get();
         if ("TECHNICIAN".equals(caller.role())) {
-            return service.listForTechnician(caller.id(), pageable);
+            // Server-scoped to the caller; client cannot widen via technicianId/unassigned.
+            return service.listForTechnician(caller.id(), status, q, pageable);
         }
-        return service.listAll(status, pageable);
+        return service.listAll(status, active, scheduled, technicianId, unassigned, q, pageable);
     }
 
     @GetMapping("/{id}")

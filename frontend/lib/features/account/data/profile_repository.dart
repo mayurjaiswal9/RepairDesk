@@ -130,4 +130,42 @@ class ProfileRepository {
           : AppException.fromDioError(e);
     }
   }
+
+  Future<UserProfileData> updateUser(
+    String userId, {
+    String? name,
+    String? mobile,
+    String? role,
+  }) async {
+    try {
+      final res = await _dio.patch<Map<String, dynamic>>('/users/$userId',
+          data: {'name': name, 'mobile': mobile, 'role': role});
+      return UserProfileData.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> resetUserPassword(String userId, String newPassword) async {
+    try {
+      await _dio.post<void>('/users/$userId/reset-password',
+          data: {'newPassword': newPassword});
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<void> deleteUser(String userId) async {
+    try {
+      await _dio.delete<void>('/users/$userId');
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
 }

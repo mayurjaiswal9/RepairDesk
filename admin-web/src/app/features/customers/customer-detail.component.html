@@ -1,0 +1,221 @@
+@if (profileState() === 'forbidden' || historyState() === 'forbidden') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Restricted</h1>
+    <p>Customer lookup is limited to staff and administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else if (profileState() === 'notfound') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Customer not found</h1>
+    <p>This account may have been deleted, or the link is no longer valid.</p>
+    <a routerLink="/customers" [queryParams]="returnQuery()" class="primary-btn">Back to customers</a>
+  </div>
+} @else {
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a routerLink="/customers" [queryParams]="returnQuery()">Customers</a>
+    <span class="sep" aria-hidden="true">›</span>
+    <span class="current">{{ displayName() }}</span>
+  </nav>
+
+  <header class="record-header">
+    <div class="titles">
+      <h1 class="display truncate" tabindex="-1" [matTooltip]="displayName()">{{ displayName() }}</h1>
+      @if (profile(); as p) {
+        <p class="username">{{ '@' + p.username }}</p>
+        <div class="chips">
+          <span class="chip-status {{ accountStatusChip(p.status) }}">
+            {{ accountStatusLabel(p.status) }}
+          </span>
+        </div>
+      } @else if (profileState() === 'loading') {
+        <div class="skel skel-line short"></div>
+      }
+    </div>
+    @if (showAccountActions()) {
+      <button type="button" class="ghost-btn" [matMenuTriggerFor]="actionsMenu">
+        Account actions
+        <mat-icon>expand_more</mat-icon>
+      </button>
+      <mat-menu #actionsMenu="matMenu">
+        <button mat-menu-item type="button" (click)="openReset()">Reset password</button>
+        <button mat-menu-item type="button" class="danger" (click)="openDelete()">
+          Delete customer
+        </button>
+      </mat-menu>
+    }
+  </header>
+
+  @if (isDeleted()) {
+    <div class="banner" role="status">
+      This account has been deleted. Its repair history is retained.
+    </div>
+  }
+
+  <div class="detail-layout">
+    <div class="main-col">
+      @if (historyState() === 'loading') {
+        <section class="history-section" aria-busy="true">
+          <div class="skel skel-heading"></div>
+          @for (_ of [1, 2, 3]; track $index) {
+            <div class="skel skel-row"></div>
+          }
+        </section>
+        <section class="history-section" aria-busy="true">
+          <div class="skel skel-heading"></div>
+          @for (_ of [1, 2, 3]; track $index) {
+            <div class="skel skel-row"></div>
+          }
+        </section>
+      } @else if (historyState() === 'error') {
+        <div class="state-panel error compact" role="alert">
+          <h2>Couldn't load repair history</h2>
+          <p>{{ historyError()?.message }}</p>
+          @if (historyError()?.correlationId) {
+            <p class="cid">correlationId: {{ historyError()?.correlationId }}</p>
+          }
+          <button type="button" class="primary-btn" (click)="retryHistory()">Retry</button>
+        </div>
+      } @else if (historyEmpty()) {
+        <div class="state-panel compact">
+          <div class="icon" aria-hidden="true">🔧</div>
+          <h2>No repairs yet</h2>
+          <p>This customer hasn't submitted a repair request.</p>
+        </div>
+      } @else {
+        <section class="history-section">
+          <h2>Repair requests ({{ requests().length }})</h2>
+          @if (requests().length === 0) {
+            <p class="inline-empty">No requests</p>
+          } @else {
+            <div class="table-wrap">
+              <table class="data-table compact">
+                <thead>
+                  <tr>
+                    <th scope="col">Reference</th>
+                    <th scope="col">Device</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of requests(); track r.id) {
+                    <tr>
+                      <td>
+                        <a class="mono link" [routerLink]="['/requests', r.id]">{{ r.referenceNumber }}</a>
+                      </td>
+                      <td>{{ r.deviceCategoryName || '—' }}</td>
+                      <td>
+                        <span class="chip-status {{ statusChipClass(r.status) }}">
+                          {{ statusLabel(r.status) }}
+                        </span>
+                      </td>
+                      <td>{{ formatDateOnly(r.updatedAt) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <section class="history-section">
+          <h2>Jobs ({{ jobs().length }})</h2>
+          @if (jobs().length === 0) {
+            <p class="inline-empty">No jobs</p>
+          } @else {
+            <div class="table-wrap">
+              <table class="data-table compact">
+                <thead>
+                  <tr>
+                    <th scope="col">Reference</th>
+                    <th scope="col">Device</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Technician</th>
+                    <th scope="col">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (j of jobs(); track j.id) {
+                    <tr>
+                      <td>
+                        <a class="mono link" [routerLink]="['/jobs', j.id]">{{ j.referenceNumber }}</a>
+                      </td>
+                      <td>{{ j.deviceCategoryName || '—' }}</td>
+                      <td>
+                        <span class="chip-status {{ statusChipClass(j.status) }}">
+                          {{ statusLabel(j.status) }}
+                        </span>
+                      </td>
+                      <td>{{ j.assignedTechnicianName || 'Unassigned' }}</td>
+                      <td>{{ formatDateOnly(j.updatedAt) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      }
+    </div>
+
+    <aside class="side-col">
+      <h2 class="side-title">Account profile</h2>
+      @if (profileState() === 'loading') {
+        <dl class="kv" aria-busy="true">
+          @for (_ of [1, 2, 3, 4, 5, 6]; track $index) {
+            <div class="kv-row">
+              <dt><div class="skel skel-label"></div></dt>
+              <dd><div class="skel skel-value"></div></dd>
+            </div>
+          }
+        </dl>
+      } @else if (profileState() === 'error') {
+        <div class="state-panel error compact" role="alert">
+          <h2>Couldn't load profile</h2>
+          <p>{{ profileError()?.message }}</p>
+          @if (profileError()?.correlationId) {
+            <p class="cid">correlationId: {{ profileError()?.correlationId }}</p>
+          }
+          <button type="button" class="primary-btn" (click)="retryProfile()">Retry</button>
+        </div>
+      } @else if (profile()) {
+        @if (profile(); as p) {
+          <dl class="kv">
+            <div class="kv-row">
+              <dt>Name</dt>
+              <dd>{{ p.name?.trim() || '—' }}</dd>
+            </div>
+            <div class="kv-row">
+              <dt>Username</dt>
+              <dd class="mono">{{ '@' + p.username }}</dd>
+            </div>
+            <div class="kv-row">
+              <dt>Mobile</dt>
+              <dd>{{ p.mobile || '—' }}</dd>
+            </div>
+            <div class="kv-row">
+              <dt>Status</dt>
+              <dd>
+                <span class="chip-status {{ accountStatusChip(p.status) }}">
+                  {{ accountStatusLabel(p.status) }}
+                </span>
+              </dd>
+            </div>
+            <div class="kv-row">
+              <dt>Registered</dt>
+              <dd>{{ formatDateOnly(p.createdAt) }}</dd>
+            </div>
+            <div class="kv-row">
+              <dt>Repairs</dt>
+              <dd>{{ p.repairCount ?? '—' }}</dd>
+            </div>
+          </dl>
+          <p class="note">
+            This is the account contact, used for sign-in and for anything not tied to one repair. An
+            individual request may carry different contact details entered at submission time.
+          </p>
+        }
+      }
+    </aside>
+  </div>
+}

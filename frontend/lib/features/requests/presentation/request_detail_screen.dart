@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../attachments/presentation/attachments_widget.dart';
 import '../data/requests_repository.dart';
+import 'job_status.dart';
 
 final _requestDetailFamily = FutureProvider.autoDispose
     .family<RequestDetail, String>((ref, id) =>
@@ -95,6 +96,20 @@ class _RequestDetailBody extends ConsumerWidget {
           ],
           const SizedBox(height: AppTheme.spaceM),
 
+          // ── Job progress (Accepted requests only) ────────────────────
+          // "Accepted" only means the request was reviewed and a job was
+          // created — it does not mean the repair is complete or even
+          // picked up yet, so surface the linked job's real status here.
+          if (detail.status == 'APPROVED') ...[
+            _Section(title: 'Job Status', children: [
+              _JobStatusInfoRow(
+                jobStatus: detail.jobStatus,
+                assignedTechnicianName: detail.assignedTechnicianName,
+              ),
+            ]),
+            const SizedBox(height: AppTheme.spaceM),
+          ],
+
           // ── Alerts ───────────────────────────────────────────────────
           if (detail.infoRequestedMessage != null)
             _AlertCard(
@@ -102,6 +117,13 @@ class _RequestDetailBody extends ConsumerWidget {
               color: AppTheme.secondary,
               title: 'Information requested from customer',
               body: detail.infoRequestedMessage!,
+            ),
+          if (detail.customerInfoResponse != null)
+            _AlertCard(
+              icon: Icons.reply_outlined,
+              color: AppTheme.success,
+              title: 'Information provided by customer',
+              body: detail.customerInfoResponse!,
             ),
           if (detail.customerFacingMessage != null)
             _AlertCard(
@@ -468,6 +490,36 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+class _JobStatusInfoRow extends StatelessWidget {
+  const _JobStatusInfoRow(
+      {required this.jobStatus, this.assignedTechnicianName});
+  final String? jobStatus;
+  final String? assignedTechnicianName;
+
+  @override
+  Widget build(BuildContext context) {
+    final info = JobStatusInfo.forStatus(jobStatus);
+    if (info == null) {
+      return const Text('Job details unavailable',
+          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13));
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 2, bottom: AppTheme.spaceXS),
+      child: Row(
+        children: [
+          Icon(info.icon, size: 18, color: info.color),
+          const SizedBox(width: AppTheme.spaceS),
+          Text(info.describe(assignedTechnicianName),
+              style: TextStyle(
+                  color: info.color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13)),
+        ],
+      ),
+    );
+  }
+}
+
 class _AlertCard extends StatelessWidget {
   const _AlertCard(
       {required this.icon,
@@ -530,7 +582,7 @@ class _StatusChip extends StatelessWidget {
   static const _labels = {
     'PENDING_REVIEW': 'Pending',
     'INFORMATION_REQUIRED': 'Info Needed',
-    'APPROVED': 'Approved',
+    'APPROVED': 'Accepted',
     'REJECTED': 'Rejected',
     'CANCELLED': 'Cancelled',
   };

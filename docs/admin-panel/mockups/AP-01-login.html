@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP-01 · Sign In — Mockup (Signed off)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="mockup.css" />
+</head>
+<body>
+  <div class="review-bar">
+    <span class="tag">Signed off</span>
+    <strong>AP-01 · Sign In</strong>
+    <span style="opacity:.7">Spec: <a href="../pages/AP-01-login.md">AP-01-login.md</a></span>
+    <div class="controls">
+      <label>
+        State
+        <select id="stateSelect">
+          <option value="default">Default</option>
+          <option value="session">Session expired notice</option>
+          <option value="error">Invalid credentials</option>
+          <option value="customer">Customer blocked</option>
+          <option value="disabled">Disabled account</option>
+          <option value="submitting">Submitting</option>
+          <option value="forgot">Forgot password</option>
+          <option value="forgot-done">Forgot password — confirmation</option>
+          <option value="change">Forced change password</option>
+        </select>
+      </label>
+      <a href="index.html">← All mockups</a>
+    </div>
+  </div>
+
+  <div class="login-page" id="view">
+    <!-- filled by script -->
+  </div>
+
+  <script>
+    const brand = `
+      <div class="brand-block">
+        <p class="company">ACE <span class="accent">Telecom</span></p>
+        <p class="product">RepairDesk Admin Panel</p>
+      </div>`;
+
+    const footer = `
+      <div class="login-footer">
+        Customers: use the RepairDesk mobile app to submit and track repairs. No account is created here.<br />
+        You'll be signed out when you close your browser.
+      </div>`;
+
+    function loginForm({ notice, error, busy }) {
+      return `
+        ${brand}
+        <div class="login-card">
+          <h1 tabindex="-1">Sign in</h1>
+          ${notice || ''}
+          ${error || ''}
+          <div class="field">
+            <label for="user">Username <span class="req">*</span></label>
+            <input id="user" type="text" autocomplete="username" value="admin" ${busy ? 'disabled' : ''} />
+          </div>
+          <div class="field">
+            <label for="pass">Password <span class="req">*</span></label>
+            <div class="password-wrap">
+              <input id="pass" type="password" autocomplete="current-password" value="••••••••" ${busy ? 'disabled' : ''} />
+              <button class="toggle" type="button" ${busy ? 'disabled' : ''}>Show</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full ${busy ? 'is-busy' : ''}" ${busy ? 'disabled' : ''}>
+            ${busy ? '<span class="spinner"></span>' : ''} Sign in
+          </button>
+          <p style="text-align:center;margin:16px 0 0">
+            <a href="#" onclick="document.getElementById('stateSelect').value='forgot'; apply(); return false;">Forgot your password?</a>
+          </p>
+        </div>
+        ${footer}
+        <p class="body-small" style="margin-top:16px;text-align:center;opacity:.6">
+          Deliberately absent: registration link · remember me
+        </p>`;
+    }
+
+    const views = {
+      default: () => loginForm({}),
+      session: () => loginForm({
+        notice: `<div class="banner-info" aria-live="polite">ⓘ Your session is no longer valid. Please sign in again.</div>`
+      }),
+      error: () => loginForm({
+        error: `<div class="banner-error" role="alert">⚠ Username or password is incorrect.</div>`
+      }),
+      customer: () => loginForm({
+        error: `<div class="banner-error" role="alert"><div><strong>This panel is for staff.</strong><br />Customers should use the RepairDesk mobile app to submit and track repairs.</div></div>`
+      }),
+      disabled: () => loginForm({
+        error: `<div class="banner-error" role="alert">⚠ This account is disabled. Contact an administrator.</div>`
+      }),
+      submitting: () => loginForm({ busy: true }),
+      forgot: () => `
+        ${brand}
+        <div class="login-card">
+          <h1>Reset password</h1>
+          <p class="body-medium" style="margin:0 0 16px;color:var(--color-text-secondary)">
+            Enter your username. If an account exists, the password will be updated.
+          </p>
+          <div class="field">
+            <label>Username <span class="req">*</span></label>
+            <input type="text" value="admin" />
+          </div>
+          <div class="field">
+            <label>New password <span class="req">*</span></label>
+            <div class="password-wrap">
+              <input type="password" value="" />
+              <button class="toggle" type="button">Show</button>
+            </div>
+            <div class="helper">At least 8 characters.</div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="document.getElementById('stateSelect').value='forgot-done'; apply()">Reset password</button>
+          <p style="text-align:center;margin:16px 0 0">
+            <a href="#" onclick="document.getElementById('stateSelect').value='default'; apply(); return false;">← Back to sign in</a>
+          </p>
+        </div>
+        <div class="login-footer" style="margin-top:16px;color:var(--color-warning)">
+          ⚠ Security note for review: public reset currently takes {username, newPassword} with no ownership proof (API-Contract-Gaps §3.1).
+        </div>`,
+      'forgot-done': () => `
+        ${brand}
+        <div class="login-card">
+          <h1>Check your details</h1>
+          <div class="banner-info" aria-live="polite">
+            If an account exists for that username, the password has been updated. You can sign in with the new password.
+          </div>
+          <button class="btn btn-primary btn-full" onclick="document.getElementById('stateSelect').value='default'; apply()">Back to sign in</button>
+        </div>`,
+      change: () => `
+        ${brand}
+        <div class="login-card">
+          <h1>Choose a new password</h1>
+          <p class="body-medium" style="margin:0 0 16px;color:var(--color-text-secondary)">
+            Your account still uses the password it was set up with.
+          </p>
+          <div class="field">
+            <label>Current password <span class="req">*</span></label>
+            <div class="password-wrap"><input type="password" /><button class="toggle" type="button">Show</button></div>
+          </div>
+          <div class="field">
+            <label>New password <span class="req">*</span></label>
+            <div class="password-wrap"><input type="password" /><button class="toggle" type="button">Show</button></div>
+            <div class="helper">At least 8 characters.</div>
+          </div>
+          <div class="field">
+            <label>Confirm new password <span class="req">*</span></label>
+            <div class="password-wrap"><input type="password" /><button class="toggle" type="button">Show</button></div>
+          </div>
+          <button class="btn btn-primary btn-full">Update password</button>
+          <p style="text-align:center;margin:16px 0 0">
+            <a href="#" style="color:var(--color-error)">Sign out</a>
+          </p>
+        </div>`
+    };
+
+    function apply() {
+      document.getElementById('view').innerHTML = views[document.getElementById('stateSelect').value]();
+    }
+    document.getElementById('stateSelect').addEventListener('change', apply);
+    apply();
+  </script>
+</body>
+</html>

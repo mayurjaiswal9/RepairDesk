@@ -1,9 +1,11 @@
 package com.acetelecom.repairdesk.feature.customer.controller;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,10 +40,21 @@ public class CustomerController {
         this.jobRepo = jobRepo;
     }
 
-    /** Search customers (CUSTOMER role, non-deleted). */
+    /**
+     * Search customers (CUSTOMER role, non-deleted).
+     *
+     * <p>A missing {@code q} is normalized to {@code ""} rather than passed
+     * through as {@code null}: with a genuinely {@code null} bind parameter,
+     * Hibernate/the PostgreSQL driver can't infer a concrete type for {@code :q}
+     * inside the {@code concat('%', :q, '%')} expression in
+     * {@link UserRepository#searchCustomers} and defaults it to {@code bytea},
+     * which blows up {@code lower(...)} with a {@code SQLGrammarException}
+     * (BUG-9). An empty string matches everything via the existing
+     * {@code LIKE '%%'} pattern, so this is behavior-preserving.
+     */
     @GetMapping
     public List<UserProfile> search(@RequestParam(required = false) String q) {
-        return userRepo.searchCustomers(Role.CUSTOMER, q).stream()
+        return userRepo.searchCustomers(Role.CUSTOMER, q == null ? "" : q).stream()
                 .map(UserProfile::from)
                 .toList();
     }
@@ -54,11 +67,21 @@ public class CustomerController {
         if (user.getRole() != Role.CUSTOMER) {
             throw new ApiException(ErrorCode.NOT_FOUND, "Customer not found");
         }
-        return UserProfile.from(user);
+        int repairCount = requestRepo.findByCustomerIdOrderByUpdatedAtDesc(id).size();
+        return UserProfile.from(user, repairCount);
     }
 
-    /** Customer repair history: all requests and their jobs. */
+    /**
+     * Customer repair history: all requests and their jobs.
+     *
+     * <p>{@code @Transactional} is required here because {@code open-in-view}
+     * is disabled: {@code RepairRequestSummary.from} / {@code JobSummary.from}
+     * touch LAZY {@code customer} and {@code deviceCategory} associations, which
+     * would otherwise throw {@code LazyInitializationException} once the
+     * repository call's transaction has closed (BUG-6).
+     */
     @GetMapping("/{id}/history")
+    @Transactional(readOnly = true)
     public CustomerHistory history(@PathVariable UUID id) {
         User user = userRepo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Customer not found"));
@@ -67,13 +90,16 @@ public class CustomerController {
         }
 
         var requests = requestRepo.findByCustomerIdOrderByUpdatedAtDesc(id).stream()
-                .map(RepairRequestSummary::from)
+                .map(r -> RepairRequestSummary.from(r,
+                        jobRepo.findByRequestId(r.getId()).orElse(null)))
                 .toList();
         var jobs = jobRepo.findByCustomerId(id).stream()
                 .map(JobSummary::from)
+                .sorted(Comparator.comparing(JobSummary::updatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
 
-        return new CustomerHistory(UserProfile.from(user), requests, jobs);
+        return new CustomerHistory(UserProfile.from(user, requests.size()), requests, jobs);
     }
 
     record CustomerHistory(UserProfile customer,

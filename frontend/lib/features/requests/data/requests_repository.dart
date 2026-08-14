@@ -20,6 +20,8 @@ class RequestSummary {
   final String status;
   final String priority;
   final String? submittedAt;
+  final String? jobStatus;
+  final String? assignedTechnicianName;
 
   const RequestSummary({
     required this.id,
@@ -30,6 +32,8 @@ class RequestSummary {
     required this.status,
     required this.priority,
     this.submittedAt,
+    this.jobStatus,
+    this.assignedTechnicianName,
   });
 
   factory RequestSummary.fromJson(Map<String, dynamic> json) => RequestSummary(
@@ -41,6 +45,8 @@ class RequestSummary {
         status: json['status'] as String,
         priority: json['priority'] as String,
         submittedAt: json['submittedAt'] as String?,
+        jobStatus: json['jobStatus'] as String?,
+        assignedTechnicianName: json['assignedTechnicianName'] as String?,
       );
 }
 
@@ -64,7 +70,10 @@ class RequestDetail {
   final String priority;
   final String? infoRequestedMessage;
   final String? customerFacingMessage;
+  final String? customerInfoResponse;
   final String? submittedAt;
+  final String? jobStatus;
+  final String? assignedTechnicianName;
 
   const RequestDetail({
     required this.id,
@@ -86,7 +95,10 @@ class RequestDetail {
     required this.priority,
     this.infoRequestedMessage,
     this.customerFacingMessage,
+    this.customerInfoResponse,
     this.submittedAt,
+    this.jobStatus,
+    this.assignedTechnicianName,
   });
 
   factory RequestDetail.fromJson(Map<String, dynamic> json) => RequestDetail(
@@ -109,7 +121,10 @@ class RequestDetail {
         priority: json['priority'] as String,
         infoRequestedMessage: json['infoRequestedMessage'] as String?,
         customerFacingMessage: json['customerFacingMessage'] as String?,
+        customerInfoResponse: json['customerInfoResponse'] as String?,
         submittedAt: json['submittedAt'] as String?,
+        jobStatus: json['jobStatus'] as String?,
+        assignedTechnicianName: json['assignedTechnicianName'] as String?,
       );
 }
 

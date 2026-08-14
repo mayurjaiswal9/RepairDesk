@@ -171,14 +171,27 @@ Customer Home / repairs and notifications also live under `/me` (§14, §15).
 
 | Method | Path | Roles | Description |
 | --- | --- | --- | --- |
-| GET | `/device-categories` | Authenticated | **Active** categories (for the request form). |
+| GET | `/device-categories` | Authenticated | **Active** categories (for the request form). Each includes `brandMode`. |
 | GET | `/device-categories/all` | ADMIN | All incl. archived. |
-| POST | `/device-categories` | ADMIN | Create `{ name, description? }`. |
-| PUT | `/device-categories/{id}` | ADMIN | Edit `{ name?, description?, version }`. |
+| POST | `/device-categories` | ADMIN | Create `{ name, description?, brandMode? }`. `brandMode` defaults to `FREE_TEXT` if omitted. |
+| PUT | `/device-categories/{id}` | ADMIN | Edit `{ name?, description?, brandMode?, version }`. `brandMode` unchanged if omitted. |
 | POST | `/device-categories/{id}/archive` | ADMIN | Soft delete. |
 | POST | `/device-categories/{id}/unarchive` | ADMIN | Restore. |
 
-**Rules:** active name unique (`409` on duplicate). Archived categories hidden from `GET /device-categories` but retained on existing requests/jobs. (Driven by gap-analysis GAP-01 Product Management; no dedicated spec.)
+**Rules:** active name unique (`409` on duplicate). Archived categories hidden from `GET /device-categories` but retained on existing requests/jobs. `brandMode` is one of `CONFIGURED` (customer picks from this category's curated brand list, see §10a, plus an always-available "Others") or `FREE_TEXT` (no curated list — customer picks "Others" or types a custom brand). (Driven by gap-analysis GAP-01 Product Management; brand configuration added post-launch as PROD-004 — see [Bugs.md](Bugs.md) device type/brand analysis and [Progress.md](Progress.md).)
+
+## 10a. Device Brands API (`/device-categories/{categoryId}/brands`) — PROD-004
+
+| Method | Path | Roles | Description |
+| --- | --- | --- | --- |
+| GET | `/device-categories/{categoryId}/brands` | Authenticated | **Active** brands for this category (for the request form's brand picker). |
+| GET | `/device-categories/{categoryId}/brands/all` | ADMIN | All incl. archived, for the Manage Brands screen. |
+| POST | `/device-categories/{categoryId}/brands` | ADMIN | Create `{ name }`. |
+| PUT | `/device-categories/{categoryId}/brands/{brandId}` | ADMIN | Edit `{ name, version }`. |
+| POST | `/device-categories/{categoryId}/brands/{brandId}/archive` | ADMIN | Soft delete. |
+| POST | `/device-categories/{categoryId}/brands/{brandId}/unarchive` | ADMIN | Restore. |
+
+**Rules:** active brand name unique **per category** (`409` on duplicate); `404` if `categoryId` doesn't exist or `brandId` doesn't belong to it. Brands can be curated regardless of the category's current `brandMode`, so an admin can build out a list before switching a category to `CONFIGURED`. "Others" is **never** a row here — it's an always-on client-side sentinel on the request form (see §12 request creation) that lets the customer free-type a brand even when the category is `CONFIGURED`.
 
 ---
 
@@ -218,6 +231,8 @@ Customer Home / repairs and notifications also live under `/me` (§14, §15).
 }
 ```
 → `201` request `{ id, referenceNumber, status: "PENDING_REVIEW", ... }`. Triggers customer notification + appears in staff queue. Errors: `422` (missing required, past/out-of-hours/out-of-horizon preferred date/time, invalid category), `409` (archived category / duplicate warning is non-blocking — surfaced as a warning field, not a hard error).
+
+`deviceBrand` is always a plain string snapshot server-side (unchanged shape), regardless of the category's `brandMode`. When `brandMode = CONFIGURED`, the client's brand picker (§10a) resolves the user's choice — a curated `DeviceBrand.name`, or free-typed text when "Others" is picked — down to this one string before submit; the server does not validate it against the curated list.
 
 **Notes:** attachments optional, added via §16. Contact name/mobile pre-filled from account but request-local. Issue Category/Symptom and Service Mode are **not** in V1.
 

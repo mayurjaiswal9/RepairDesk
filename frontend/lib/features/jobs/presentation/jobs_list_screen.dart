@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/roles.dart';
+import '../../../core/auth/session_controller.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../data/jobs_repository.dart';
 import 'job_detail_screen.dart';
 
+/// Status filter key for the jobs family. Technicians are always scoped to
+/// their own assignments (any status) via [technicianId].
+typedef _JobsQuery = ({String? status, String? technicianId});
+
 final _jobsFamily = FutureProvider.autoDispose
-    .family<List<JobSummary>, String?>((ref, status) =>
-        ref.watch(jobsRepositoryProvider).list(status: status));
+    .family<List<JobSummary>, _JobsQuery>((ref, query) =>
+        ref.watch(jobsRepositoryProvider).list(
+              status: query.status,
+              technicianId: query.technicianId,
+            ));
 
 class JobsListScreen extends ConsumerStatefulWidget {
   const JobsListScreen({super.key});
@@ -21,10 +30,21 @@ class _JobsListScreenState extends ConsumerState<JobsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final jobsAsync = ref.watch(_jobsFamily(_status));
+    final session = ref.watch(sessionControllerProvider);
+    final isTech = Roles.isTechnician(session.role);
+    final myId = session.userId;
+    final query = (
+      status: _status,
+      // Always send technicianId for TECHNICIAN so older APIs that honour
+      // the query param still scope the list.
+      technicianId: isTech ? myId : null,
+    );
+    final jobsAsync = ref.watch(_jobsFamily(query));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Jobs')),
+      appBar: AppBar(
+        title: Text(isTech ? 'My Jobs' : 'Jobs'),
+      ),
       body: Column(
         children: [
           _StatusFilterBar(
@@ -45,35 +65,44 @@ class _JobsListScreenState extends ConsumerState<JobsListScreen> {
                         style: const TextStyle(color: AppTheme.error),
                         textAlign: TextAlign.center),
                     FilledButton(
-                        onPressed: () =>
-                            ref.invalidate(_jobsFamily(_status)),
+                        onPressed: () => ref.invalidate(_jobsFamily(query)),
                         child: const Text('Retry')),
                   ],
                 ),
               ),
-              data: (jobs) => jobs.isEmpty
-                  ? const _EmptyJobs()
-                  : RefreshIndicator(
-                      onRefresh: () =>
-                          ref.refresh(_jobsFamily(_status).future),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(AppTheme.spaceM),
-                        itemCount: jobs.length,
-                        separatorBuilder: (_, sep) =>
-                            const SizedBox(height: AppTheme.spaceS),
-                        itemBuilder: (ctx, i) => _JobCard(
-                          job: jobs[i],
-                          onTap: () async {
-                            await Navigator.of(ctx).push(
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      JobDetailScreen(jobId: jobs[i].id)),
-                            );
-                            ref.invalidate(_jobsFamily(_status));
-                          },
+              data: (jobs) {
+                // Strict: technicians only ever see jobs assigned to them.
+                // Do NOT keep rows with a null assignee — that previously
+                // leaked the full board when the API omitted the field.
+                final visible = isTech && myId != null
+                    ? jobs
+                        .where((j) => j.assignedTechnicianId == myId)
+                        .toList()
+                    : jobs;
+                return visible.isEmpty
+                    ? const _EmptyJobs()
+                    : RefreshIndicator(
+                        onRefresh: () =>
+                            ref.refresh(_jobsFamily(query).future),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(AppTheme.spaceM),
+                          itemCount: visible.length,
+                          separatorBuilder: (_, sep) =>
+                              const SizedBox(height: AppTheme.spaceS),
+                          itemBuilder: (ctx, i) => _JobCard(
+                            job: visible[i],
+                            onTap: () async {
+                              await Navigator.of(ctx).push(
+                                MaterialPageRoute(
+                                    builder: (_) => JobDetailScreen(
+                                        jobId: visible[i].id)),
+                              );
+                              ref.invalidate(_jobsFamily(query));
+                            },
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+              },
             ),
           ),
         ],
@@ -179,8 +208,11 @@ class _JobCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppTheme.spaceXS),
-              Text(job.contactName,
-                  style: Theme.of(context).textTheme.bodyMedium),
+              // Account customer name — not the per-request contact person.
+              Text(job.customerDisplayName,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      )),
               Text(job.deviceCategoryName,
                   style: const TextStyle(color: AppTheme.textSecondary)),
               if (job.assignedTechnicianName != null) ...[
@@ -198,11 +230,10 @@ class _JobCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: AppTheme.spaceXS),
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const Icon(Icons.chevron_right,
-                      color: AppTheme.textSecondary),
+                  Icon(Icons.chevron_right, color: AppTheme.textSecondary),
                 ],
               ),
             ],

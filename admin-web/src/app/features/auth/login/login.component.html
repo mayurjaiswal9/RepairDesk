@@ -1,0 +1,177 @@
+<div class="auth-page">
+  <span class="auth-dots auth-dots--start" aria-hidden="true"></span>
+  <span class="auth-dots auth-dots--end" aria-hidden="true"></span>
+
+  <div class="auth-brand">
+    <img class="auth-logo" [src]="branding.logoUrl" [alt]="branding.brandName" />
+    <p class="auth-title">{{ branding.productName }}</p>
+    <p class="auth-tagline">Sign in to continue</p>
+  </div>
+
+  @if (step() === 'sign-in') {
+    <div class="auth-card">
+      <h1 tabindex="-1">Sign in</h1>
+
+      @if (sessionNotice()) {
+        <div class="banner banner-info" aria-live="polite">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ sessionNotice() }}</span>
+        </div>
+      }
+      @if (errorBanner()) {
+        <div class="banner banner-error" role="alert">
+          <span>
+            {{ errorBanner() }}
+            @if (correlationId()) {
+              <span class="cid">correlationId: {{ correlationId() }}</span>
+            }
+          </span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submitSignIn()" novalidate>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Username</mat-label>
+          <mat-icon matPrefix>person_outline</mat-icon>
+          <input matInput formControlName="username" autocomplete="username" [attr.autofocus]="!errorBanner() ? true : null" />
+          @if (form.controls.username.touched && form.controls.username.hasError('required')) {
+            <mat-error>Enter a username.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Password</mat-label>
+          <mat-icon matPrefix>lock_outline</mat-icon>
+          <input
+            matInput
+            formControlName="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            autocomplete="current-password"
+          />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="togglePassword()"
+            [attr.aria-pressed]="showPassword()"
+            [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+          >
+            <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+            <mat-error>Enter a password.</mat-error>
+          }
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" class="full submit" type="submit" [disabled]="submitting()">
+          @if (submitting()) {
+            <mat-spinner diameter="18"></mat-spinner>
+          }
+          Sign in
+        </button>
+      </form>
+
+      <p class="forgot">
+        <button type="button" class="link-btn" (click)="openForgot()" [disabled]="submitting()">
+          Forgot your password?
+        </button>
+      </p>
+    </div>
+  }
+
+  @if (step() === 'forgot') {
+    <div class="auth-card">
+      <h1 tabindex="-1">Reset password</h1>
+      <p class="hint">Enter your username. If an account exists, the password will be updated.</p>
+
+      @if (errorBanner()) {
+        <div class="banner banner-error" role="alert">
+          <span>
+            {{ errorBanner() }}
+            @if (correlationId()) {
+              <span class="cid">correlationId: {{ correlationId() }}</span>
+            }
+          </span>
+        </div>
+      }
+
+      <form [formGroup]="forgotForm" (ngSubmit)="submitForgot()" novalidate>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Username</mat-label>
+          <mat-icon matPrefix>person_outline</mat-icon>
+          <input matInput formControlName="username" autocomplete="username" />
+          @if (forgotForm.controls.username.touched && forgotForm.controls.username.hasError('required')) {
+            <mat-error>Enter a username.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>New password</mat-label>
+          <mat-icon matPrefix>lock_outline</mat-icon>
+          <input
+            matInput
+            formControlName="newPassword"
+            [type]="showNewPassword() ? 'text' : 'password'"
+            autocomplete="new-password"
+          />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="toggleNewPassword()"
+            [attr.aria-label]="showNewPassword() ? 'Hide password' : 'Show password'"
+          >
+            <mat-icon>{{ showNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (forgotForm.controls.newPassword.touched && forgotForm.controls.newPassword.hasError('required')) {
+            <mat-error>Enter a new password.</mat-error>
+          } @else if (forgotForm.controls.newPassword.touched && forgotForm.controls.newPassword.hasError('minlength')) {
+            <mat-error>Password must be at least 8 characters.</mat-error>
+          } @else if (forgotForm.controls.newPassword.hasError('server')) {
+            <mat-error>{{ forgotForm.controls.newPassword.getError('server') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Confirm new password</mat-label>
+          <mat-icon matPrefix>lock_outline</mat-icon>
+          <input matInput formControlName="confirmPassword" type="password" autocomplete="new-password" />
+          @if (forgotForm.controls.confirmPassword.touched && forgotForm.controls.confirmPassword.hasError('required')) {
+            <mat-error>Confirm the new password.</mat-error>
+          } @else if (forgotForm.controls.confirmPassword.hasError('mismatch')) {
+            <mat-error>Passwords do not match.</mat-error>
+          }
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" class="full submit" type="submit" [disabled]="submitting()">
+          @if (submitting()) {
+            <mat-spinner diameter="18"></mat-spinner>
+          }
+          Reset password
+        </button>
+      </form>
+
+      <p class="forgot">
+        <button type="button" class="link-btn" (click)="backToSignIn()">← Back to sign in</button>
+      </p>
+    </div>
+  }
+
+  @if (step() === 'forgot-done') {
+    <div class="auth-card">
+      <h1 tabindex="-1">Check your details</h1>
+      <div class="banner banner-info" aria-live="polite">
+        <mat-icon>check_circle</mat-icon>
+        <span>
+          If an active account matches what you entered, its password has been updated. Sign in with your
+          new password.
+        </span>
+      </div>
+      <button mat-flat-button color="primary" class="full submit" type="button" (click)="backToSignIn()">
+        Back to sign in
+      </button>
+    </div>
+  }
+
+  <p class="auth-powered">Powered by {{ branding.poweredBy }}</p>
+</div>

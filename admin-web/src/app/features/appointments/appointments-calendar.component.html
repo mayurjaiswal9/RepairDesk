@@ -1,0 +1,327 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Appointments</h1>
+    <p>You don't have access to the calendar ({{ role() || 'unknown role' }}).</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else {
+  <header class="hero-header">
+    <div>
+      <h1 class="display" tabindex="-1">Appointments</h1>
+      @if (summary()) {
+        <p class="meta" aria-live="polite">{{ summary() }}</p>
+      }
+    </div>
+    <button type="button" class="icon-pill" (click)="refresh()" [disabled]="refetching()" aria-label="Refresh">
+      @if (refetching()) {
+        <mat-spinner diameter="18"></mat-spinner>
+      } @else {
+        <mat-icon>refresh</mat-icon>
+      }
+    </button>
+  </header>
+
+  <div class="toolbar glass">
+    <div class="nav-cluster">
+      <button type="button" class="icon-pill" (click)="shiftRange(-1)" aria-label="Previous range">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <button type="button" class="icon-pill" (click)="shiftRange(1)" aria-label="Next range">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+      <button type="button" class="ghost-pill" [disabled]="containsToday()" (click)="goToday()">Today</button>
+      <span class="range-label">{{ rangeLabel() }}</span>
+    </div>
+
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" [class.active]="view() === 'day'" (click)="setView('day')">Day</button>
+      <button type="button" [class.active]="view() === 'week'" (click)="setView('week')">Week</button>
+    </div>
+
+    <div class="filters">
+      @if (!isTechnician()) {
+        <select class="select" [value]="techFilter()" (change)="onTechChange($event)" aria-label="Technician">
+          <option value="">All technicians</option>
+          @for (t of technicians(); track t.id) {
+            <option [value]="t.id">{{ t.name || t.username }}</option>
+          }
+        </select>
+      }
+      <select class="select" [value]="statusFilter()" (change)="onStatusChange($event)" aria-label="Status">
+        <option value="">All statuses</option>
+        <option value="SCHEDULED">Scheduled</option>
+        <option value="IN_PROGRESS">In progress</option>
+        <option value="COMPLETED">Completed</option>
+      </select>
+      <div class="search">
+        <mat-icon aria-hidden="true">search</mat-icon>
+        <input type="search" [formControl]="searchCtrl" placeholder="Reference, customer…" aria-label="Search appointments" />
+        @if (searchCtrl.value) {
+          <button type="button" class="clear" (click)="clearSearch()" aria-label="Clear search">×</button>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (hasFilters()) {
+    <div class="chips">
+      @if (techFilter()) {
+        <span class="chip">{{ techName() }}
+          <button type="button" (click)="clearTech()" aria-label="Remove technician">×</button>
+        </span>
+      }
+      @if (statusFilter()) {
+        <span class="chip">{{ statusLabel(statusFilter()) }}
+          <button type="button" (click)="clearStatus()" aria-label="Remove status">×</button>
+        </span>
+      }
+      @if (q()) {
+        <span class="chip">“{{ q() }}”
+          <button type="button" (click)="clearSearch()" aria-label="Remove search">×</button>
+        </span>
+      }
+      <button type="button" class="clear-all" (click)="clearFilters()">Clear filters</button>
+    </div>
+  }
+
+  @if (configNotice()) {
+    <div class="banner" role="status">Working hours couldn't be loaded — showing a plain day axis.</div>
+  }
+
+  @if (refetching()) {
+    <mat-progress-bar mode="indeterminate" class="top-bar"></mat-progress-bar>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel error" role="alert">
+      <h2>Couldn't load appointments</h2>
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+    </div>
+  }
+
+  <div class="workspace" [class.panel-open]="panelOpen() && isStaffOrAdmin()">
+    <div class="board-wrap" [class.dimmed]="refetching()">
+      @if (state() === 'loading') {
+        <div class="cal skel-cal" aria-busy="true">
+          <div class="gutter"></div>
+          @for (_ of [1,2,3,4,5,6,7]; track $index) {
+            <div class="day-skel"></div>
+          }
+        </div>
+      } @else if (state() === 'ready' || state() === 'error') {
+        @if (empty()) {
+          <div class="empty-overlay">
+            <div class="empty-card">
+              <div class="empty-icon" aria-hidden="true">📅</div>
+              <h2>No appointments this {{ view() === 'day' ? 'day' : 'week' }}</h2>
+              @if (isTechnician()) {
+                <p>Anything scheduled for you will appear here.</p>
+              } @else {
+                <p>Appointments are scheduled from a job.</p>
+                @if (unscheduled().length) {
+                  <p class="hint">{{ unscheduled().length }} job{{ unscheduled().length === 1 ? '' : 's' }} waiting to be scheduled.</p>
+                }
+              }
+            </div>
+          </div>
+        } @else if (filteredEmpty()) {
+          <div class="empty-overlay">
+            <div class="empty-card">
+              <h2>No appointments match your filters</h2>
+              <p>
+                Nothing for
+                @if (techName()) {
+                  {{ techName() }}
+                }
+                in {{ rangeLabel() }}.
+              </p>
+              <button type="button" class="primary-btn" (click)="clearFilters()">Clear filters</button>
+            </div>
+          </div>
+        }
+
+        <!-- Desktop / tablet week-day grid -->
+        <div
+          class="cal"
+          [class.day-view]="view() === 'day'"
+          role="grid"
+          tabindex="0"
+          [attr.aria-label]="'Calendar ' + rangeLabel()"
+        >
+          <div class="corner"></div>
+          @for (board of boards(); track board.column.dateStr) {
+            <div
+              class="day-head"
+              [style.grid-column]="board.index + 2"
+              [class.today]="board.column.isToday"
+              role="columnheader"
+            >
+              <span class="dow">{{ board.column.label }}</span>
+              @if (board.closed) {
+                <span class="closed-tag">Closed</span>
+              }
+            </div>
+          }
+
+          <div class="gutter" aria-hidden="true">
+            @for (label of labels(); track label) {
+              <div class="tick">{{ label }}</div>
+            }
+          </div>
+
+          @for (board of boards(); track board.column.dateStr) {
+            <div
+              class="day-col"
+              [style.grid-column]="board.index + 2"
+              [class.today]="board.column.isToday"
+              [class.closed]="board.closed"
+            >
+              @if (board.shadeTopPct > 0) {
+                <div
+                  class="shade"
+                  [style.top]="'0'"
+                  [style.height.%]="board.shadeTopPct"
+                  aria-hidden="true"
+                ></div>
+              }
+              @if (board.shadeBottomPct > 0) {
+                <div
+                  class="shade"
+                  [style.bottom]="'0'"
+                  [style.height.%]="board.shadeBottomPct"
+                  aria-hidden="true"
+                ></div>
+              }
+              @if (board.column.isToday && nowPct() != null) {
+                <div class="now-line" [style.top.%]="nowPct()" aria-hidden="true"></div>
+              }
+              @for (item of board.visible; track item.appt.id) {
+                <a
+                  class="appt"
+                  [routerLink]="['/jobs', item.appt.jobId]"
+                  [style]="blockStyle(item)"
+                  [matTooltip]="apptTooltip(item.appt)"
+                  [attr.aria-label]="apptAria(item.appt)"
+                  [class.status-in]="item.appt.status === 'IN_PROGRESS'"
+                  [class.status-done]="item.appt.status === 'COMPLETED'"
+                >
+                  <span class="appt-time">
+                    {{ formatTimeOnly(item.appt.startTime) }}
+                    @if (item.appt.endTime) {
+                      – {{ formatTimeOnly(item.appt.endTime) }}
+                    }
+                  </span>
+                  <span class="appt-ref">{{ item.appt.referenceNumber }}</span>
+                  <span class="appt-cust">{{ item.appt.customerName || '—' }}</span>
+                  @if (!techFilter()) {
+                    <span class="appt-tech">{{ item.appt.technicianName }}</span>
+                  }
+                </a>
+              }
+              @if (board.overflow.length) {
+                <button
+                  type="button"
+                  class="more-chip"
+                  [matMenuTriggerFor]="moreMenu"
+                  [style.top.%]="board.visible[board.visible.length - 1].topPct || 40"
+                >
+                  +{{ board.overflow.length }} more
+                </button>
+                <mat-menu #moreMenu="matMenu">
+                  @for (a of board.overflow; track a.id) {
+                    <a mat-menu-item [routerLink]="['/jobs', a.jobId]">
+                      {{ formatTimeOnly(a.startTime) }} · {{ a.referenceNumber }} · {{ a.customerName }}
+                    </a>
+                  }
+                </mat-menu>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Mobile agenda -->
+        <div class="agenda" aria-label="Agenda list">
+          @for (board of boards(); track board.column.dateStr) {
+            <section class="agenda-day" [class.today]="board.column.isToday">
+              <header>
+                <h2>{{ board.column.longLabel }}</h2>
+                @if (board.closed) {
+                  <span class="closed-tag">Closed</span>
+                }
+              </header>
+              @if (!board.visible.length && !board.overflow.length) {
+                <p class="muted">No appointments</p>
+              } @else {
+                @for (item of board.visible; track item.appt.id) {
+                  <a class="agenda-card" [routerLink]="['/jobs', item.appt.jobId]">
+                    <div class="when">
+                      {{ formatTimeOnly(item.appt.startTime) }}
+                      @if (item.appt.endTime) {
+                        <span>– {{ formatTimeOnly(item.appt.endTime) }}</span>
+                      }
+                    </div>
+                    <div class="body">
+                      <div class="ref">{{ item.appt.referenceNumber }}</div>
+                      <div class="cust">{{ item.appt.customerName || '—' }}</div>
+                      <div class="meta-line">
+                        {{ item.appt.technicianName }} · {{ item.appt.deviceCategoryName }}
+                      </div>
+                    </div>
+                    <span class="chip-status {{ statusChipClass(item.appt.status) }}">
+                      {{ statusLabel(item.appt.status) }}
+                    </span>
+                  </a>
+                }
+                @for (a of board.overflow; track a.id) {
+                  <a class="agenda-card" [routerLink]="['/jobs', a.jobId]">
+                    <div class="when">{{ formatTimeOnly(a.startTime) }}</div>
+                    <div class="body">
+                      <div class="ref">{{ a.referenceNumber }}</div>
+                      <div class="cust">{{ a.customerName || '—' }}</div>
+                    </div>
+                  </a>
+                }
+              }
+            </section>
+          }
+        </div>
+      }
+    </div>
+
+    @if (isStaffOrAdmin()) {
+      <aside class="rail" [class.open]="panelOpen()">
+        <button type="button" class="rail-toggle" (click)="togglePanel()" [attr.aria-expanded]="panelOpen()">
+          <mat-icon>{{ panelOpen() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+          <span>Unscheduled</span>
+          <span class="count">{{ unscheduled().length }}</span>
+        </button>
+        @if (panelOpen()) {
+          <div class="rail-body">
+            <h2>Unscheduled</h2>
+            <p class="rail-meta">{{ unscheduled().length }} jobs</p>
+            @if (!unscheduled().length) {
+              <p class="muted">Everything is scheduled</p>
+            } @else {
+              <ul>
+                @for (job of unscheduled(); track job.id) {
+                  <li>
+                    <a [routerLink]="['/jobs', job.id, 'schedule']">
+                      <span class="ref">{{ job.referenceNumber }}</span>
+                      <span class="cust">{{ job.contactName || '—' }}</span>
+                      <span class="dev">{{ job.deviceCategoryName || '—' }}</span>
+                      <span class="chip-status {{ statusChipClass(job.status) }}">{{ statusLabel(job.status) }}</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </aside>
+    }
+  </div>
+}

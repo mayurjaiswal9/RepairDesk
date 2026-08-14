@@ -1,0 +1,273 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">{{ pageTitle() }}</h1>
+    <p>You don’t have access to the jobs board.</p>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">{{ pageTitle() }}</h1>
+      @if (summary()) {
+        <p class="meta" aria-live="polite">{{ summary() }}</p>
+      }
+    </div>
+    <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="refetching()" aria-label="Refresh">
+      @if (refetching()) {
+        <mat-spinner diameter="18"></mat-spinner>
+      } @else {
+        <mat-icon aria-hidden="true">refresh</mat-icon>
+      }
+      Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="seg" role="group" aria-label="Status filter">
+      @for (f of statusFilters; track f.key) {
+        <button
+          type="button"
+          [class.active]="isStatusActive(f.status)"
+          (click)="setStatusFilter(f.status)"
+        >
+          {{ f.label }}
+        </button>
+      }
+    </div>
+
+    <div class="search-field">
+      <mat-icon class="prefix" aria-hidden="true">search</mat-icon>
+      <input
+        type="search"
+        [formControl]="searchCtrl"
+        placeholder="Search reference, customer, device…"
+        aria-label="Search jobs"
+      />
+      @if (searchCtrl.value) {
+        <button type="button" class="clear-x" (click)="clearSearch()" aria-label="Clear search">×</button>
+      }
+    </div>
+
+    @if (showTechFilter()) {
+      <select
+        class="select"
+        [value]="activeTechnician()"
+        (change)="onTechnicianChange($event)"
+        aria-label="Technician filter"
+      >
+        <option value="">All technicians</option>
+        <option value="unassigned">Unassigned</option>
+        @for (t of technicians(); track t.id) {
+          <option [value]="t.id">{{ t.name || t.username }}</option>
+        }
+      </select>
+    }
+
+    <select class="select" [value]="activeSort()" (change)="onSortChange($event)" aria-label="Sort">
+      <option value="updatedAt,desc">Updated (newest)</option>
+      <option value="updatedAt,asc">Updated (oldest)</option>
+      <option value="referenceNumber,asc">Reference</option>
+      <option value="status,asc">Status</option>
+      <option value="priority,asc">Priority</option>
+    </select>
+  </div>
+
+  @if (hasFilters()) {
+    <div class="filter-chips">
+      @if (activeActive()) {
+        <span class="chip">Active work
+          <button type="button" (click)="clearDashboardChip()" aria-label="Remove active filter">×</button>
+        </span>
+      }
+      @if (activeUnscheduled()) {
+        <span class="chip">Unscheduled
+          <button type="button" (click)="clearDashboardChip()" aria-label="Remove unscheduled filter">×</button>
+        </span>
+      }
+      @if (activeStatus()) {
+        <span class="chip">Status: {{ statusLabel(activeStatus()!) }}
+          <button type="button" (click)="setStatusFilter(undefined)" aria-label="Remove status filter">×</button>
+        </span>
+      }
+      @if (activeQ()) {
+        <span class="chip">Search: {{ activeQ() }}
+          <button type="button" (click)="clearSearch()" aria-label="Remove search">×</button>
+        </span>
+      }
+      @if (activeTechnician()) {
+        <span class="chip">{{ technicianLabel(activeTechnician()) }}
+          <button type="button" (click)="clearTechnician()" aria-label="Remove technician filter">×</button>
+        </span>
+      }
+      <button type="button" class="clear-all" (click)="clearFilters()">Clear all</button>
+    </div>
+  }
+
+  @if (refetching()) {
+    <mat-progress-bar mode="indeterminate" class="top-bar"></mat-progress-bar>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel error" role="alert">
+      <h2>Couldn't load jobs</h2>
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <div class="table-wrap" aria-busy="true">
+      @for (_ of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track $index) {
+        <div class="skel-row"></div>
+      }
+    </div>
+  } @else if (empty()) {
+    <div class="state-panel">
+      <div class="icon" aria-hidden="true">🔧</div>
+      @if (isTechnician()) {
+        <h2>No jobs are assigned to you right now</h2>
+        <p>When work is assigned to you it will show up here.</p>
+        <a routerLink="/appointments">View your schedule</a>
+      } @else {
+        <h2>No jobs yet</h2>
+        <p>Jobs are created automatically when a repair request is approved.</p>
+      }
+    </div>
+  } @else if (filteredEmpty()) {
+    <div class="state-panel">
+      <h2>No jobs match your filters</h2>
+      <p>
+        @if (activeQ() && activeStatus()) {
+          Nothing matched “{{ activeQ() }}” in {{ statusLabel(activeStatus()!) }}.
+        } @else if (activeQ()) {
+          Nothing matched “{{ activeQ() }}”.
+        } @else if (activeTechnician() === 'unassigned') {
+          No unassigned jobs
+          @if (activeStatus()) {
+            in {{ statusLabel(activeStatus()!) }}
+          }
+          .
+        } @else if (activeTechnician()) {
+          No jobs for {{ technicianLabel(activeTechnician()) }}
+          @if (activeStatus()) {
+            in {{ statusLabel(activeStatus()!) }}
+          }
+          .
+        } @else if (activeStatus()) {
+          No jobs in {{ statusLabel(activeStatus()!) }}.
+        } @else {
+          Try clearing filters to see more work.
+        }
+      </p>
+      <button type="button" class="primary-btn" (click)="clearFilters()">Clear filters</button>
+    </div>
+  } @else {
+    <div class="table-wrap" [class.dimmed]="refetching()">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">Customer</th>
+            <th scope="col" class="hide-sm">Device</th>
+            <th scope="col">Technician</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="pri">!</th>
+            <th scope="col">Updated</th>
+            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (job of rows(); track job.id) {
+            <tr>
+              <td>
+                <a
+                  class="ref"
+                  [routerLink]="['/jobs', job.id]"
+                  [state]="{ returnQuery: returnQuery() }"
+                  [attr.aria-label]="'Open ' + job.referenceNumber"
+                >
+                  {{ job.referenceNumber }}
+                </a>
+              </td>
+              <td>
+                <div class="two-line">
+                  <div class="primary" [matTooltip]="job.contactName || '—'">{{ job.contactName || '—' }}</div>
+                  <div class="secondary" [matTooltip]="'@' + (job.customerUsername || '')">
+                    {{ job.customerUsername ? '@' + job.customerUsername : '—' }}
+                  </div>
+                </div>
+              </td>
+              <td class="hide-sm">{{ job.deviceCategoryName || '—' }}</td>
+              <td>
+                @if (job.assignedTechnicianName) {
+                  {{ job.assignedTechnicianName }}
+                } @else {
+                  <span class="unassigned">Unassigned</span>
+                }
+              </td>
+              <td>
+                <span class="chip-status {{ statusChipClass(job.status) }}">
+                  {{ statusLabel(job.status) }}
+                </span>
+              </td>
+              <td class="pri">
+                @if (priorityMarker(job.priority); as mark) {
+                  <span
+                    class="prio-mark"
+                    [class.urgent]="job.priority === 'URGENT'"
+                    [class.high]="job.priority === 'HIGH'"
+                    [attr.aria-label]="mark.label"
+                  >
+                    {{ job.priority === 'URGENT' ? '‼' : '↑' }}
+                    <span class="sr-only">{{ mark.label }}</span>
+                  </span>
+                }
+              </td>
+              <td>
+                <span [matTooltip]="updated(job).absolute">{{ updated(job).relative }}</span>
+              </td>
+              <td class="actions">
+                <button
+                  type="button"
+                  class="icon-btn"
+                  [matMenuTriggerFor]="menu"
+                  aria-label="Row actions"
+                >
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #menu="matMenu">
+                  <a mat-menu-item [routerLink]="['/jobs', job.id]" [state]="{ returnQuery: returnQuery() }">
+                    Open job
+                  </a>
+                </mat-menu>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span>
+        Page {{ page() + 1 }} of {{ totalPages() || 1 }} · {{ total() }} jobs
+      </span>
+      <select class="select compact" [value]="size()" (change)="changeSize($event)" aria-label="Page size">
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+      <div class="pager-btns">
+        <button type="button" class="ghost-btn" [disabled]="page() <= 0" (click)="changePage(-1)">‹ Prev</button>
+        <button
+          type="button"
+          class="ghost-btn"
+          [disabled]="page() + 1 >= totalPages()"
+          (click)="changePage(1)"
+        >
+          Next ›
+        </button>
+      </div>
+    </div>
+  }
+}

@@ -677,6 +677,23 @@ Goal: scheduling, customer management, product management, staff management, and
 **Acceptance Criteria:**
 - Admin manages categories; archive toggles visibility; validation surfaced.
 
+### PROD-003 · Per-category brand mode & `device_brands` CRUD `[BE]` (M) — post-launch
+**Description:** Add `brand_mode` (`CONFIGURED`/`FREE_TEXT`) to `device_categories` and a `device_brands` entity/repository/service/controller (`/device-categories/{id}/brands` — list active/all, create, edit, archive, unarchive) so an admin can give some device types a curated brand list while others stay free-text. See [API.md §10a](API.md) and [Database.md §3.2a](Database.md).
+**Dependencies:** PROD-002
+**Acceptance Criteria:**
+- `V10__device_brands.sql` adds the column + table + partial-unique-per-category index.
+- Create/edit/archive/unarchive brands; duplicate active name per category → `409`.
+- Category create/update accepts optional `brandMode` (defaults `FREE_TEXT` on create, preserved on update if omitted).
+- "Others" is never persisted as a brand row — always a client-side sentinel.
+
+### PROD-004 · Brand management UI + searchable brand picker on request form `[FE]` (M) — post-launch
+**Description:** Add a "Manage Brands" screen (per category, reachable from the category card) and replace the free-text brand field on the request-creation form with a mode-aware `_BrandSelector`: `CONFIGURED` categories show a searchable `Autocomplete` of curated brands + "Others" (free text on selection); `FREE_TEXT` categories show "Custom (Free Text)" / "Others" directly. Triggered by user request for device-type/brand flexibility; see [Bugs.md](Bugs.md) intro analysis.
+**Dependencies:** PROD-003, REQ-020
+**Acceptance Criteria:**
+- Admin can add/edit/archive/unarchive brands per category from a dedicated, discoverable screen.
+- New Request form's brand field adapts to the selected category's `brandMode` live; searchable when `CONFIGURED`.
+- Selecting "Others" (either mode) reveals a free-text input; submitted `deviceBrand` is always a plain string.
+
 ## 3D. Staff Management (Admin)
 
 ### STAFF-001 · User list & search `[BE]` (S)

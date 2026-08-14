@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP-04 · Repair Requests — Mockup (Signed off)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="mockup.css" />
+  <style>
+    .trunc-demo .primary { max-width: 140px; }
+    td.actions { position: relative; width: 48px; text-align: right; }
+    .stale-mark {
+      display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 600;
+      color: var(--color-warning); background: #FFF3E0; padding: 2px 6px; border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="review-bar">
+    <span class="tag">Signed off</span>
+    <strong>AP-04 · Repair Requests</strong>
+    <span style="opacity:.7">Spec: <a href="../pages/AP-04-repair-requests.md">AP-04-repair-requests.md</a></span>
+    <div class="controls">
+      <label>
+        State
+        <select id="stateSelect">
+          <option value="loaded">Loaded (Pending default)</option>
+          <option value="all">Loaded (All statuses)</option>
+          <option value="menu-decide">Row menu — decidable</option>
+          <option value="menu-resolved">Row menu — resolved only</option>
+          <option value="approve">Dialog — Approve</option>
+          <option value="reject">Dialog — Reject</option>
+          <option value="info">Dialog — Request info</option>
+          <option value="loading">Loading skeletons</option>
+          <option value="empty">Empty</option>
+          <option value="filtered">Filtered-empty</option>
+          <option value="error">Error</option>
+          <option value="forbidden">Forbidden (Staff)</option>
+        </select>
+      </label>
+      <a href="index.html">← All mockups</a>
+    </div>
+  </div>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><div class="mark">AT</div><span>RepairDesk</span></div>
+      <nav>
+        <div class="nav-group">
+          <div class="nav-group-label">Work</div>
+          <a class="nav-item" href="#"><span class="ico">▣</span><span class="label">Dashboard</span></a>
+          <a class="nav-item active" href="#" aria-current="page"><span class="ico">📥</span><span class="label">Repair Requests</span></a>
+          <a class="nav-item" href="#"><span class="ico">🔧</span><span class="label">Jobs</span></a>
+          <a class="nav-item" href="#"><span class="ico">📅</span><span class="label">Appointments</span></a>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="breadcrumb">Work / <strong>Repair Requests</strong></div>
+        <div class="topbar-spacer"></div>
+        <button class="bell" type="button">🔔<span class="badge">3</span></button>
+        <div class="avatar">AS</div>
+      </header>
+
+      <main class="content" id="content"></main>
+    </div>
+  </div>
+
+  <div id="dialogHost"></div>
+  <div class="toast-stack" id="toastHost"></div>
+
+  <script>
+    const rowsPending = [
+      { ref: 'RQ-1042', name: 'Anita Kumar', user: '@akumar', cat: 'Mobile Phone', brand: 'Samsung Galaxy S23', when: '2 hours ago', status: 'Pending review', chip: 'chip-warning', job: '—', photos: 3, decide: true },
+      { ref: 'RQ-1041', name: 'Gangadharan Venkateshwaran', user: '@gvenkat', cat: 'Laptop', brand: 'Dell XPS 13', when: '5 hours ago', status: 'Pending review', chip: 'chip-warning', job: '—', photos: 0, decide: true, trunc: true },
+      { ref: 'RQ-1038', name: 'Sunil Rao', user: '@srao', cat: 'Tablet', brand: '—', when: 'Yesterday', status: 'Pending review', chip: 'chip-warning', job: '—', photos: 1, decide: true },
+    ];
+
+    const rowsAll = [
+      ...rowsPending,
+      { ref: 'RQ-1035', name: 'Meera Iyer', user: '@miyer', cat: 'Mobile Phone', brand: 'Apple iPhone 14', when: '2 days ago', status: 'Needs info', chip: 'chip-secondary', job: '—', photos: 2, decide: true },
+      { ref: 'RQ-1030', name: 'Karan Shah', user: '@kshah', cat: 'Mobile Phone', brand: 'OnePlus 11', when: '3 days ago', status: 'Approved', chip: 'chip-success', job: 'In progress · Priya', photos: 1, decide: false },
+      { ref: 'RQ-1022', name: 'Neha Patel', user: '@npatel', cat: 'Camera', brand: 'Canon EOS', when: '1 week ago', status: 'Rejected', chip: 'chip-error', job: '—', photos: 0, decide: false },
+      { ref: 'RQ-1010', name: 'Amit Desai', user: '@adesai', cat: 'Laptop', brand: 'HP Pavilion', when: '12 Jul 2026', status: 'Cancelled', chip: 'chip-neutral', job: '—', photos: 0, decide: false },
+    ];
+
+    function chip(status, cls) {
+      return `<span class="chip ${cls}">${status}</span>`;
+    }
+
+    function table(rows, { menuOn, openMenu }) {
+      return `
+        <div class="table-wrap">
+          <table class="data-table trunc-demo">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Customer</th>
+                <th>Device</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th>Job</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map((r, i) => `
+                <tr>
+                  <td><a class="ref" href="#/requests/${r.ref}">${r.ref}</a></td>
+                  <td>
+                    <div class="cell-2line">
+                      <div class="primary" title="${r.name}">${r.name}</div>
+                      <div class="secondary">${r.user}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="cell-2line">
+                      <div class="primary">${r.cat}${r.photos ? ` <span title="${r.photos} photos" style="opacity:.7">📷 ${r.photos}</span>` : ''}</div>
+                      <div class="secondary">${r.brand}</div>
+                    </div>
+                  </td>
+                  <td title="6 Aug 2026, 10:15 am">${r.when}</td>
+                  <td>${chip(r.status, r.chip)}${r.stale ? '<span class="stale-mark">Updated elsewhere</span>' : ''}</td>
+                  <td>${r.job === '—' ? '—' : `<a href="#/jobs/x">${r.job}</a>`}</td>
+                  <td class="actions">
+                    <button class="btn btn-icon" type="button" aria-label="Actions for ${r.ref}">⋮</button>
+                    ${menuOn === i ? rowMenu(r.decide) : ''}
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+          <div class="table-footer">
+            <span>Page 1 of 3 · 47 requests</span>
+            <div class="pager">
+              <select style="height:32px;border:1px solid var(--color-divider);border-radius:4px;padding:0 8px">
+                <option>20</option><option>50</option><option>100</option>
+              </select>
+              <button class="btn btn-ghost" disabled>‹ Prev</button>
+              <button class="btn btn-ghost">Next ›</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function rowMenu(decide) {
+      if (!decide) {
+        return `<div class="row-menu"><button type="button">Open detail</button></div>`;
+      }
+      return `<div class="row-menu">
+        <button type="button" onclick="showDialog('approve')">Approve</button>
+        <button type="button" onclick="showDialog('info')">Request info</button>
+        <button type="button" class="danger" onclick="showDialog('reject')">Reject</button>
+        <button type="button">Open detail</button>
+      </div>`;
+    }
+
+    function filterBar(active = 'Pending') {
+      const labels = ['All', 'Pending', 'Needs info', 'Approved', 'Rejected', 'Cancelled'];
+      return `
+        <div class="filter-bar">
+          <div class="seg">
+            ${labels.map(l => `<button class="${l === active ? 'active' : ''}" type="button">${l}</button>`).join('')}
+          </div>
+          <div class="search-field">
+            <span class="prefix">🔍</span>
+            <input type="search" placeholder="Search reference, customer, mobile…" />
+          </div>
+          <select style="height:40px;border:1px solid var(--color-divider);border-radius:8px;padding:0 12px">
+            <option>All categories</option>
+            <option>Mobile Phone</option>
+            <option>Laptop</option>
+          </select>
+          <select style="height:40px;border:1px solid var(--color-divider);border-radius:8px;padding:0 12px">
+            <option>Submitted (newest)</option>
+            <option>Submitted (oldest)</option>
+            <option>Reference</option>
+          </select>
+        </div>
+        <div class="filter-chips">
+          <span class="filter-chip">Status: ${active} <button type="button">×</button></span>
+          <button class="btn btn-ghost" style="height:28px">Clear all</button>
+        </div>`;
+    }
+
+    function header(summary = '47 requests · 5 awaiting your decision') {
+      return `
+        <div class="page-header">
+          <div>
+            <h1 class="display" tabindex="-1">Repair Requests</h1>
+            <p class="body-small" style="margin:6px 0 0">${summary}</p>
+          </div>
+          <button class="btn btn-ghost" type="button">⟳ Refresh</button>
+        </div>`;
+    }
+
+    function skeletons() {
+      return `<div class="table-wrap">${[...Array(8)].map(() =>
+        `<div class="skeleton-block" style="height:48px;margin:0;border-radius:0;border-bottom:1px solid #eee"></div>`
+      ).join('')}</div>`;
+    }
+
+    window.showDialog = function (kind) {
+      document.getElementById('stateSelect').value = kind;
+      apply();
+    };
+
+    function dialog(kind) {
+      if (kind === 'approve') {
+        return `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-labelledby="d-title">
+          <h2 id="d-title">Approve RQ-1042?</h2>
+          <div class="body">A job will be created and Anita Kumar will be notified.</div>
+          <div class="field"><label>Priority</label>
+            <select><option>Normal</option><option>Low</option><option>High</option><option>Urgent</option></select>
+          </div>
+          <div class="field"><label>Internal note</label>
+            <textarea rows="3" placeholder="Optional note for staff…"></textarea>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="document.getElementById('stateSelect').value='loaded'; apply()">Cancel</button>
+            <button class="btn btn-primary">Approve &amp; create job</button>
+          </div>
+        </div></div>`;
+      }
+      if (kind === 'reject') {
+        return `<div class="dialog-backdrop"><div class="dialog wide" role="dialog">
+          <h2>Reject RQ-1042?</h2>
+          <div class="body">The customer will see your message. This cannot be undone.</div>
+          <div class="field"><label>Reason code <span class="req">*</span></label>
+            <select><option value="">Select a reason…</option><option>Unable to service</option><option>Out of warranty / declined</option><option>Duplicate request</option></select>
+            <div class="helper">Canonical list TBD (APB-006).</div>
+          </div>
+          <div class="field"><label>Message to customer <span class="req">*</span></label>
+            <textarea rows="3"></textarea>
+          </div>
+          <div class="field"><label>Internal reason</label>
+            <textarea rows="2" placeholder="Optional — not shown to customer"></textarea>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="document.getElementById('stateSelect').value='loaded'; apply()">Cancel</button>
+            <button class="btn btn-destructive">Reject</button>
+          </div>
+        </div></div>`;
+      }
+      if (kind === 'info') {
+        return `<div class="dialog-backdrop"><div class="dialog" role="dialog">
+          <h2>Request more information</h2>
+          <div class="body">RQ-1042 will move to Needs info. Anita Kumar will be notified.</div>
+          <div class="field"><label>Message to customer <span class="req">*</span></label>
+            <textarea rows="4" placeholder="What do you need from the customer?"></textarea>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="document.getElementById('stateSelect').value='loaded'; apply()">Cancel</button>
+            <button class="btn btn-primary">Send</button>
+          </div>
+        </div></div>`;
+      }
+      return '';
+    }
+
+    function apply() {
+      const state = document.getElementById('stateSelect').value;
+      const content = document.getElementById('content');
+      const dialogHost = document.getElementById('dialogHost');
+      dialogHost.innerHTML = '';
+
+      if (state === 'forbidden') {
+        content.innerHTML = `<div class="state-panel">
+          <div class="icon">🔒</div>
+          <h2>You don't have access to this page</h2>
+          <p>Repair request review is limited to administrators. Your role: Staff.</p>
+          <a class="btn btn-primary" href="#/dashboard">Back to dashboard</a>
+        </div>`;
+        return;
+      }
+
+      if (state === 'empty') {
+        content.innerHTML = header('') + filterBar('All') + `
+          <div class="state-panel">
+            <div class="icon">📥</div>
+            <h2>No repair requests yet</h2>
+            <p>Customer submissions will appear here for review.</p>
+          </div>`;
+        return;
+      }
+
+      if (state === 'filtered') {
+        content.innerHTML = header('0 requests') + `
+          <div class="filter-bar">
+            <div class="seg"><button>All</button><button class="active">Pending</button></div>
+            <div class="search-field"><span class="prefix">🔍</span><input value="came" /></div>
+          </div>
+          <div class="filter-chips">
+            <span class="filter-chip">Status: Pending <button>×</button></span>
+            <span class="filter-chip">Search: came <button>×</button></span>
+            <button class="btn btn-ghost" style="height:28px">Clear all</button>
+          </div>
+          <div class="state-panel">
+            <div class="icon">🔍</div>
+            <h2>No requests match your filters</h2>
+            <p>Nothing matched “came” in Pending.</p>
+            <button class="btn btn-secondary">Clear filters</button>
+          </div>`;
+        return;
+      }
+
+      if (state === 'error') {
+        content.innerHTML = header('') + filterBar() + `
+          <div class="state-panel">
+            <div class="icon">⚠</div>
+            <h2>Couldn't load requests</h2>
+            <p>Something went wrong. Please try again.</p>
+            <button class="btn btn-primary">Retry</button>
+            <div class="cid">correlationId: 7f3a2c1e-9b04-4d11-a8e0-12ab34cd56ef</div>
+          </div>`;
+        return;
+      }
+
+      if (state === 'loading') {
+        content.innerHTML = header('') + filterBar() + skeletons();
+        return;
+      }
+
+      let menuOn = null;
+      let rows = rowsPending;
+      let filter = 'Pending';
+      let summary = '12 requests · 5 awaiting your decision';
+
+      if (state === 'all') {
+        rows = rowsAll;
+        filter = 'All';
+        summary = '47 requests · 5 awaiting your decision';
+      }
+      if (state === 'menu-decide') menuOn = 0;
+      if (state === 'menu-resolved') {
+        rows = rowsAll;
+        filter = 'All';
+        menuOn = 4; // approved row
+      }
+      if (['approve', 'reject', 'info'].includes(state)) {
+        menuOn = 0;
+        dialogHost.innerHTML = dialog(state);
+      }
+
+      content.innerHTML = header(summary) + filterBar(filter) + table(rows, { menuOn });
+    }
+
+    document.getElementById('stateSelect').addEventListener('change', apply);
+    apply();
+  </script>
+</body>
+</html>

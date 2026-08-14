@@ -1,7 +1,8 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/error/app_exception.dart';
@@ -63,8 +64,12 @@ class AttachmentsRepository {
 
   Future<List<AttachmentItem>> listForRequest(String requestId) async {
     try {
-      final res = await _dio.get<List<dynamic>>('/requests/$requestId/attachments');
-      return res.data!.cast<Map<String, dynamic>>().map(AttachmentItem.fromJson).toList();
+      final res =
+          await _dio.get<List<dynamic>>('/requests/$requestId/attachments');
+      return res.data!
+          .cast<Map<String, dynamic>>()
+          .map(AttachmentItem.fromJson)
+          .toList();
     } on DioException catch (e) {
       throw e.error is AppException
           ? e.error as AppException
@@ -75,7 +80,10 @@ class AttachmentsRepository {
   Future<List<AttachmentItem>> listForJob(String jobId) async {
     try {
       final res = await _dio.get<List<dynamic>>('/jobs/$jobId/attachments');
-      return res.data!.cast<Map<String, dynamic>>().map(AttachmentItem.fromJson).toList();
+      return res.data!
+          .cast<Map<String, dynamic>>()
+          .map(AttachmentItem.fromJson)
+          .toList();
     } on DioException catch (e) {
       throw e.error is AppException
           ? e.error as AppException
@@ -83,13 +91,10 @@ class AttachmentsRepository {
     }
   }
 
-  Future<AttachmentItem> uploadToRequest(String requestId, File file) async {
+  Future<AttachmentItem> uploadToRequest(String requestId, XFile file) async {
     try {
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          file.path,
-          filename: file.path.split('/').last,
-        ),
+        'file': await _multipartImage(file),
       });
       final res = await _dio.post<Map<String, dynamic>>(
         '/requests/$requestId/attachments',
@@ -103,13 +108,10 @@ class AttachmentsRepository {
     }
   }
 
-  Future<AttachmentItem> uploadToJob(String jobId, File file) async {
+  Future<AttachmentItem> uploadToJob(String jobId, XFile file) async {
     try {
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          file.path,
-          filename: file.path.split('/').last,
-        ),
+        'file': await _multipartImage(file),
       });
       final res = await _dio.post<Map<String, dynamic>>(
         '/jobs/$jobId/attachments',
@@ -123,6 +125,93 @@ class AttachmentsRepository {
     }
   }
 
+  /// Camera cache paths can vanish before Dio reads them; send bytes instead.
+  /// MIME is taken from magic bytes so a `.heic` name on JPEG data is accepted.
+  Future<MultipartFile> _multipartImage(XFile file) async {
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
+      throw const AppException(
+        errorCode: 'VALIDATION_ERROR',
+        message: 'The photo could not be read. Please try again.',
+      );
+    }
+    final mediaType = _mediaTypeForBytes(bytes, file.name, file.path);
+    final rawName = (file.name.isNotEmpty ? file.name : file.path)
+        .split(RegExp(r'[\\/]'))
+        .last;
+    final filename = _ensureExtension(rawName, mediaType);
+    return MultipartFile.fromBytes(
+      bytes,
+      filename: filename,
+      contentType: mediaType,
+    );
+  }
+
+  static MediaType _mediaTypeForBytes(
+    List<int> bytes,
+    String name,
+    String path,
+  ) {
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF) {
+      return MediaType('image', 'jpeg');
+    }
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
+      return MediaType('image', 'png');
+    }
+    if (bytes.length >= 3 &&
+        bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46) {
+      return MediaType('image', 'gif');
+    }
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return MediaType('image', 'webp');
+    }
+    return _mediaTypeForPath(name.isNotEmpty ? name : path);
+  }
+
+  static MediaType _mediaTypeForPath(String name) {
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.png')) return MediaType('image', 'png');
+    if (lower.endsWith('.gif')) return MediaType('image', 'gif');
+    if (lower.endsWith('.webp')) return MediaType('image', 'webp');
+    if (lower.endsWith('.heic')) return MediaType('image', 'heic');
+    if (lower.endsWith('.heif')) return MediaType('image', 'heif');
+    // image_picker with imageQuality re-encodes as JPEG by default.
+    return MediaType('image', 'jpeg');
+  }
+
+  static String _ensureExtension(String name, MediaType type) {
+    final lower = name.toLowerCase();
+    final hasExt = lower.contains('.') &&
+        !lower.endsWith('.') &&
+        lower.lastIndexOf('.') > 0;
+    if (hasExt) return name;
+    final ext = switch (type.subtype) {
+      'png' => 'png',
+      'gif' => 'gif',
+      'webp' => 'webp',
+      'heic' || 'heif' => 'heic',
+      _ => 'jpg',
+    };
+    return '$name.$ext';
+  }
+
   Future<void> delete(String attachmentId) async {
     try {
       await _dio.delete<void>('/attachments/$attachmentId');
@@ -133,18 +222,68 @@ class AttachmentsRepository {
     }
   }
 
-  /// Downloads the raw image bytes for a given storageKey (requires auth).
-  Future<Uint8List> fetchImageBytes(String storageKey) async {
+  /// Downloads image bytes by attachment id (preferred — no file-extension
+  /// routing issues). Falls back to storage-key path for older APIs.
+  Future<Uint8List> fetchImageBytes(AttachmentItem attachment) async {
     try {
-      final res = await _dio.get<List<int>>(
-        '/attachments/$storageKey',
-        options: Options(responseType: ResponseType.bytes),
+      return await _downloadBytes('/attachments/by-id/${attachment.id}');
+    } on AppException catch (e) {
+      if (e.isNotFound || e.errorCode == 'UNKNOWN') {
+        // Older backend without by-id route — try legacy key path.
+        return _downloadBytes(
+            '/attachments/${Uri.encodeComponent(attachment.storageKey)}');
+      }
+      rethrow;
+    }
+  }
+
+  Future<Uint8List> _downloadBytes(String path) async {
+    try {
+      final res = await _dio.get<dynamic>(
+        path,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {
+            Headers.acceptHeader: '*/*',
+            Headers.contentTypeHeader: null,
+          },
+        ),
       );
-      return Uint8List.fromList(res.data!);
+      return _asUint8List(res.data);
     } on DioException catch (e) {
       throw e.error is AppException
           ? e.error as AppException
           : AppException.fromDioError(e);
+    } catch (e) {
+      throw AppException(
+        errorCode: 'UNKNOWN',
+        message: 'Could not read image data ($e)',
+      );
     }
+  }
+
+  static Uint8List _asUint8List(dynamic data) {
+    if (data == null) {
+      throw const AppException(
+          errorCode: 'NOT_FOUND', message: 'Image data was empty.');
+    }
+    if (data is Uint8List) {
+      if (data.isEmpty) {
+        throw const AppException(
+            errorCode: 'NOT_FOUND', message: 'Image data was empty.');
+      }
+      return data;
+    }
+    if (data is List<int>) {
+      if (data.isEmpty) {
+        throw const AppException(
+            errorCode: 'NOT_FOUND', message: 'Image data was empty.');
+      }
+      return Uint8List.fromList(data);
+    }
+    throw AppException(
+      errorCode: 'UNKNOWN',
+      message: 'Unexpected image payload type: ${data.runtimeType}',
+    );
   }
 }

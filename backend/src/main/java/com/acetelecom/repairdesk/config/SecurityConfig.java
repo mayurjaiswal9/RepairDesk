@@ -1,5 +1,6 @@
 package com.acetelecom.repairdesk.config;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.context.annotation.Bean;
@@ -68,7 +69,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(appProperties.getCors().getAllowedOrigins());
+        // application.yml may bind a comma-separated env default as one list element;
+        // split so each origin matches browser Origin headers independently.
+        List<String> origins = appProperties.getCors().getAllowedOrigins().stream()
+                .flatMap(entry -> Arrays.stream(entry.split(",")))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("X-Correlation-Id"));

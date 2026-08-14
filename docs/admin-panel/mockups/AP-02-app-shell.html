@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP-02 · App Shell — Mockup (Signed off)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="mockup.css" />
+</head>
+<body>
+  <div class="review-bar">
+    <span class="tag">Signed off</span>
+    <strong>AP-02 · App Shell</strong>
+    <span style="opacity:.7">Spec: <a href="../pages/AP-02-app-shell.md">AP-02-app-shell.md</a></span>
+    <div class="controls">
+      <label>
+        Role
+        <select id="roleSelect">
+          <option value="admin">ADMIN</option>
+          <option value="staff">STAFF</option>
+          <option value="tech">TECHNICIAN</option>
+        </select>
+      </label>
+      <label>
+        View
+        <select id="viewSelect">
+          <option value="page">Content page</option>
+          <option value="menu">Avatar menu open</option>
+          <option value="404">404 Not found</option>
+          <option value="403">403 Forbidden</option>
+          <option value="badge99">Bell badge 99+</option>
+        </select>
+      </label>
+      <button type="button" id="railToggle">Toggle rail</button>
+      <a href="index.html">← All mockups</a>
+    </div>
+  </div>
+
+  <a href="#content" class="body-small" style="position:absolute;left:8px;top:48px;background:#fff;padding:4px 8px;z-index:200;clip:rect(0 0 0 0)">Skip to content</a>
+
+  <div class="shell" id="shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="sidebar-brand" href="#/dashboard">
+        <div class="mark">AT</div>
+        <span>ACE Telecom<br /><span style="font-weight:500;font-size:12px;opacity:.75">RepairDesk</span></span>
+      </a>
+      <nav id="nav"></nav>
+      <button class="collapse-btn" type="button" id="collapseBtn" aria-expanded="true">
+        ⟨ <span class="collapse-label">Collapse</span>
+      </button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="breadcrumb" id="breadcrumb">Work / <strong>Dashboard</strong></div>
+        <div class="topbar-spacer"></div>
+        <button class="bell" type="button" id="bell" aria-label="Notifications, 3 unread">
+          🔔<span class="badge" id="badge">3</span>
+        </button>
+        <div class="avatar-wrap">
+          <button class="avatar" type="button" id="avatarBtn" aria-haspopup="menu" aria-expanded="false" title="Account menu">AS</button>
+          <div class="menu" id="avatarMenu" hidden role="menu">
+            <div class="who">
+              <div class="name" id="menuName">Anita Sharma</div>
+              <div class="user" id="menuUser">@asharma</div>
+              <div style="margin-top:6px"><span class="role-badge role-admin" id="menuRole">ADMIN</span></div>
+            </div>
+            <a href="#/account" role="menuitem">My account</a>
+            <button class="menu-item danger" type="button" role="menuitem">Sign out</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="content" id="content">
+        <div id="mainView"></div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const navDefs = [
+      { group: 'Work', items: [
+        { id: 'dash', label: 'Dashboard', ico: '▣', roles: ['admin','staff'] },
+        { id: 'req', label: 'Repair Requests', ico: '📥', roles: ['admin'] },
+        { id: 'jobs', label: 'Jobs', ico: '🔧', roles: ['admin','staff','tech'] },
+        { id: 'appt', label: 'Appointments', ico: '📅', roles: ['admin','staff','tech'] },
+      ]},
+      { group: 'People', items: [
+        { id: 'cust', label: 'Customers', ico: '👤', roles: ['admin','staff'] },
+        { id: 'staff', label: 'Staff', ico: '👥', roles: ['admin'] },
+      ]},
+      { group: 'Catalog', items: [
+        { id: 'cat', label: 'Device Categories', ico: '📱', roles: ['admin'] },
+      ]},
+      { group: 'Configuration', items: [
+        { id: 'set', label: 'Business Settings', ico: '⚙', roles: ['admin'] },
+      ]},
+    ];
+
+    const profiles = {
+      admin: { name: 'Anita Sharma', user: '@asharma', initials: 'AS', role: 'ADMIN', roleClass: 'role-admin', landing: 'dash' },
+      staff: { name: 'Ravi Mehta', user: '@rmehta', initials: 'RM', role: 'STAFF', roleClass: 'role-staff', landing: 'dash' },
+      tech:  { name: 'Priya Nair', user: '@pnair', initials: 'PN', role: 'TECHNICIAN', roleClass: 'role-tech', landing: 'jobs' },
+    };
+
+    function renderNav(role) {
+      const active = profiles[role].landing;
+      let html = '';
+      for (const g of navDefs) {
+        const items = g.items.filter(i => i.roles.includes(role));
+        if (!items.length) continue;
+        html += `<div class="nav-group"><div class="nav-group-label">${g.group}</div>`;
+        for (const i of items) {
+          html += `<a class="nav-item ${i.id === active ? 'active' : ''}" href="#/${i.id}" ${i.id === active ? 'aria-current="page"' : ''} title="${i.label}">
+            <span class="ico">${i.ico}</span><span class="label">${i.label}</span></a>`;
+        }
+        html += `</div>`;
+      }
+      document.getElementById('nav').innerHTML = html;
+    }
+
+    function renderMain(view, role) {
+      const p = profiles[role];
+      const el = document.getElementById('mainView');
+      document.getElementById('breadcrumb').innerHTML =
+        view === '404' || view === '403' ? '<strong>Error</strong>' :
+        role === 'tech' ? 'Work / <strong>Jobs</strong>' : 'Work / <strong>Dashboard</strong>';
+
+      if (view === '404') {
+        el.innerHTML = `<div class="state-panel">
+          <div class="icon">🔎</div>
+          <h2>Page not found</h2>
+          <p>That URL doesn't match any page in the panel.</p>
+          <a class="btn btn-primary" href="#/dashboard">Back to dashboard</a>
+        </div>`;
+        return;
+      }
+      if (view === '403') {
+        el.innerHTML = `<div class="state-panel">
+          <div class="icon">🔒</div>
+          <h2>You don't have access to this page</h2>
+          <p>Repair request review is limited to administrators. Your role: ${p.role}.</p>
+          <a class="btn btn-primary" href="#/dashboard">Back to dashboard</a>
+        </div>`;
+        return;
+      }
+
+      el.innerHTML = `
+        <h1 class="display" tabindex="-1">${role === 'tech' ? 'Jobs' : 'Dashboard'}</h1>
+        <p class="body-medium" style="color:var(--color-text-secondary);margin:8px 0 24px">
+          Shell chrome preview for <strong>${p.role}</strong>. Sidebar items match role visibility from README §4 / AP-02.
+        </p>
+        <div class="demo-box">
+          <div class="kv">
+            <div class="k">Visible nav groups</div>
+            <div class="v" id="visibleList"></div>
+            <div class="k">Landing</div>
+            <div class="v">${role === 'tech' ? '/jobs' : '/dashboard'}</div>
+            <div class="k">Bell</div>
+            <div class="v">Polls unread-count every 30s · badge hidden at 0 · caps at 99+</div>
+          </div>
+        </div>`;
+      const names = [];
+      navDefs.forEach(g => g.items.filter(i => i.roles.includes(role)).forEach(i => names.push(i.label)));
+      document.getElementById('visibleList').textContent = names.join(' · ');
+    }
+
+    function apply() {
+      const role = document.getElementById('roleSelect').value;
+      const view = document.getElementById('viewSelect').value;
+      const p = profiles[role];
+
+      renderNav(role);
+      document.getElementById('avatarBtn').textContent = p.initials;
+      document.getElementById('menuName').textContent = p.name;
+      document.getElementById('menuUser').textContent = p.user;
+      const roleEl = document.getElementById('menuRole');
+      roleEl.textContent = p.role;
+      roleEl.className = 'role-badge ' + p.roleClass;
+
+      const badge = document.getElementById('badge');
+      if (view === 'badge99') {
+        badge.hidden = false;
+        badge.textContent = '99+';
+        document.getElementById('bell').setAttribute('aria-label', 'Notifications, 99 or more unread');
+      } else {
+        badge.hidden = false;
+        badge.textContent = '3';
+        document.getElementById('bell').setAttribute('aria-label', 'Notifications, 3 unread');
+      }
+
+      const menu = document.getElementById('avatarMenu');
+      const showMenu = view === 'menu';
+      menu.hidden = !showMenu;
+      document.getElementById('avatarBtn').setAttribute('aria-expanded', showMenu ? 'true' : 'false');
+
+      renderMain(view === 'menu' || view === 'badge99' ? 'page' : view, role);
+    }
+
+    document.getElementById('roleSelect').addEventListener('change', apply);
+    document.getElementById('viewSelect').addEventListener('change', apply);
+    document.getElementById('railToggle').addEventListener('click', () => {
+      document.getElementById('shell').classList.toggle('is-rail');
+      const rail = document.getElementById('shell').classList.contains('is-rail');
+      document.getElementById('collapseBtn').setAttribute('aria-expanded', rail ? 'false' : 'true');
+    });
+    document.getElementById('collapseBtn').addEventListener('click', () => {
+      document.getElementById('railToggle').click();
+    });
+    document.getElementById('avatarBtn').addEventListener('click', () => {
+      document.getElementById('viewSelect').value =
+        document.getElementById('viewSelect').value === 'menu' ? 'page' : 'menu';
+      apply();
+    });
+    apply();
+  </script>
+</body>
+</html>

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 /// Maps all error sources (API errors, network errors) to a single type
@@ -24,7 +26,8 @@ class AppException implements Exception {
   String get userMessage => switch (errorCode) {
     'UNAUTHORIZED' => 'Session expired. Please sign in again.',
     'FORBIDDEN' => 'You don\'t have permission to do that.',
-    'NOT_FOUND' => 'Item not found.',
+    // Prefer the server message when it is specific (e.g. missing photo file).
+    'NOT_FOUND' => message.trim().isEmpty ? 'Item not found.' : message,
     'CONFLICT' => message,
     'VALIDATION_ERROR' => fieldErrors.isNotEmpty
         ? fieldErrors.map((e) => e.message).join(', ')
@@ -37,11 +40,12 @@ class AppException implements Exception {
   /// Build from a Dio error, parsing the standard API error body when present.
   factory AppException.fromDioError(DioException error) {
     final data = error.response?.data;
-    if (data is Map<String, dynamic>) {
-      final fieldErrorsRaw = data['fieldErrors'] as List<dynamic>? ?? [];
+    final map = _asJsonMap(data);
+    if (map != null) {
+      final fieldErrorsRaw = map['fieldErrors'] as List<dynamic>? ?? [];
       return AppException(
-        errorCode: data['errorCode'] as String? ?? 'UNKNOWN',
-        message:   data['message']   as String? ?? 'An unexpected error occurred',
+        errorCode: map['errorCode'] as String? ?? 'UNKNOWN',
+        message:   map['message']   as String? ?? 'An unexpected error occurred',
         fieldErrors: fieldErrorsRaw
             .whereType<Map<String, dynamic>>()
             .map((e) => FieldError(
@@ -72,6 +76,29 @@ class AppException implements Exception {
 
     return const AppException(
         errorCode: 'UNKNOWN', message: 'An unexpected error occurred.');
+  }
+
+  /// Binary downloads use [ResponseType.bytes], so error bodies arrive as
+  /// `List<int>` rather than a decoded JSON map — decode them when possible.
+  static Map<String, dynamic>? _asJsonMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    if (data is List<int>) {
+      try {
+        final text = String.fromCharCodes(data);
+        final decoded = jsonDecode(text);
+        if (decoded is Map<String, dynamic>) return decoded;
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    if (data is String) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map<String, dynamic>) return decoded;
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return null;
   }
 
   @override

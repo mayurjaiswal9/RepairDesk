@@ -170,25 +170,32 @@ class _WorkingHourRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppTheme.spaceS),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 100,
+            width: 130,
             child: Text(wh.dayName,
-                style: const TextStyle(fontWeight: FontWeight.w500)),
+                style: const TextStyle(
+                    color: AppTheme.textSecondary, fontSize: 13)),
           ),
-          if (wh.isClosed)
-            const Chip(
-              label: Text('Closed',
-                  style: TextStyle(fontSize: 12)),
-              backgroundColor: AppTheme.divider,
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            )
-          else
-            Text(
-              '${_fmt(wh.openTime)} – ${_fmt(wh.closeTime)}',
-              style: const TextStyle(color: AppTheme.textSecondary),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: wh.isClosed
+                  ? const Chip(
+                      label: Text('Closed',
+                          style: TextStyle(fontSize: 12)),
+                      backgroundColor: AppTheme.divider,
+                      padding: EdgeInsets.symmetric(horizontal: 4),
+                      materialTapTargetSize:
+                          MaterialTapTargetSize.shrinkWrap,
+                    )
+                  : Text(
+                      '${_fmt(wh.openTime)} – ${_fmt(wh.closeTime)}',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
             ),
+          ),
         ],
       ),
     );

@@ -4,6 +4,8 @@ import com.acetelecom.repairdesk.common.domain.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,4 +26,8 @@ public class DeviceCategory extends BaseEntity {
 
     @Column(nullable = false)
     private boolean archived = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "brand_mode", nullable = false, length = 20)
+    private BrandMode brandMode = BrandMode.FREE_TEXT;
 }

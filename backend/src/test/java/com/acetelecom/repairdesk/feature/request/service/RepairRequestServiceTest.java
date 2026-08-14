@@ -21,6 +21,7 @@ import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.devicecategory.repository.DeviceCategoryRepository;
+import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
@@ -38,6 +39,7 @@ class RepairRequestServiceTest {
     @Mock private RepairRequestRepository requestRepo;
     @Mock private DeviceCategoryRepository categoryRepo;
     @Mock private UserRepository userRepo;
+    @Mock private JobRepository jobRepo;
     @Mock private JdbcTemplate jdbc;
     @Mock private AuditService auditService;
 
@@ -48,7 +50,7 @@ class RepairRequestServiceTest {
     @BeforeEach
     void setUp() {
         service = new RepairRequestService(requestRepo, categoryRepo,
-                userRepo, jdbc, auditService);
+                userRepo, jobRepo, jdbc, auditService);
 
         UUID customerId = UUID.randomUUID();
         customerActor = new AuthenticatedUser(customerId, "cust1", "CUSTOMER");

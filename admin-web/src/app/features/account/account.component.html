@@ -1,0 +1,111 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">My Account</h1>
+    <p>You don't have access to this page.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else if (state() === 'error') {
+  <div class="state-panel error" role="alert">
+    <h1 class="display" tabindex="-1">Couldn't load account</h1>
+    <p>{{ error()?.message }}</p>
+    @if (error()?.correlationId) {
+      <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+    }
+    <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+  </div>
+} @else {
+  <div class="page-header">
+    <h1 class="display" tabindex="-1">My Account</h1>
+  </div>
+
+  @if (state() === 'loading') {
+    <div class="shell" aria-busy="true">
+      <div class="skel skel-card"></div>
+      <div class="skel skel-section"></div>
+      <div class="skel skel-section"></div>
+      <div class="skel skel-section"></div>
+    </div>
+  } @else if (profile()) {
+    @if (profile(); as p) {
+      @if (mustChange()) {
+        <div class="banner" role="status">
+          Change your password. This account is still using its initial password — set your own before
+          continuing.
+        </div>
+      }
+
+      <div class="shell">
+        <section class="identity">
+          <div class="avatar" aria-hidden="true">{{ initials() }}</div>
+          <div>
+            <h2 class="name">{{ displayName() }}</h2>
+            <div class="meta-row">
+              <span class="handle">{{ '@' + p.username }}</span>
+              <span class="role-badge {{ roleBadgeClass(p.role) }}">{{ roleLabel(p.role) }}</span>
+              <span class="chip-status chip-success">Active</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Profile</h2>
+          <dl class="kv">
+            <div class="kv-row">
+              <dt>Username</dt>
+              <dd>
+                <span>{{ p.username }}</span>
+                <p class="helper">
+                  Usernames can't be changed. Ask an administrator if you need a different one.
+                </p>
+              </dd>
+            </div>
+            <div class="kv-row">
+              <dt>Mobile</dt>
+              <dd class="with-action">
+                <span>{{ p.mobile || '—' }}</span>
+                <button type="button" class="text-btn" (click)="openChangeMobile()">Change</button>
+              </dd>
+            </div>
+            <div class="kv-row">
+              <dt>Display name</dt>
+              <dd>
+                <span>{{ p.name?.trim() || '—' }}</span>
+                <p class="helper">
+                  Ask an administrator if you need your name corrected.
+                </p>
+              </dd>
+            </div>
+            <div class="kv-row">
+              <dt>Role</dt>
+              <dd>
+                <span>{{ roleLabel(p.role) }}</span>
+                <p class="helper">Roles are assigned by an administrator.</p>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2>Security</h2>
+          <dl class="kv">
+            <div class="kv-row">
+              <dt>Password</dt>
+              <dd class="with-action">
+                <span>Last changed —</span>
+                <button type="button" class="text-btn" (click)="openChangePassword()">Change</button>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2>Session</h2>
+          <div class="session-row">
+            <span>Signed in on this browser.</span>
+            <button type="button" class="sign-out" (click)="signOut()">Sign out</button>
+          </div>
+        </section>
+      </div>
+    }
+  }
+}

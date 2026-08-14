@@ -292,7 +292,7 @@ com.acetelecom.repairdesk
     request/      (controller, service, repository, domain)   # repair requests + review
     job/          (controller, service, repository, domain)
     appointment/  (controller, service, repository, domain)   # child of job
-    devicecategory/ (controller, service, repository, domain) # product mgmt (categories)
+    devicecategory/ (controller, service, repository, domain) # product mgmt (categories + curated brands, PROD-004)
     settings/     (controller, service, repository, domain)   # business settings
     notification/ (controller, service, repository, domain)   # inbox + counters
     attachment/   (controller, service, repository, domain)   # upload/stream metadata
@@ -345,7 +345,8 @@ Major business entities, their responsibilities, and key relationships. (No sche
 | **RepairRequest** | Customer intake record and its review lifecycle (`Pending Review → Information Required → Approved/Rejected/Cancelled`). Holds device/issue/appointment-preference snapshot + priority. | Belongs to a User (owner). References a DeviceCategory. **1:1 → Job on approval.** Owns request Attachments (≤5). |
 | **Job** | Active repair lifecycle (`Created → Assigned → Scheduled → In Progress ⇄ Awaiting Parts → Completed`, plus `Cancelled`). Operational source of truth post-approval. | **1:1 with approved RepairRequest**; **Job Number = Request Reference**. Optional assigned technician (one). Owns job Attachments (≤10). Has Appointments. |
 | **Appointment** | Date/time + technician booking for a job; reschedule history. | **Child of Job**; at most one *active* appointment per job; reschedule creates a new record and cancels the prior (gap-analysis ENTY-03). Mirrors job status. |
-| **DeviceCategory** | Catalog of repairable device categories driving the request form. | Referenced by RepairRequest/Job. **Archivable (soft delete)**; archived categories hidden from new requests but retained on existing records. Admin-managed. |
+| **DeviceCategory** | Catalog of repairable device categories driving the request form. Carries a `brandMode` (`CONFIGURED`/`FREE_TEXT`, PROD-004 post-launch) controlling whether the request form offers a curated brand list. | Referenced by RepairRequest/Job. **Archivable (soft delete)**; archived categories hidden from new requests but retained on existing records. Admin-managed. |
+| **DeviceBrand** *(PROD-004, post-launch)* | Curated brand belonging to one DeviceCategory (e.g., "Samsung" under "Mobile Phone"), used only when the category's `brandMode = CONFIGURED`. | Belongs to a DeviceCategory. **Archivable (soft delete)**, active-name-unique per category. Not referenced by RepairRequest/Job directly — `deviceBrand` there stays a free-text snapshot; "Others" is a UI sentinel, never a row here. Admin-managed. |
 | **Notification** | Persisted customer-facing in-app notification (status changes, appointments). | Belongs to a recipient User; references the related request/job. Customer inbox = last 30 (gap-analysis GAP-02). |
 | **AuditEvent** | Append-only record of who did what, when (status changes, assignments, decisions, account changes, etc.). | **Polymorphic** (entity type + id) + actor reference + actor snapshot. Admin sees full log; staff see per-record history. |
 | **Attachment** | Metadata for an uploaded image (type, size, owner ref, uploader, storage key). | Belongs polymorphically to a RepairRequest **or** a Job. Binary lives on the file system; access is role/ownership-checked. |
@@ -360,6 +361,7 @@ erDiagram
     REPAIR_REQUEST ||--|| JOB : "1:1 on approval"
     JOB ||--o{ APPOINTMENT : "has (1 active, history)"
     DEVICE_CATEGORY ||--o{ REPAIR_REQUEST : "categorizes"
+    DEVICE_CATEGORY ||--o{ DEVICE_BRAND : "curated brands (if CONFIGURED)"
     USER ||--o{ NOTIFICATION : "receives"
     REPAIR_REQUEST ||--o{ ATTACHMENT : "request images (<=5)"
     JOB ||--o{ ATTACHMENT : "job images (<=10)"
@@ -381,6 +383,7 @@ erDiagram
 - `RepairRequest 1—1 Job` (created on approval; shared reference).
 - `Job 1—* Appointment` (one active at a time; history retained).
 - `DeviceCategory 1—* RepairRequest`.
+- `DeviceCategory 1—* DeviceBrand` (curated list, consulted only when `brandMode = CONFIGURED`; PROD-004 post-launch).
 - `User 1—* Notification` (recipient).
 - `Attachment` belongs to a RepairRequest **or** a Job (polymorphic owner via `owner_type` + `owner_id`, or two nullable FKs — finalized in `Database.md`; polymorphic recommended for one upload pipeline).
 - `AuditEvent` polymorphic to any entity.
@@ -389,6 +392,7 @@ erDiagram
 ## Soft-delete strategy
 The product needs *logical* removal far more than physical deletion. Default to **soft delete** to protect referential integrity and audit attributability:
 - **DeviceCategory:** `archived` flag (spec mandate). Hidden from new requests; retained on existing records.
+- **DeviceBrand** *(PROD-004)*: same `archived` pattern, scoped per category. Hidden from the request form's picker; existing requests keep their free-text `deviceBrand` snapshot regardless.
 - **User:** "delete" is implemented as a **logical delete** (status = `DELETED`) plus immediate access revocation (status check rejects the token) and optional PII scrubbing. This satisfies "access permanently revoked" while keeping foreign keys (jobs/requests/audit) valid and history attributable. **Disable** is a separate reversible status. (Tradeoff in Risks.)
 - **RepairRequest / Job:** never deleted in V1; **terminal statuses** (`Rejected`/`Cancelled`/`Completed`) serve as the logical archive; records are **retained indefinitely** (Jobs decision).
 - **Attachment:** hard-deleted (row + binary) when removed or when its owning request is deleted; otherwise retained for the record's life.

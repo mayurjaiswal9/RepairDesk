@@ -88,7 +88,7 @@ class JobServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(req.getStatus()).isEqualTo(RequestStatus.APPROVED);
-        verify(notifService).send(any(), eq("JOB_APPROVED"), any(), any(), any());
+        verify(notifService).send(any(), eq("JOB_APPROVED"), any(), any(), any(), any());
         verify(auditService).record(eq(staffActor), eq("REQUEST"), eq(reqId),
                 eq("APPROVED"), any());
     }
@@ -128,7 +128,7 @@ class JobServiceTest {
 
         assertThat(req.getStatus()).isEqualTo(RequestStatus.REJECTED);
         assertThat(req.getRejectionReasonCode()).isEqualTo("CANNOT_REPAIR");
-        verify(notifService).send(any(), eq("REQUEST_REJECTED"), any(), any(), any());
+        verify(notifService).send(any(), eq("REQUEST_REJECTED"), any(), any(), any(), any());
     }
 
     @Test

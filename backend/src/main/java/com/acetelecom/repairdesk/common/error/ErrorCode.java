@@ -13,6 +13,7 @@ public enum ErrorCode {
     FORBIDDEN(HttpStatus.FORBIDDEN),
     NOT_FOUND(HttpStatus.NOT_FOUND),
     CONFLICT(HttpStatus.CONFLICT),
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final HttpStatus status;

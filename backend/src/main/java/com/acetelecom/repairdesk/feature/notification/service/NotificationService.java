@@ -29,9 +29,13 @@ public class NotificationService {
         this.userRepo = userRepo;
     }
 
-    /** Creates a notification for a recipient. Called by review/job services. */
+    /**
+     * Creates a notification for a recipient.
+     *
+     * @param relatedType {@code REPAIR_REQUEST}, {@code JOB}, or {@code APPOINTMENT}
+     */
     public void send(UUID recipientId, String type, String message,
-            String referenceNumber, UUID relatedEntityId) {
+            String referenceNumber, String relatedType, UUID relatedEntityId) {
         User recipient = userRepo.findById(recipientId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Recipient not found"));
         Notification n = new Notification();
@@ -39,6 +43,7 @@ public class NotificationService {
         n.setType(type);
         n.setMessage(message);
         n.setReferenceNumber(referenceNumber);
+        n.setRelatedType(relatedType);
         n.setRelatedEntityId(relatedEntityId);
         notifRepo.save(n);
     }

@@ -1,28 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/roles.dart';
 import '../../../core/auth/session_controller.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../customer_home/presentation/customer_home_screen.dart';
-import '../../jobs/presentation/jobs_list_screen.dart';
+import '../../account/data/profile_repository.dart';
 import '../../account/presentation/account_screen.dart';
+import '../../admin/presentation/categories_screen.dart';
+import '../../admin/presentation/settings_screen.dart';
+import '../../admin/presentation/staff_screen.dart';
+import '../../customer_home/presentation/customer_home_screen.dart';
+import '../../customer_management/presentation/customers_screen.dart';
+import '../../jobs/presentation/jobs_list_screen.dart';
 import '../../notifications/data/unread_count_provider.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../requests/presentation/request_queue_screen.dart';
-import '../../admin/presentation/categories_screen.dart';
-import '../../admin/presentation/staff_screen.dart';
-import '../../admin/presentation/settings_screen.dart';
-import '../../customer_management/presentation/customers_screen.dart';
 import '../../scheduling/presentation/calendar_screen.dart';
 import '../data/dashboard_repository.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Re-sync role from /me so a demotion/promotion (or stale secure-storage
+    // role) cannot leave a technician on the Staff dashboard.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncRole());
+  }
+
+  Future<void> _syncRole() async {
+    try {
+      final me = await ref.read(profileRepositoryProvider).getMe();
+      await ref.read(sessionControllerProvider.notifier).syncRole(me.role);
+    } catch (_) {
+      // Keep cached role if /me fails (offline / 401 handled elsewhere).
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(sessionControllerProvider);
-    final role = session.role ?? '';
+    final role = Roles.normalize(session.role);
 
     return Scaffold(
       appBar: AppBar(
@@ -39,10 +63,12 @@ class DashboardScreen extends ConsumerWidget {
         ],
       ),
       body: switch (role) {
-        'ADMIN' || 'STAFF' => _StaffDashboard(role: role),
-        'CUSTOMER' => const CustomerHomeScreen(),
-        'TECHNICIAN' => const _TechnicianLanding(),
-        _ => const Center(child: Text('Unknown role')),
+        Roles.admin || Roles.staff => _StaffDashboard(role: role),
+        Roles.customer => const CustomerHomeScreen(),
+        Roles.technician => const _TechnicianDashboard(),
+        _ => Center(
+            child: Text('Unknown role: ${session.role ?? "(none)"}'),
+          ),
       },
     );
   }
@@ -60,6 +86,11 @@ class _StaffDashboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Belt-and-suspenders: never render Staff Quick Actions for technicians.
+    if (Roles.isTechnician(role)) {
+      return const _TechnicianDashboard();
+    }
+
     final countersAsync = ref.watch(_countersProvider);
 
     return RefreshIndicator(
@@ -70,6 +101,9 @@ class _StaffDashboard extends ConsumerWidget {
           const SizedBox(height: AppTheme.spaceS),
           Text('Welcome back',
               style: Theme.of(context).textTheme.titleMedium),
+          Text('Role: $role',
+              style: const TextStyle(
+                  color: AppTheme.textSecondary, fontSize: 13)),
           const SizedBox(height: AppTheme.spaceM),
           countersAsync.when(
             loading: () => const SizedBox(
@@ -107,8 +141,7 @@ class _StaffDashboard extends ConsumerWidget {
           Text('Quick Actions',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppTheme.spaceM),
-          // Repair Request queue is admin-only — only admins review & approve.
-          if (role == 'ADMIN')
+          if (Roles.isAdmin(role))
             _NavTile(
               icon: Icons.inbox_outlined,
               label: 'Repair Requests',
@@ -134,15 +167,17 @@ class _StaffDashboard extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const CalendarScreen()),
             ),
           ),
-          _NavTile(
-            icon: Icons.person_search_outlined,
-            label: 'Customers',
-            subtitle: 'Search customer profiles and history',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CustomersScreen()),
+          // Customer Management: Staff/Admin only — never technicians.
+          if (Roles.canAccessCustomers(role))
+            _NavTile(
+              icon: Icons.person_search_outlined,
+              label: 'Customers',
+              subtitle: 'Search customer profiles and history',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CustomersScreen()),
+              ),
             ),
-          ),
-          if (role == 'ADMIN') ...[
+          if (Roles.isAdmin(role)) ...[
             _NavTile(
               icon: Icons.people_outline,
               label: 'Staff Management',
@@ -170,6 +205,51 @@ class _StaffDashboard extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+// ── Technician dashboard ──────────────────────────────────────────────────
+
+/// Technicians get Jobs + Appointments only. No Customers, Staff, Catalog, or
+/// Repair Requests (see docs/features/customer-management.md).
+class _TechnicianDashboard extends ConsumerWidget {
+  const _TechnicianDashboard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final role = Roles.normalize(ref.watch(sessionControllerProvider).role);
+    return ListView(
+      padding: const EdgeInsets.all(AppTheme.spaceM),
+      children: [
+        const SizedBox(height: AppTheme.spaceS),
+        Text('My work', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: AppTheme.spaceXS),
+        Text(
+          'Role: $role — only jobs and appointments assigned to you.',
+          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+        ),
+        const SizedBox(height: AppTheme.spaceL),
+        Text('Quick Actions',
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: AppTheme.spaceM),
+        _NavTile(
+          icon: Icons.build_outlined,
+          label: 'My Jobs',
+          subtitle: 'Jobs assigned to you',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const JobsListScreen()),
+          ),
+        ),
+        _NavTile(
+          icon: Icons.calendar_month_outlined,
+          label: 'My Appointments',
+          subtitle: 'Your weekly schedule',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CalendarScreen()),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -310,16 +390,5 @@ class _BellButton extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-// ── Technician landing ────────────────────────────────────────────────────
-
-class _TechnicianLanding extends StatelessWidget {
-  const _TechnicianLanding();
-
-  @override
-  Widget build(BuildContext context) {
-    return const JobsListScreen();
   }
 }

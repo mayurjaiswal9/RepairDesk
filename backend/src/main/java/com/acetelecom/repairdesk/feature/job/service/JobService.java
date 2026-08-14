@@ -1,6 +1,8 @@
 package com.acetelecom.repairdesk.feature.job.service;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -52,6 +54,14 @@ public class JobService {
 
     /** Approve a PENDING_REVIEW request → atomically create a Job (CREATED). */
     public JobResponse approve(UUID requestId, AuthenticatedUser actor) {
+        return approve(requestId, actor, null, null);
+    }
+
+    /**
+     * Approve with optional priority override and internal note (admin panel AP-04).
+     */
+    public JobResponse approve(UUID requestId, AuthenticatedUser actor, String priority,
+            String note) {
         RepairRequest req = requireRequest(requestId);
         if (req.getStatus() != RequestStatus.PENDING_REVIEW
                 && req.getStatus() != RequestStatus.INFORMATION_REQUIRED) {
@@ -60,6 +70,15 @@ public class JobService {
         }
         if (jobRepo.findByRequestId(requestId).isPresent()) {
             throw new ApiException(ErrorCode.CONFLICT, "Job already exists for this request");
+        }
+
+        if (priority != null && !priority.isBlank()) {
+            try {
+                req.setPriority(com.acetelecom.repairdesk.feature.request.domain.Priority
+                        .valueOf(priority.trim().toUpperCase()));
+            } catch (IllegalArgumentException ex) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR, "Unknown priority: " + priority);
+            }
         }
 
         req.setStatus(RequestStatus.APPROVED);
@@ -84,9 +103,12 @@ public class JobService {
         notifService.send(req.getCustomer().getId(), "JOB_APPROVED",
                 "Your repair request " + req.getReferenceNumber()
                         + " has been accepted and is being prepared.",
-                req.getReferenceNumber(), saved.getId());
+                req.getReferenceNumber(), "JOB", saved.getId());
 
         auditService.record(actor, "REQUEST", requestId, "APPROVED", null);
+        if (note != null && !note.isBlank()) {
+            auditService.record(actor, "REQUEST", requestId, "NOTE_ADDED", note.trim());
+        }
         auditService.record(actor, "JOB", saved.getId(), "CREATED",
                 "Auto-created from request " + req.getReferenceNumber());
 
@@ -118,7 +140,7 @@ public class JobService {
                         ? customerMessage
                         : "Your repair request " + req.getReferenceNumber()
                                 + " could not be accepted at this time.",
-                req.getReferenceNumber(), requestId);
+                req.getReferenceNumber(), "REPAIR_REQUEST", requestId);
 
         auditService.record(actor, "REQUEST", requestId, "REJECTED",
                 "Reason: " + reasonCode);
@@ -142,7 +164,7 @@ public class JobService {
         notifService.send(req.getCustomer().getId(), "INFO_REQUIRED",
                 "More information is needed for your request "
                         + req.getReferenceNumber() + ": " + message,
-                req.getReferenceNumber(), requestId);
+                req.getReferenceNumber(), "REPAIR_REQUEST", requestId);
 
         auditService.record(actor, "REQUEST", requestId, "INFO_REQUESTED", message);
     }
@@ -151,16 +173,59 @@ public class JobService {
     // Job lifecycle (JOB-002, JOB-003, JOB-004, JOB-005)
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Staff/Admin job list. Prefer named filters that match dashboard counters:
+     * {@code active=true} → ASSIGNED+SCHEDULED+IN_PROGRESS+AWAITING_PARTS;
+     * {@code scheduled=false} → CREATED+ASSIGNED (unscheduled backlog proxy).
+     * Otherwise optional single or comma-separated {@code status}.
+     * Optional {@code technicianId}, {@code unassigned=true}, and free-text {@code q}.
+     */
     @Transactional(readOnly = true)
-    public PageResponse<JobSummary> listAll(String status, Pageable pageable) {
-        Page<Job> page = jobRepo.findAll(status, pageable);
+    public PageResponse<JobSummary> listAll(String status, Boolean active, Boolean scheduled,
+            UUID technicianId, Boolean unassigned, String q, Pageable pageable) {
+        List<JobStatus> statuses = resolveStatuses(status, active, scheduled);
+        boolean hasStatuses = !statuses.isEmpty();
+        // IN (:statuses) needs a non-empty collection even when unused.
+        List<JobStatus> statusParam = hasStatuses ? statuses : List.of(JobStatus.CREATED);
+        boolean onlyUnassigned = Boolean.TRUE.equals(unassigned);
+        UUID techFilter = onlyUnassigned ? null : technicianId;
+        String query = (q == null || q.isBlank()) ? null : q.trim();
+        Page<Job> page = jobRepo.findFiltered(
+                hasStatuses, statusParam, techFilter, onlyUnassigned, query, pageable);
         return PageResponse.from(page.map(JobSummary::from));
     }
 
+    /** Technician board — always scoped to the caller; optional status + search within that set. */
     @Transactional(readOnly = true)
-    public PageResponse<JobSummary> listForTechnician(UUID techId, Pageable pageable) {
-        Page<Job> page = jobRepo.findByAssignedTechnicianIdOrderByUpdatedAtDesc(techId, pageable);
+    public PageResponse<JobSummary> listForTechnician(UUID techId, String status, String q,
+            Pageable pageable) {
+        List<JobStatus> statuses = resolveStatuses(status, null, null);
+        boolean hasStatuses = !statuses.isEmpty();
+        // Dummy non-empty list required by JPQL IN clause when hasStatuses is false.
+        List<JobStatus> statusParam = hasStatuses ? statuses : List.of(JobStatus.CREATED);
+        String query = (q == null || q.isBlank()) ? null : q.trim();
+        Page<Job> page = jobRepo.findForTechnician(
+                techId, hasStatuses, statusParam, query, pageable);
         return PageResponse.from(page.map(JobSummary::from));
+    }
+
+    private List<JobStatus> resolveStatuses(String status, Boolean active, Boolean scheduled) {
+        if (Boolean.TRUE.equals(active)) {
+            return List.of(
+                    JobStatus.ASSIGNED, JobStatus.SCHEDULED,
+                    JobStatus.IN_PROGRESS, JobStatus.AWAITING_PARTS);
+        }
+        if (Boolean.FALSE.equals(scheduled)) {
+            return List.of(JobStatus.CREATED, JobStatus.ASSIGNED);
+        }
+        if (status == null || status.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(status.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(JobStatus::valueOf)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -191,7 +256,7 @@ public class JobService {
 
         notifService.send(technicianId, "JOB_ASSIGNED",
                 "You have been assigned to job " + job.getReferenceNumber() + ".",
-                job.getReferenceNumber(), job.getId());
+                job.getReferenceNumber(), "JOB", job.getId());
         auditService.record(actor, "JOB", jobId, "ASSIGNED", "Technician: " + tech.getUsername());
 
         return JobResponse.from(job);
@@ -224,7 +289,7 @@ public class JobService {
 
         notifService.send(job.getCustomer().getId(), "JOB_IN_PROGRESS",
                 "Work has started on your repair " + job.getReferenceNumber() + ".",
-                job.getReferenceNumber(), job.getId());
+                job.getReferenceNumber(), "JOB", job.getId());
         auditService.record(actor, "JOB", jobId, "STARTED", null);
         return JobResponse.from(job);
     }
@@ -240,7 +305,7 @@ public class JobService {
         notifService.send(job.getCustomer().getId(), "JOB_AWAITING_PARTS",
                 "Your repair " + job.getReferenceNumber()
                         + " is on hold while we source parts.",
-                job.getReferenceNumber(), job.getId());
+                job.getReferenceNumber(), "JOB", job.getId());
         auditService.record(actor, "JOB", jobId, "AWAITING_PARTS", null);
         return JobResponse.from(job);
     }
@@ -272,7 +337,7 @@ public class JobService {
         notifService.send(job.getCustomer().getId(), "JOB_COMPLETED",
                 "Your repair " + job.getReferenceNumber()
                         + " is complete and ready for collection.",
-                job.getReferenceNumber(), job.getId());
+                job.getReferenceNumber(), "JOB", job.getId());
         auditService.record(actor, "JOB", jobId, "COMPLETED", resolutionSummary);
         return JobResponse.from(job);
     }
@@ -297,7 +362,7 @@ public class JobService {
         notifService.send(job.getCustomer().getId(), "JOB_CANCELLED",
                 "Your repair " + job.getReferenceNumber()
                         + " has been cancelled. Reason: " + reason,
-                job.getReferenceNumber(), job.getId());
+                job.getReferenceNumber(), "JOB", job.getId());
         auditService.record(actor, "JOB", jobId, "CANCELLED", reason);
     }
 
@@ -371,6 +436,7 @@ public class JobService {
                 ? existing + "\n\n--- " + Instant.now() + " ---\n" + note
                 : note;
         job.setInternalNotes(combined);
+        job.setUpdatedAt(Instant.now());
         jobRepo.save(job);
         auditService.record(actor, "JOB", id, "NOTE_ADDED",
                 "note appended by " + actor.username());

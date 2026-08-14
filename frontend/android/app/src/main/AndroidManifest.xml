@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Lets image_picker launch the camera to take a new photo, not just
+         pick from the gallery (bug: "Upload photo does not give option to
+         take picture"). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:label="repairdesk"
         android:name="${applicationName}"

@@ -1,0 +1,182 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Device Categories</h1>
+    <p>Catalog management is limited to administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Device Categories</h1>
+      @if (summary()) {
+        <p class="meta" aria-live="polite">{{ summary() }}</p>
+      }
+    </div>
+    <div class="header-actions">
+      <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="refetching()">
+        @if (refetching()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon>refresh</mat-icon>
+        }
+        Refresh
+      </button>
+      <button type="button" class="primary-btn" (click)="openCreate()">
+        <mat-icon>add</mat-icon>
+        Add category
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-field">
+      <mat-icon class="prefix" aria-hidden="true">search</mat-icon>
+      <input
+        type="search"
+        [formControl]="searchCtrl"
+        placeholder="Search categories"
+        aria-label="Search categories"
+      />
+      @if (searchCtrl.value) {
+        <button type="button" class="clear-x" (click)="clearSearch()" aria-label="Clear search">×</button>
+      }
+    </div>
+    <mat-checkbox [formControl]="archivedCtrl">Show archived</mat-checkbox>
+  </div>
+
+  @if (refetching()) {
+    <mat-progress-bar mode="indeterminate" class="top-bar"></mat-progress-bar>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel error" role="alert">
+      <h2>Couldn't load categories</h2>
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <div class="table-wrap" aria-busy="true">
+      @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+        <div class="skel-row"></div>
+      }
+    </div>
+  } @else if (empty()) {
+    <div class="state-panel">
+      <div class="icon" aria-hidden="true">📱</div>
+      <h2>No device categories yet</h2>
+      <p>Categories are what customers choose from when submitting a repair request.</p>
+      <button type="button" class="primary-btn" (click)="openCreate()">Add category</button>
+    </div>
+  } @else if (emptyActiveOnly()) {
+    <div class="state-panel warn">
+      <h2>All categories are archived — customers can't submit requests.</h2>
+      <p>Restore a category, or show archived ones to manage them.</p>
+      <button type="button" class="primary-btn" (click)="showArchived()">Show archived</button>
+    </div>
+  } @else if (filteredEmpty()) {
+    <div class="state-panel">
+      <h2>No categories match “{{ q() }}”</h2>
+      <button type="button" class="primary-btn" (click)="clearSearch()">Clear search</button>
+    </div>
+  } @else {
+    <div class="table-wrap" [class.dimmed]="refetching()">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Description</th>
+            <th scope="col">Brand mode</th>
+            <th scope="col">Brands</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of rows(); track c.id) {
+            <tr
+              class="clickable"
+              [class.archived-row]="c.archived"
+              (click)="openEdit(c)"
+            >
+              <td>
+                <span class="name" [class.strike]="c.archived" [matTooltip]="c.name">{{ c.name }}</span>
+              </td>
+              <td>
+                <span class="desc" [matTooltip]="c.description || ''">{{ c.description || '—' }}</span>
+              </td>
+              <td>
+                <span
+                  class="chip-status {{ brandModeChip(c.brandMode) }}"
+                  [matTooltip]="brandModeTooltip(c.brandMode)"
+                >
+                  {{ brandModeLabel(c.brandMode) }}
+                </span>
+              </td>
+              <td (click)="$event.stopPropagation()">
+                <a
+                  class="brands-link"
+                  [routerLink]="['/catalog/categories', c.id, 'brands']"
+                >
+                  {{ brandCountLabel(c) }}
+                  @if (hasMismatch(c)) {
+                    <span
+                      class="warn-mark"
+                      matTooltip="These brands aren't shown to customers because this category uses free-text entry."
+                      aria-label="Brand mode mismatch"
+                    >⚠</span>
+                  }
+                </a>
+              </td>
+              <td>
+                <span class="chip-status {{ c.archived ? 'chip-neutral' : 'chip-success' }}">
+                  {{ c.archived ? 'Archived' : 'Active' }}
+                </span>
+              </td>
+              <td class="actions" (click)="$event.stopPropagation()">
+                @if (!refetching()) {
+                  <button type="button" class="icon-btn" [matMenuTriggerFor]="menu" aria-label="Row actions">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    <button mat-menu-item type="button" (click)="openEdit(c)">Edit</button>
+                    <a mat-menu-item [routerLink]="['/catalog/categories', c.id, 'brands']">
+                      Manage brands
+                    </a>
+                    @if (!c.archived) {
+                      <button mat-menu-item type="button" (click)="openArchive(c)">Archive</button>
+                    } @else {
+                      <button mat-menu-item type="button" (click)="restore(c)">Restore</button>
+                    }
+                  </mat-menu>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span>Page {{ page() + 1 }} of {{ totalPages() }} · {{ total() }} categories</span>
+      <select class="select" [value]="size()" (change)="changeSize($event)" aria-label="Page size">
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+      <div class="pager-btns">
+        <button type="button" class="ghost-btn" [disabled]="page() <= 0" (click)="changePage(-1)">‹ Prev</button>
+        <button
+          type="button"
+          class="ghost-btn"
+          [disabled]="page() + 1 >= totalPages()"
+          (click)="changePage(1)"
+        >
+          Next ›
+        </button>
+      </div>
+    </div>
+  }
+}

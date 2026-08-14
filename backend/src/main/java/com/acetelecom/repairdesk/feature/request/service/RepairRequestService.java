@@ -17,6 +17,8 @@ import com.acetelecom.repairdesk.common.web.PageResponse;
 import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.devicecategory.repository.DeviceCategoryRepository;
+import com.acetelecom.repairdesk.feature.job.domain.Job;
+import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
@@ -38,17 +40,20 @@ public class RepairRequestService {
     private final RepairRequestRepository requestRepo;
     private final DeviceCategoryRepository categoryRepo;
     private final UserRepository userRepo;
+    private final JobRepository jobRepo;
     private final JdbcTemplate jdbc;
     private final AuditService auditService;
 
     public RepairRequestService(RepairRequestRepository requestRepo,
             DeviceCategoryRepository categoryRepo,
             UserRepository userRepo,
+            JobRepository jobRepo,
             JdbcTemplate jdbc,
             AuditService auditService) {
         this.requestRepo = requestRepo;
         this.categoryRepo = categoryRepo;
         this.userRepo = userRepo;
+        this.jobRepo = jobRepo;
         this.auditService = auditService;
         this.jdbc = jdbc;
     }
@@ -80,14 +85,14 @@ public class RepairRequestService {
         req.setPreferredDate(dto.preferredDate());
         req.setPreferredTime(dto.preferredTime());
 
-        return RepairRequestResponse.from(requestRepo.save(req));
+        return RepairRequestResponse.from(requestRepo.save(req), null);
     }
 
     @Transactional(readOnly = true)
     public RepairRequestResponse get(UUID id, AuthenticatedUser caller) {
         RepairRequest req = requireById(id);
         checkReadAccess(req, caller);
-        return RepairRequestResponse.from(req);
+        return RepairRequestResponse.from(req, findJobOrNull(req.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -99,15 +104,22 @@ public class RepairRequestService {
     public PageResponse<RepairRequestSummary> getMyRequests(UUID customerId, Pageable pageable) {
         Page<RepairRequest> page = requestRepo
                 .findAllByCustomerIdOrderByUpdatedAtDescCreatedAtDesc(customerId, pageable);
-        return PageResponse.from(page.map(RepairRequestSummary::from));
+        return PageResponse.from(page.map(r -> RepairRequestSummary.from(r, findJobOrNull(r.getId()))));
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<RepairRequestSummary> getQueue(String status, Pageable pageable) {
+    public PageResponse<RepairRequestSummary> getQueue(String status, UUID categoryId, String q,
+            Pageable pageable) {
         RequestStatus statusEnum = (status == null || status.isBlank())
                 ? null : RequestStatus.valueOf(status.toUpperCase());
-        Page<RepairRequest> page = requestRepo.findQueueFiltered(statusEnum, pageable);
-        return PageResponse.from(page.map(RepairRequestSummary::from));
+        String query = (q == null || q.isBlank()) ? null : q.trim();
+        Page<RepairRequest> page = requestRepo.findQueueFiltered(statusEnum, categoryId, query, pageable);
+        return PageResponse.from(page.map(r -> RepairRequestSummary.from(r, findJobOrNull(r.getId()))));
+    }
+
+    /** The Job is created 1:1 on approval; null for requests not yet approved. */
+    private Job findJobOrNull(UUID requestId) {
+        return jobRepo.findByRequestId(requestId).orElse(null);
     }
 
     public RepairRequestResponse update(UUID id, UpdateRequestDto dto, AuthenticatedUser caller) {
@@ -131,7 +143,7 @@ public class RepairRequestService {
         req.setPreferredTime(dto.preferredTime());
         req.setUpdatedAt(Instant.now());
 
-        return RepairRequestResponse.from(requestRepo.save(req));
+        return RepairRequestResponse.from(requestRepo.save(req), null);
     }
 
     public void cancel(UUID id, AuthenticatedUser caller) {
@@ -187,7 +199,7 @@ public class RepairRequestService {
         requestRepo.save(req);
         auditService.record(actor, "REQUEST", id, "PRIORITY_CHANGED",
                 old + " → " + priority);
-        return RepairRequestResponse.from(req);
+        return RepairRequestResponse.from(req, findJobOrNull(req.getId()));
     }
 
     // ── RV-005: Internal notes ────────────────────────────────────────────────
@@ -197,7 +209,7 @@ public class RepairRequestService {
         assertStaffOrAdmin(actor);
         RepairRequest req = findById(id);
         auditService.record(actor, "REQUEST", id, "NOTE_ADDED", note);
-        return RepairRequestResponse.from(req);
+        return RepairRequestResponse.from(req, findJobOrNull(req.getId()));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -1,0 +1,216 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Business Settings</h1>
+    <p>Business settings are limited to administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else if (state() === 'error') {
+  <div class="state-panel error" role="alert">
+    <h1 class="display" tabindex="-1">Couldn't load settings</h1>
+    <p>{{ error()?.message }}</p>
+    @if (error()?.correlationId) {
+      <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+    }
+    <button type="button" class="primary-btn" (click)="retry()">Retry</button>
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Business Settings</h1>
+      <p class="meta">
+        Last saved
+        {{ updatedAt() ? formatAbsolute(updatedAt()) : '—' }}
+      </p>
+    </div>
+  </div>
+
+  @if (partialBanner(); as banner) {
+    <div class="partial" role="alert">
+      <strong>Business information and scheduling were saved. Working hours were not.</strong>
+      <p>{{ banner.message }}</p>
+      @if (banner.correlationId) {
+        <p class="cid">correlationId: {{ banner.correlationId }}</p>
+      }
+      <button type="button" class="primary-btn" (click)="retryHours()" [disabled]="saving()">
+        Retry working hours
+      </button>
+    </div>
+  }
+
+  @if (state() === 'loading') {
+    <div class="form-shell" aria-busy="true">
+      <div class="skel skel-block"></div>
+      <div class="skel skel-block"></div>
+      <div class="skel skel-block tall"></div>
+      @for (_ of [1, 2, 3, 4, 5, 6, 7]; track $index) {
+        <div class="skel skel-row"></div>
+      }
+    </div>
+  } @else {
+    <form class="form-shell" [formGroup]="form" [class.readonly]="saving()">
+      <section class="section">
+        <div class="section-head">
+          <h2>Business information</h2>
+          @if (settingsSavedMark()) {
+            <span class="mark saved">Saved</span>
+          }
+        </div>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Business name</mat-label>
+          <input matInput formControlName="businessName" maxlength="150" [readonly]="saving()" />
+          @if (form.controls.businessName.touched && form.controls.businessName.hasError('required')) {
+            <mat-error>Business name is required</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Address</mat-label>
+          <textarea matInput rows="2" formControlName="businessAddress" maxlength="500" [readonly]="saving()"></textarea>
+        </mat-form-field>
+        <div class="row-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Phone</mat-label>
+            <input matInput formControlName="businessPhone" maxlength="20" [readonly]="saving()" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="businessEmail" maxlength="255" [readonly]="saving()" />
+            <mat-hint>Shown for reference only — RepairDesk does not send email in V1</mat-hint>
+            @if (form.controls.businessEmail.hasError('email')) {
+              <mat-error>Enter a valid email</mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Scheduling</h2>
+          @if (settingsSavedMark()) {
+            <span class="mark saved">Saved</span>
+          }
+        </div>
+        <fieldset class="radios">
+          <legend>Appointment slot duration</legend>
+          <mat-radio-group formControlName="slotDurationMinutes" [disabled]="saving()">
+            @for (mins of slotOptions; track mins) {
+              <mat-radio-button [value]="mins">{{ mins }} minutes</mat-radio-button>
+            }
+          </mat-radio-group>
+          <p class="helper">An appointment's end time is derived from this.</p>
+        </fieldset>
+        <div class="horizon">
+          <mat-form-field appearance="outline" class="horizon-field">
+            <mat-label>Booking horizon</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="bookingHorizonDays"
+              min="1"
+              max="365"
+              step="1"
+              [readonly]="saving()"
+            />
+            @if (form.controls.bookingHorizonDays.hasError('min')
+              || form.controls.bookingHorizonDays.hasError('max')
+              || form.controls.bookingHorizonDays.hasError('range')) {
+              <mat-error>Enter a whole number from 1 to 365</mat-error>
+            }
+          </mat-form-field>
+          <span class="suffix">days ahead</span>
+        </div>
+        <p class="helper">Customers can request a date up to this many days from today.</p>
+        <p class="info-note">
+          These values are enforced when an appointment is booked.
+          <a routerLink="/jobs">Open jobs</a> to schedule with the current rules.
+        </p>
+      </section>
+
+      <section class="section hours">
+        <div class="section-head">
+          <h2>Working hours</h2>
+          <span class="hint">Times are local shop hours.</span>
+          @if (hoursNotSavedMark()) {
+            <span class="mark fail">Not saved</span>
+          }
+        </div>
+        @if (hoursIncompleteNote()) {
+          <p class="warn-note">
+            Some days had no saved hours and are shown as closed. Saving will store all seven days.
+          </p>
+        }
+        <div class="hours-list">
+          @for (d of days(); track d.dayOfWeek) {
+            <div class="hours-row" [class.closed]="!d.open">
+              <span class="day">{{ weekdayFull(d.dayOfWeek) }}</span>
+              <mat-slide-toggle
+                [checked]="d.open"
+                [disabled]="saving()"
+                [attr.aria-label]="weekdayFull(d.dayOfWeek) + ' — open'"
+                (change)="toggleDay(d.dayOfWeek, $event.checked)"
+              >
+                {{ d.open ? 'Open' : 'Closed' }}
+              </mat-slide-toggle>
+              @if (d.open) {
+                <div class="times">
+                  <label>
+                    <span class="sr-only">{{ weekdayFull(d.dayOfWeek) }} open</span>
+                    <input
+                      type="time"
+                      [value]="d.openTime"
+                      [disabled]="saving()"
+                      (change)="setDayTime(d.dayOfWeek, 'openTime', $any($event.target).value)"
+                    />
+                  </label>
+                  <span class="dash">–</span>
+                  <label>
+                    <span class="sr-only">{{ weekdayFull(d.dayOfWeek) }} close</span>
+                    <input
+                      type="time"
+                      [value]="d.closeTime"
+                      [disabled]="saving()"
+                      (change)="setDayTime(d.dayOfWeek, 'closeTime', $any($event.target).value)"
+                    />
+                  </label>
+                </div>
+              } @else {
+                <span class="closed-label">Closed all day</span>
+              }
+              @if (dayErrors()[d.dayOfWeek]) {
+                <p class="day-err" role="alert">{{ dayErrors()[d.dayOfWeek] }}</p>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (formError()) {
+        <div class="form-error" role="alert">{{ formError() }}</div>
+      }
+    </form>
+  }
+
+  <div class="sticky-footer">
+    <span class="dirty">{{ dirtySummary() }}</span>
+    <div class="footer-actions">
+      <button
+        type="button"
+        class="ghost-btn"
+        [disabled]="saving() || !dirty() || state() !== 'ready'"
+        (click)="cancel()"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="primary-btn"
+        [disabled]="saving() || !dirty() || state() !== 'ready'"
+        (click)="save()"
+      >
+        @if (saving()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        }
+        Save
+      </button>
+    </div>
+  </div>
+}

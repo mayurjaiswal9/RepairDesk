@@ -10,14 +10,20 @@ public record NotificationResponse(
         String type,
         String message,
         String referenceNumber,
+        String relatedType,
         UUID relatedEntityId,
         boolean read,
         Instant createdAt) {
 
     public static NotificationResponse from(Notification n) {
         return new NotificationResponse(
-                n.getId(), n.getType(), n.getMessage(),
-                n.getReferenceNumber(), n.getRelatedEntityId(),
-                n.isRead(), n.getCreatedAt());
+                n.getId(),
+                n.getType(),
+                n.getMessage(),
+                n.getReferenceNumber(),
+                n.getRelatedType(),
+                n.getRelatedEntityId(),
+                n.isRead(),
+                n.getCreatedAt());
     }
 }

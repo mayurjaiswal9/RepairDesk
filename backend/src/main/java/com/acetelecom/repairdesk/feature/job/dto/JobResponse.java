@@ -14,6 +14,7 @@ public record JobResponse(
         UUID requestId,
         UUID customerId,
         String customerUsername,
+        String customerName,
         UUID deviceCategoryId,
         String deviceCategoryName,
         String contactName,
@@ -32,6 +33,7 @@ public record JobResponse(
         String resolutionSummary,
         String cancelReason,
         String internalNotes,
+        Instant createdAt,
         Instant updatedAt,
         long version) {
 
@@ -42,6 +44,7 @@ public record JobResponse(
                 j.getRequest().getId(),
                 j.getCustomer().getId(),
                 j.getCustomer().getUsername(),
+                j.getCustomer().getName(),
                 j.getDeviceCategory().getId(),
                 j.getDeviceCategory().getName(),
                 j.getContactName(),
@@ -60,6 +63,7 @@ public record JobResponse(
                 j.getResolutionSummary(),
                 j.getCancelReason(),
                 j.getInternalNotes(),
+                j.getCreatedAt(),
                 j.getUpdatedAt(),
                 j.getVersion());
     }

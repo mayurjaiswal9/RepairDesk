@@ -16,7 +16,8 @@ Dio apiClient(Ref ref) {
   final dio = Dio(BaseOptions(
     baseUrl: _baseUrl,
     connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 60),
+    sendTimeout: const Duration(seconds: 60),
     headers: {'Content-Type': 'application/json'},
   ));
 
@@ -27,6 +28,12 @@ Dio apiClient(Ref ref) {
         final session = ref.read(sessionControllerProvider);
         if (session.token != null) {
           options.headers['Authorization'] = 'Bearer ${session.token}';
+        }
+        // BaseOptions defaults to application/json — that breaks multipart
+        // uploads (camera photos). Let Dio set the boundary Content-Type.
+        if (options.data is FormData) {
+          options.headers.remove(Headers.contentTypeHeader);
+          options.contentType = null;
         }
         handler.next(options);
       },

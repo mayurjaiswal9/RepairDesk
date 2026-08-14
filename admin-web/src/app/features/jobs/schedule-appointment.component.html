@@ -1,0 +1,230 @@
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a routerLink="/jobs">Jobs</a>
+  <span class="sep" aria-hidden="true">›</span>
+  @if (job(); as j) {
+    <a [routerLink]="['/jobs', j.id]">{{ j.referenceNumber }}</a>
+  } @else {
+    <span>…</span>
+  }
+  <span class="sep" aria-hidden="true">›</span>
+  <span class="current">Schedule</span>
+</nav>
+
+@if (state() === 'forbidden') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Restricted</h1>
+    <p>Scheduling is handled by staff and administrators.</p>
+    <a routerLink="/appointments" class="primary-btn">View appointments</a>
+  </div>
+} @else if (state() === 'notfound') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Job not found</h1>
+    <p>That job no longer exists.</p>
+    <a routerLink="/jobs" class="primary-btn">Back to jobs</a>
+  </div>
+} @else if (state() === 'error') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Couldn't load scheduling</h1>
+    <p>{{ error()?.message }}</p>
+    @if (error()?.correlationId) {
+      <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+    }
+    <button type="button" class="primary-btn" (click)="load()">Retry</button>
+  </div>
+} @else if (state() === 'blocked_terminal') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Can't schedule</h1>
+    <p>
+      {{ job()?.referenceNumber }} is {{ statusLabel(job()!.status).toLowerCase() }} and can no longer be scheduled.
+    </p>
+    <a [routerLink]="['/jobs', job()!.id]" class="primary-btn">Back to job</a>
+  </div>
+} @else if (state() === 'blocked_techs') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">No technicians</h1>
+    <p>No active technicians are available to schedule.</p>
+    @if (isAdmin()) {
+      <a routerLink="/staff" class="primary-btn">Open staff</a>
+    } @else {
+      <p class="muted">Ask an administrator to add a technician.</p>
+    }
+  </div>
+} @else if (state() === 'blocked_config') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Hours not configured</h1>
+    <p>Working hours aren't configured, so appointments can't be booked yet.</p>
+    <button type="button" class="primary-btn" (click)="load()">Retry</button>
+    @if (isAdmin()) {
+      <a routerLink="/settings" class="text-link">Business settings</a>
+    }
+  </div>
+} @else if (state() === 'blocked_closed') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Shop closed</h1>
+    <p>The shop is marked closed every day of the week.</p>
+    @if (isAdmin()) {
+      <a routerLink="/settings" class="primary-btn">Fix working hours</a>
+    }
+  </div>
+} @else if (state() === 'loading') {
+  <h1 class="display" tabindex="-1">Schedule appointment</h1>
+  <div class="skel skel-strip"></div>
+  <div class="skel skel-field"></div>
+  <div class="skel skel-field"></div>
+  <div class="skel skel-field"></div>
+}
+
+@if (state() === 'ready' && job(); as j) {
+  <div class="form-page">
+    <header class="page-header">
+      <h1 class="display" tabindex="-1">{{ pageTitle() }}</h1>
+      <div class="summary-strip">
+        <a class="ref" [routerLink]="['/jobs', j.id]">{{ j.referenceNumber }}</a>
+        <span>{{ j.contactName || '—' }}</span>
+        <span>{{ j.deviceCategoryName }}</span>
+        <span class="chip-status {{ statusChipClass(j.status) }}">{{ statusLabel(j.status) }}</span>
+      </div>
+    </header>
+
+    @if (mode() === 'reschedule' && currentAppt()) {
+      <section class="card replace-card">
+        <h2 class="section-title">Replacing this appointment</h2>
+        <p class="appt-line">
+          {{ formatDateOnly(currentAppt()!.scheduledDate) }},
+          {{ formatTimeOnly(currentAppt()!.startTime) }}
+          @if (currentAppt()!.endTime) {
+            – {{ formatTimeOnly(currentAppt()!.endTime!) }}
+          }
+          · {{ currentAppt()!.technicianName }}
+        </p>
+        <span class="chip-status {{ statusChipClass(currentAppt()!.status) }}">
+          {{ statusLabel(currentAppt()!.status) }}
+        </span>
+        @if (outsideHoursNote()) {
+          <p class="helper warn">This time falls outside the shop's current working hours.</p>
+        }
+        <button type="button" class="ghost-btn danger" (click)="openCancelAppointment(false)">
+          Cancel appointment instead
+        </button>
+      </section>
+    }
+
+    <section class="card">
+      <h2 class="section-title">Customer preference</h2>
+      @if (preference(); as pref) {
+        <div class="pref-row">
+          <span>
+            {{ formatDateOnly(pref.date) }}
+            @if (pref.time) {
+              , {{ formatTimeOnly(pref.time) }}
+            }
+            — advisory only
+          </span>
+          <button
+            type="button"
+            class="ghost-btn small"
+            [disabled]="!canUsePreference()"
+            [matTooltip]="prefReason() || 'Copy into the form'"
+            (click)="usePreference()"
+          >
+            Use this
+          </button>
+        </div>
+        @if (prefReason()) {
+          <p class="helper warn">{{ prefReason() }}</p>
+        }
+      } @else {
+        <p class="muted">No preference recorded</p>
+      }
+    </section>
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="card form-card">
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Technician</mat-label>
+        <mat-select formControlName="technicianId" required>
+          @for (t of technicians(); track t.id) {
+            <mat-option [value]="t.id">{{ t.name || t.username }}</mat-option>
+          }
+        </mat-select>
+        @if (mode() === 'reschedule') {
+          <mat-hint>Rescheduling keeps the same technician.</mat-hint>
+        }
+      </mat-form-field>
+      @if (mode() === 'reschedule') {
+        <button type="button" class="link-btn change-tech" (click)="openCancelAppointment(true)">
+          Change technician…
+        </button>
+        <p class="helper">Cancel this appointment and book a new one with a different technician.</p>
+      }
+
+      <h2 class="section-title">Date &amp; time</h2>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Date</mat-label>
+        <input
+          matInput
+          type="date"
+          formControlName="scheduledDate"
+          [attr.min]="minDate()"
+          [attr.max]="maxDate()"
+          (change)="onDateInput()"
+          required
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Start time</mat-label>
+        <mat-select formControlName="startTime" required>
+          @for (s of slots(); track s) {
+            <mat-option [value]="s">{{ formatTimeLabel(s) }}</mat-option>
+          }
+        </mat-select>
+        @if (!slots().length && form.controls.scheduledDate.value) {
+          <mat-hint>No open slots on this date</mat-hint>
+        }
+      </mat-form-field>
+
+      @if (hoursHint()) {
+        <p class="helper">{{ hoursHint() }}</p>
+      }
+      @if (slotClearedNotice()) {
+        <p class="helper warn">Previous time wasn't available for this date — pick a new slot.</p>
+      }
+      @if (conflict(); as c) {
+        <div class="conflict" role="status">
+          {{ c.technicianName }} already has {{ c.referenceNumber }} in this slot — you can proceed.
+        </div>
+      }
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Notes (optional)</mat-label>
+        <textarea matInput rows="3" formControlName="notes"></textarea>
+      </mat-form-field>
+    </form>
+
+    @if (formError()) {
+      <div class="form-error" role="alert">
+        {{ formError() }}
+        @if (formError(); as msg) {
+          @if (msg.includes('already') || msg.includes('status') || msg.includes('Cannot')) {
+            <button type="button" class="link-btn" (click)="load()">Reload</button>
+          }
+        }
+      </div>
+    }
+
+    <footer class="sticky-footer">
+      <button type="button" class="ghost-btn" [disabled]="saving()" (click)="cancelForm()">Cancel</button>
+      <button
+        type="button"
+        class="primary-btn"
+        [disabled]="saving() || form.invalid || form.pristine"
+        (click)="save()"
+      >
+        @if (saving()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        }
+        {{ saveLabel() }}
+      </button>
+    </footer>
+  </div>
+}

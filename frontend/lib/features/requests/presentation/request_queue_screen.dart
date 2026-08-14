@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../attachments/presentation/attachments_widget.dart';
 import '../data/requests_repository.dart';
+import 'job_status.dart';
 import 'request_detail_screen.dart';
 
 final _queueFamily = FutureProvider.autoDispose
@@ -89,7 +90,7 @@ class _StatusFilterBar extends StatelessWidget {
     (null, 'All'),
     ('PENDING_REVIEW', 'Pending'),
     ('INFORMATION_REQUIRED', 'Info Needed'),
-    ('APPROVED', 'Approved'),
+    ('APPROVED', 'Accepted'),
     ('REJECTED', 'Rejected'),
     ('CANCELLED', 'Cancelled'),
   ];
@@ -155,6 +156,11 @@ class _RequestCard extends ConsumerWidget {
                 _StatusChip(status: item.status),
               ],
             ),
+            if (item.status == 'APPROVED')
+              JobProgressRow(
+                jobStatus: item.jobStatus,
+                assignedTechnicianName: item.assignedTechnicianName,
+              ),
             const SizedBox(height: AppTheme.spaceXS),
             Text('${item.contactName} · @${item.customerUsername}',
                 style: Theme.of(context).textTheme.bodyMedium),
@@ -379,7 +385,7 @@ class _StatusChip extends StatelessWidget {
   static const _labels = {
     'PENDING_REVIEW': 'Pending',
     'INFORMATION_REQUIRED': 'Info Needed',
-    'APPROVED': 'Approved',
+    'APPROVED': 'Accepted',
     'REJECTED': 'Rejected',
     'CANCELLED': 'Cancelled',
   };

@@ -1,16 +1,32 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/error/app_exception.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/utils/image_source_picker.dart';
 import '../data/attachments_repository.dart';
+
+String _friendlyError(Object e) {
+  if (e is AppException) {
+    if (e.isNotFound ||
+        e.message.toLowerCase().contains('missing from storage') ||
+        e.message.toLowerCase().contains('file not found')) {
+      return 'This photo is no longer on the server. Please upload it again.';
+    }
+    return e.userMessage;
+  }
+  return 'Something went wrong. Please try again.';
+}
 
 // ── Provider ────────────────────────────────────────────────────────────────
 
-final _attachmentsProvider = FutureProvider.autoDispose
+/// Public so screens that upload attachments through a code path other than
+/// [AttachmentsWidget]'s own picker (e.g. the customer's "Add Photo" button
+/// in the respond panel) can invalidate the matching list after uploading.
+final attachmentsProvider = FutureProvider.autoDispose
     .family<List<AttachmentItem>, ({String ownerType, String ownerId})>(
         (ref, args) {
   final repo = ref.watch(attachmentsRepositoryProvider);
@@ -51,7 +67,7 @@ class _AttachmentsWidgetState extends ConsumerState<AttachmentsWidget> {
   @override
   Widget build(BuildContext context) {
     final key = (ownerType: widget.ownerType, ownerId: widget.ownerId);
-    final attachmentsAsync = ref.watch(_attachmentsProvider(key));
+    final attachmentsAsync = ref.watch(attachmentsProvider(key));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,7 +101,7 @@ class _AttachmentsWidgetState extends ConsumerState<AttachmentsWidget> {
         attachmentsAsync.when(
           loading: () =>
               const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Failed to load: $e',
+          error: (e, _) => Text('Failed to load: ${_friendlyError(e)}',
               style: const TextStyle(color: AppTheme.error)),
           data: (items) {
             if (items.isEmpty) {
@@ -100,7 +116,7 @@ class _AttachmentsWidgetState extends ConsumerState<AttachmentsWidget> {
                 attachment: a,
                 canDelete: widget.canDelete,
                 onDeleted: () =>
-                    ref.invalidate(_attachmentsProvider(key)),
+                    ref.invalidate(attachmentsProvider(key)),
               )).toList(),
             );
           },
@@ -110,23 +126,19 @@ class _AttachmentsWidgetState extends ConsumerState<AttachmentsWidget> {
   }
 
   Future<void> _pickAndUpload() async {
-    final XFile? picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
+    final XFile? picked = await pickImageWithSourceChoice(context, _picker);
     if (picked == null) return;
 
     setState(() => _uploading = true);
     try {
       final repo = ref.read(attachmentsRepositoryProvider);
-      final file = File(picked.path);
       if (widget.ownerType == 'JOB') {
-        await repo.uploadToJob(widget.ownerId, file);
+        await repo.uploadToJob(widget.ownerId, picked);
       } else {
-        await repo.uploadToRequest(widget.ownerId, file);
+        await repo.uploadToRequest(widget.ownerId, picked);
       }
       final key = (ownerType: widget.ownerType, ownerId: widget.ownerId);
-      ref.invalidate(_attachmentsProvider(key));
+      ref.invalidate(attachmentsProvider(key));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Photo uploaded')));
@@ -135,7 +147,7 @@ class _AttachmentsWidgetState extends ConsumerState<AttachmentsWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Upload failed: $e'),
+              content: Text('Upload failed: ${_friendlyError(e)}'),
               backgroundColor: AppTheme.error));
       }
     } finally {
@@ -162,7 +174,7 @@ class _AttachmentTile extends ConsumerWidget {
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
-      leading: _Thumbnail(storageKey: attachment.storageKey, ref: ref),
+      leading: _Thumbnail(attachment: attachment, ref: ref),
       title: Text(attachment.displayName,
           style: const TextStyle(fontSize: 13),
           overflow: TextOverflow.ellipsis),
@@ -227,8 +239,8 @@ class _AttachmentTile extends ConsumerWidget {
 // ── Thumbnail ─────────────────────────────────────────────────────────────────
 
 class _Thumbnail extends StatefulWidget {
-  const _Thumbnail({required this.storageKey, required this.ref});
-  final String storageKey;
+  const _Thumbnail({required this.attachment, required this.ref});
+  final AttachmentItem attachment;
   final WidgetRef ref;
 
   @override
@@ -249,7 +261,7 @@ class _ThumbnailState extends State<_Thumbnail> {
     try {
       final bytes = await widget.ref
           .read(attachmentsRepositoryProvider)
-          .fetchImageBytes(widget.storageKey);
+          .fetchImageBytes(widget.attachment);
       if (mounted) setState(() { _bytes = bytes; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -297,11 +309,15 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
 
   Future<void> _load() async {
     try {
-      final bytes =
-          await widget.repo.fetchImageBytes(widget.attachment.storageKey);
+      final bytes = await widget.repo.fetchImageBytes(widget.attachment);
       if (mounted) setState(() { _bytes = bytes; _loading = false; });
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted) {
+        setState(() {
+          _error = _friendlyError(e);
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -319,8 +335,32 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
         child: _loading
             ? const CircularProgressIndicator(color: Colors.white)
             : _error != null
-                ? Text(_error!,
-                    style: const TextStyle(color: Colors.white))
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.broken_image_outlined,
+                            color: Colors.white70, size: 48),
+                        const SizedBox(height: 12),
+                        Text(_error!,
+                            style: const TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _loading = true;
+                              _error = null;
+                            });
+                            _load();
+                          },
+                          child: const Text('Retry',
+                              style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  )
                 : InteractiveViewer(
                     child: Image.memory(_bytes!, fit: BoxFit.contain)),
       ),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_controller.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/brand_backdrop.dart';
 import '../data/auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -60,60 +61,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spaceL,
-            vertical: AppTheme.spaceXL,
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: AppTheme.spaceXL),
-                _buildHeader(textTheme),
-                const SizedBox(height: AppTheme.spaceXL),
-                if (_errorMessage != null) _buildErrorBanner(),
-                const SizedBox(height: AppTheme.spaceM),
-                _buildUsernameField(),
-                const SizedBox(height: AppTheme.spaceM),
-                _buildPasswordField(),
-                const SizedBox(height: AppTheme.spaceXL),
-                _buildSignInButton(),
-                const SizedBox(height: AppTheme.spaceL),
-                _buildRegisterLink(context),
-              ],
+      body: BrandBackdrop(
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spaceL,
+                    ),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 440),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 56),
+                              const BrandHeader(),
+                              const SizedBox(height: 28),
+                              if (_errorMessage != null) ...[
+                                _buildErrorBanner(),
+                                const SizedBox(height: AppTheme.spaceM),
+                              ],
+                              _buildUsernameField(),
+                              const SizedBox(height: AppTheme.spaceM),
+                              _buildPasswordField(),
+                              const SizedBox(height: 28),
+                              _buildSignInButton(),
+                              const SizedBox(height: AppTheme.spaceM),
+                              _buildRegisterLink(context),
+                              const Spacer(),
+                              const PoweredByFooter(),
+                              const SizedBox(height: 28),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader(TextTheme textTheme) {
-    return Column(
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: AppTheme.primary,
-            borderRadius: BorderRadius.circular(AppTheme.radiusL),
-          ),
-          child: const Icon(Icons.build_circle, color: Colors.white, size: 40),
-        ),
-        const SizedBox(height: AppTheme.spaceM),
-        Text('RepairDesk', style: textTheme.titleLarge?.copyWith(fontSize: 26)),
-        const SizedBox(height: AppTheme.spaceXS),
-        Text(
-          'Sign in to continue',
-          style: textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
-        ),
-      ],
     );
   }
 
@@ -122,7 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       padding: const EdgeInsets.all(AppTheme.spaceM),
       decoration: BoxDecoration(
         color: AppTheme.error.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        borderRadius: BorderRadius.circular(AppTheme.radiusControl),
         border: Border.all(color: AppTheme.error.withValues(alpha: 0.4)),
       ),
       child: Row(
@@ -146,7 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       textInputAction: TextInputAction.next,
       keyboardType: TextInputType.emailAddress,
       decoration: const InputDecoration(
-        labelText: 'Username',
+        hintText: 'Username',
         prefixIcon: Icon(Icons.person_outline),
       ),
       validator: (v) {
@@ -163,10 +160,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       textInputAction: TextInputAction.done,
       onFieldSubmitted: (_) => _submit(),
       decoration: InputDecoration(
-        labelText: 'Password',
+        hintText: 'Password',
         prefixIcon: const Icon(Icons.lock_outline),
         suffixIcon: IconButton(
           icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+          tooltip: _obscure ? 'Show password' : 'Hide password',
           onPressed: () => setState(() => _obscure = !_obscure),
         ),
       ),
@@ -194,10 +192,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text("Don't have an account? "),
+        const Text(
+          "Don't have an account?",
+          style: TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+        ),
         TextButton(
           onPressed: () => context.push('/register'),
-          child: const Text('Register'),
+          child: const Text(
+            'Register',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.primary,
+            ),
+          ),
         ),
       ],
     );

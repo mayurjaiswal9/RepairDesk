@@ -1,0 +1,101 @@
+@use '@angular/material' as mat;
+
+:root {
+  /* ACE Telecom palette — logo blue CTAs on cool white surfaces */
+  --color-primary: #1552cc;
+  --color-primary-dark: #0f3fa3;
+  --color-primary-light: #4c86e8;
+  --color-primary-soft: #e8f1fd;
+  --color-brand-navy: #14306e;
+  --color-brand-accent: #c2185b;
+  --color-secondary: #2bb673;
+  --color-error: #e53935;
+  --color-success: #2bb673;
+  --color-warning: #f5a623;
+  --color-surface: #ffffff;
+  --color-background: #f6faff;
+  --color-background-mid: #e3eefb;
+  --color-on-primary: #ffffff;
+  --color-text-primary: #1b2a41;
+  --color-text-secondary: #6b7a90;
+  --color-divider: #d9e4f3;
+
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 16px;
+  --space-l: 24px;
+  --space-xl: 32px;
+
+  --radius-s: 8px;
+  --radius-m: 16px;
+  --radius-l: 24px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 10px 34px rgba(20, 48, 110, 0.1);
+  --shadow-soft: 0 4px 16px rgba(21, 82, 204, 0.18);
+
+  --font-sans: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+
+html {
+  @include mat.theme((
+    color: (
+      theme-type: light,
+      primary: mat.$azure-palette,
+      tertiary: mat.$azure-palette,
+    ),
+    typography: (
+      plain-family: 'Plus Jakarta Sans',
+      brand-family: 'Plus Jakarta Sans',
+    ),
+    density: 0,
+  ));
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  background: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Pill primary actions site-wide */
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-flat-button.mat-primary {
+  --mdc-filled-button-container-shape: var(--radius-pill);
+  --mdc-protected-button-container-shape: var(--radius-pill);
+  background-color: var(--color-primary) !important;
+  color: var(--color-on-primary) !important;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-soft);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-primary-dark) !important;
+  }
+}
+
+.mat-mdc-outlined-button {
+  --mdc-outlined-button-container-shape: var(--radius-pill);
+}
+
+.mat-mdc-form-field {
+  --mdc-outlined-text-field-container-shape: var(--radius-m);
+  --mdc-outlined-text-field-outline-color: var(--color-divider);
+  --mdc-outlined-text-field-focus-outline-color: var(--color-primary);
+  --mdc-outlined-text-field-label-text-color: var(--color-text-secondary);
+  --mdc-outlined-text-field-focus-label-text-color: var(--color-primary);
+}
