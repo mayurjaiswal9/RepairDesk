@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 136" role="img" aria-label="TEZVO TECH">
+  <title>TEZVO TECH</title>
+  <defs>
+    <linearGradient id="mark" x1="12%" y1="0%" x2="92%" y2="100%">
+      <stop offset="0%" stop-color="#ff8a45"/>
+      <stop offset="55%" stop-color="#ff6a2b"/>
+      <stop offset="100%" stop-color="#ec5313"/>
+    </linearGradient>
+  </defs>
+  <rect width="136" height="136" rx="34" fill="url(#mark)"/>
+  <rect x="30" y="28" width="76" height="11" rx="5.5" fill="#fff"/>
+  <rect x="30" y="45" width="76" height="11" rx="5.5" fill="#fff"/>
+  <rect x="62.5" y="45" width="11" height="68" rx="5.5" fill="#fff"/>
+  <circle cx="92" cy="108" r="7.5" fill="#fff"/>
+</svg>

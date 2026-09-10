@@ -19,14 +19,20 @@ import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.devicecategory.repository.DeviceCategoryRepository;
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
+import com.acetelecom.repairdesk.feature.job.service.JobService;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.request.domain.IntakeChannel;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
+import com.acetelecom.repairdesk.feature.request.domain.RequestOrigin;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
 import com.acetelecom.repairdesk.feature.request.dto.CreateRequestDto;
 import com.acetelecom.repairdesk.feature.request.dto.RepairRequestResponse;
 import com.acetelecom.repairdesk.feature.request.dto.RepairRequestSummary;
 import com.acetelecom.repairdesk.feature.request.dto.UpdateRequestDto;
 import com.acetelecom.repairdesk.feature.request.repository.RepairRequestRepository;
+import com.acetelecom.repairdesk.feature.user.domain.AccountStatus;
+import com.acetelecom.repairdesk.feature.user.domain.Role;
 import com.acetelecom.repairdesk.feature.user.domain.User;
 import com.acetelecom.repairdesk.feature.user.repository.UserRepository;
 import com.acetelecom.repairdesk.security.AuthenticatedUser;
@@ -43,24 +49,41 @@ public class RepairRequestService {
     private final JobRepository jobRepo;
     private final JdbcTemplate jdbc;
     private final AuditService auditService;
+    private final JobService jobService;
+    private final NotificationService notifService;
 
     public RepairRequestService(RepairRequestRepository requestRepo,
             DeviceCategoryRepository categoryRepo,
             UserRepository userRepo,
             JobRepository jobRepo,
             JdbcTemplate jdbc,
-            AuditService auditService) {
+            AuditService auditService,
+            JobService jobService,
+            NotificationService notifService) {
         this.requestRepo = requestRepo;
         this.categoryRepo = categoryRepo;
         this.userRepo = userRepo;
         this.jobRepo = jobRepo;
         this.auditService = auditService;
         this.jdbc = jdbc;
+        this.jobService = jobService;
+        this.notifService = notifService;
     }
 
     public RepairRequestResponse create(CreateRequestDto dto, AuthenticatedUser caller) {
-        User customer = userRepo.findById(caller.id())
+        boolean staffCaller = isStaffOrAdmin(caller);
+        User actor = userRepo.findById(caller.id())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "User not found"));
+
+        User customer;
+        RequestOrigin origin;
+        if (staffCaller && dto.customerId() != null) {
+            customer = resolveAssistedCustomer(dto.customerId());
+            origin = RequestOrigin.STAFF_ASSISTED;
+        } else {
+            customer = actor;
+            origin = RequestOrigin.CUSTOMER_APP;
+        }
 
         DeviceCategory category = categoryRepo.findById(dto.deviceCategoryId())
                 .filter(c -> !c.isArchived())
@@ -84,8 +107,55 @@ public class RepairRequestService {
         req.setIssueDescription(dto.issueDescription());
         req.setPreferredDate(dto.preferredDate());
         req.setPreferredTime(dto.preferredTime());
+        req.setOrigin(origin);
+        req.setCreatedBy(actor);
+        req.setIntakeChannel(parseIntakeChannel(dto.intakeChannel()));
 
-        return RepairRequestResponse.from(requestRepo.save(req), null);
+        req = requestRepo.save(req);
+        auditService.record(caller, "REQUEST", req.getId(), "CREATED",
+                origin.name() + " by " + caller.username());
+
+        boolean approveNow = staffCaller && dto.shouldApproveOnCreate();
+        if (!approveNow) {
+            notifService.send(customer.getId(), "REQUEST_RECEIVED",
+                    "We received your repair request " + req.getReferenceNumber() + ".",
+                    req.getReferenceNumber(), "REPAIR_REQUEST", req.getId());
+            return RepairRequestResponse.from(req, null);
+        }
+
+        var job = jobService.approve(req.getId(), caller, dto.priority(), dto.note());
+        RepairRequest approved = requireById(req.getId());
+        return RepairRequestResponse.from(approved, jobRepo.findById(job.id()).orElse(null));
+    }
+
+    private User resolveAssistedCustomer(UUID customerId) {
+        User customer = userRepo.findById(customerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Customer not found"));
+        if (customer.getRole() != Role.CUSTOMER) {
+            throw new ApiException(ErrorCode.NOT_FOUND, "Customer not found");
+        }
+        if (customer.getStatus() == AccountStatus.DELETED) {
+            throw new ApiException(ErrorCode.NOT_FOUND, "Customer not found");
+        }
+        if (customer.getStatus() != AccountStatus.ACTIVE) {
+            throw new ApiException(ErrorCode.CONFLICT, "Customer is not active");
+        }
+        return customer;
+    }
+
+    private static IntakeChannel parseIntakeChannel(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return IntakeChannel.valueOf(raw.trim().toUpperCase().replace('-', '_').replace(' ', '_'));
+        } catch (IllegalArgumentException ex) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Unknown intake channel: " + raw);
+        }
+    }
+
+    private static boolean isStaffOrAdmin(AuthenticatedUser caller) {
+        return "STAFF".equals(caller.role()) || "ADMIN".equals(caller.role());
     }
 
     @Transactional(readOnly = true)

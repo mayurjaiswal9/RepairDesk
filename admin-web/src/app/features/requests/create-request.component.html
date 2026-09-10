@@ -1,0 +1,282 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <mat-icon>block</mat-icon>
+    <h1>You can’t create requests for customers</h1>
+    <p>Creating requests for customers is limited to staff and administrators.</p>
+    <a class="primary-btn" routerLink="/jobs">Go to My jobs</a>
+  </div>
+} @else if (state() === 'error') {
+  <div class="state-panel">
+    <h1>Couldn’t load Create request</h1>
+    <p>{{ error()?.message }}</p>
+    <button type="button" class="primary-btn" (click)="ngOnInit()">Retry</button>
+  </div>
+} @else if (state() === 'loading') {
+  <div class="create-page solo">
+    <div class="skel" style="height: 40px; width: 280px"></div>
+    <div class="skel" style="height: 20px; width: 420px; margin-top: 12px"></div>
+    <div class="skel" style="height: 160px; margin-top: 24px"></div>
+    <div class="skel" style="height: 200px; margin-top: 16px"></div>
+  </div>
+} @else {
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    @if (isAdmin()) {
+      <a routerLink="/requests">Repair Requests</a>
+    } @else {
+      <a routerLink="/customers">Customers</a>
+    }
+    <span class="sep">/</span>
+    <strong>Create request</strong>
+  </nav>
+
+  <div class="create-page" [class.solo]="!customer()">
+    <div class="page-title">
+      <div class="doc" aria-hidden="true">+</div>
+      <h1>Create request</h1>
+    </div>
+    <p class="lede">
+      Create a request for a walk-in or phone customer. The request is owned by them, not by you.
+    </p>
+
+    <div class="create-grid" [class.solo]="!customer()">
+      <form [formGroup]="form" class="form-col">
+        <section class="block">
+          <div class="block-head">
+            <div class="step">1</div>
+            <div>
+              <h2>Customer</h2>
+              <p class="hint">Search or select the customer this request belongs to.</p>
+            </div>
+          </div>
+
+          @if (customer(); as c) {
+            <div class="picked">
+              <div class="face">{{ initials() }}</div>
+              <div class="who">
+                <div class="name">
+                  {{ displayName(c) }}
+                  <span class="chip-status chip-success">Active</span>
+                </div>
+                <div class="meta">{{ '@' + c.username }} · {{ c.mobile }}</div>
+              </div>
+              <button type="button" class="ghost-btn" (click)="changeCustomer()">Change</button>
+            </div>
+          } @else {
+            <div class="search-pill">
+              <mat-icon>search</mat-icon>
+              <input formControlName="q" placeholder="Search name, username, or mobile number" />
+            </div>
+            @if (searching()) {
+              <p class="hint">Searching…</p>
+            }
+            @if (searchHits().length) {
+              <div class="suggest">
+                @for (row of searchHits(); track row.id) {
+                  <button type="button" (click)="selectCustomer(row)">
+                    <div class="s-name">{{ displayName(row) }}</div>
+                    <div class="s-meta">
+                      {{ '@' + row.username }} · {{ row.mobile }}
+                      @if (row.repairCount != null) {
+                        · {{ row.repairCount }} previous
+                      }
+                    </div>
+                  </button>
+                }
+              </div>
+            } @else if (searchDone()) {
+              <div class="suggest empty">
+                <p>No customer matches “{{ form.controls.q.value }}”. Create one and keep going.</p>
+                <button type="button" class="primary-btn" (click)="openNewCustomer()">+ Create new customer</button>
+              </div>
+            }
+            @if (formError() && !customer()) {
+              <div class="field-error">{{ formError() }}</div>
+            }
+            <button type="button" class="new-cust" (click)="openNewCustomer()">+ New customer</button>
+          }
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <div class="step">2</div>
+            <div>
+              <h2>Contact (this request only)</h2>
+              <p class="hint">We’ll use this to reach out about this request.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="field">
+              <span>Name <em>*</em></span>
+              <input formControlName="contactName" placeholder="Enter full name" />
+              @if (form.controls.contactName.touched && form.controls.contactName.invalid) {
+                <small>Name is required</small>
+              }
+            </label>
+            <label class="field">
+              <span>Mobile <em>*</em></span>
+              <input formControlName="contactMobile" placeholder="Enter mobile number" />
+              @if (form.controls.contactMobile.touched && form.controls.contactMobile.invalid) {
+                <small>Enter a valid mobile number</small>
+              }
+            </label>
+          </div>
+          <label class="field">
+            <span>Email (optional)</span>
+            <input formControlName="contactEmail" placeholder="Enter email address" />
+            @if (form.controls.contactEmail.touched && form.controls.contactEmail.invalid) {
+              <small>Enter a valid email, or leave it blank</small>
+            }
+          </label>
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <div class="step">3</div>
+            <div>
+              <h2>Request details</h2>
+              <p class="hint">Same device and issue fields the customer fills in the app.</p>
+            </div>
+          </div>
+          <label class="field">
+            <span>Device type <em>*</em></span>
+            <select formControlName="deviceCategoryId">
+              <option value="">Select device type</option>
+              @for (c of categories(); track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+            </select>
+            @if (form.controls.deviceCategoryId.touched && form.controls.deviceCategoryId.invalid) {
+              <small>Please select a device type</small>
+            }
+          </label>
+          <div class="form-row">
+            <label class="field">
+              <span>Brand</span>
+              <select formControlName="deviceBrand">
+                <option value="">{{ brandLocked() ? 'Select a device type first' : 'Select brand' }}</option>
+                @for (b of brands(); track b.id) {
+                  <option [value]="b.name">{{ b.name }}</option>
+                }
+                <option value="Others">Others</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Model</span>
+              <input formControlName="deviceModel" placeholder="e.g. Galaxy S24" />
+            </label>
+          </div>
+          <label class="field">
+            <span>Describe the issue <em>*</em></span>
+            <textarea formControlName="issueDescription" rows="4" placeholder="Describe the issue in detail."></textarea>
+            @if (form.controls.issueDescription.touched && form.controls.issueDescription.invalid) {
+              <small>Please describe the issue (min 10 characters)</small>
+            }
+          </label>
+          <div class="field">
+            <span>How did the customer contact you?</span>
+            <div class="channels">
+              @for (ch of channels; track ch) {
+                <button
+                  type="button"
+                  class="channel"
+                  [class.on]="form.controls.intakeChannel.value === ch"
+                  (click)="setChannel(ch)"
+                >
+                  {{ channelLabel[ch] }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="field">
+            <span>Photos <span class="opt">(optional)</span></span>
+            <label class="drop">
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple (change)="onFiles($event)" hidden />
+              <b>+ Add photos</b>
+              <span>Up to 5 photos of the device or damage · JPG, PNG · 10 MB each</span>
+            </label>
+            @if (photos().length) {
+              <ul class="thumbs">
+                @for (f of photos(); track $index) {
+                  <li>
+                    {{ f.name }}
+                    <button type="button" (click)="removePhoto($index)" aria-label="Remove">×</button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </section>
+      </form>
+
+      @if (customer(); as c) {
+        <aside class="rail" aria-label="Customer context">
+          <div class="rail-card">
+            <h3>Customer snapshot</h3>
+            <div class="snap">
+              <div class="face">{{ initials() }}</div>
+              <div>
+                <div class="name">{{ displayName(c) }}</div>
+                <div class="meta">{{ c.mobile }}</div>
+                <div class="meta">{{ history().length }} previous request{{ history().length === 1 ? '' : 's' }}</div>
+              </div>
+            </div>
+            <a class="snap-link" [routerLink]="['/customers', c.id]">View customer →</a>
+          </div>
+          <div class="rail-card">
+            <h3>Equipment / asset</h3>
+            <p class="next-note">No equipment on file yet. Device type on the form is enough for this request.</p>
+          </div>
+          <div class="rail-card">
+            <h3>Previous requests</h3>
+            @if (history().length) {
+              <ul class="hist">
+                @for (r of history().slice(0, 5); track r.id) {
+                  <li>
+                    <span><b>{{ r.referenceNumber }}</b> · {{ r.deviceCategoryName }}</span>
+                    <span class="when">{{ r.status }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="next-note">No previous requests. This will be their first.</p>
+            }
+          </div>
+          <div class="rail-card">
+            <h3>Next</h3>
+            <p class="next-note">
+              After this request is created you can review it, then schedule and assign a technician.
+              Those steps are not on this screen.
+            </p>
+          </div>
+        </aside>
+      }
+    </div>
+  </div>
+
+  <div class="sticky-foot">
+    <p class="foot-hint">
+      Create the request first. Schedule and assign come next.
+      @if (isAdmin()) {
+        <button type="button" class="text-btn" (click)="createAndApprove()" [disabled]="!canSubmit()">
+          Create and approve
+        </button>
+      }
+    </p>
+    <div class="foot-actions">
+      <button type="button" class="ghost-btn" (click)="cancel()" [disabled]="submitting()">Cancel</button>
+      <button type="button" class="ghost-btn" (click)="saveForReview()" [disabled]="!canSubmit()">
+        Save for review
+      </button>
+      <button type="button" class="primary-btn" (click)="createRequest()" [disabled]="!canSubmit()">
+        @if (submitting()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        }
+        Create request →
+      </button>
+    </div>
+  </div>
+
+  @if (formError() && customer()) {
+    <div class="toast-error" role="alert">{{ formError() }}</div>
+  }
+}

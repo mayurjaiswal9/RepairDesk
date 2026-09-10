@@ -75,7 +75,7 @@ app:
   admin:
     # Default admin seed (GAP-03). Mobile is a placeholder updated on first login.
     default-username: admin
-    default-password: Admin@1234
+    default-password: "Admin$1234"
     default-mobile: "0000000000"
 
 logging:

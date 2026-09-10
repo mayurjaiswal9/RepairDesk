@@ -42,4 +42,5 @@ export interface ApiErrorBody {
   path?: string;
   correlationId?: string;
   fieldErrors?: Array<{ field: string; message: string }>;
+  details?: { existingCustomerId?: string };
 }

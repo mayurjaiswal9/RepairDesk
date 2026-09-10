@@ -54,9 +54,10 @@ This feature is primarily a **Customer** capability, but it produces records con
   - Review submitted requests, validate completeness, and approve, reject, or request additional information.
   - Convert approved requests into jobs (handled in downstream features).
 - **Permissions**
-  - View all repair requests.
+  - View all repair requests (when granted queue access).
   - Change request status within their authority (e.g., Pending Review → Approved/Rejected).
   - Add review notes / request more information.
+  - Create a request on behalf of a customer ([FEAT-SAI-001](staff-assisted-intake.md)).
 - **Restrictions**
   - Should not silently edit customer-entered factual content (device, issue) without an auditable note; corrections must be traceable.
   - Cannot manage users, products, or global settings (Administrator scope).
@@ -68,7 +69,7 @@ This feature is primarily a **Customer** capability, but it produces records con
 - **Permissions**
   - View requests/jobs assigned to them, including the originating request details and attachments.
 - **Restrictions**
-  - Cannot create repair requests on behalf of customers in V1 (see *Open Questions* — staff/technician-assisted intake is a candidate enhancement).
+  - Cannot create repair requests on behalf of customers from the technician UI (staff-assisted intake is a Staff/Admin capability — [FEAT-SAI-001](staff-assisted-intake.md)).
   - Cannot approve/reject requests.
   - Cannot view requests unrelated to their assignments (unless broadened by policy).
 
@@ -638,12 +639,12 @@ The following decisions resolve the previously open questions. They favor simpli
 9. **Holiday calendar:** **Not in V1** — weekly working hours only.
 10. **Attachments:** **≤5 images**, **10 MB/file**, **25 MB total**, formats **JPEG/PNG/HEIC/WebP**. No EXIF stripping in V1. Attachments are **deleted with the request** if the request is deleted.
 11. **Drafts / offline:** **Not in V1.** A request is created only on successful submission.
-12. **Staff-assisted intake:** **Not in V1.** Customers self-submit only. (Walk-in/phone-in intake by staff is a future enhancement.)
+12. **Staff-assisted intake:** Specified in [staff-assisted-intake.md](staff-assisted-intake.md). Staff/Admin create a request **owned by the customer** (find or create the account), then Save for review or Create and approve. Technicians cannot. Self-submit in the app is unchanged.
 13. **Severity / issue category at intake:** **Not captured at intake** in V1. **Staff set Priority during review** (see Request Review spec).
 14. **Warranty:** Customer may optionally indicate purchase date / warranty; **warranty is confirmed by staff**. No automatic derivation.
 15. **Service mode:** **Single implicit mode** in V1 (no selectable walk-in/drop-off/on-site). Field deferred.
 16. **Idempotency:** **Required.** The UI prevents double submission and retries must not create duplicate requests.
 17. **Sensitive data:** Serial/IMEI is **optional**, visible to **internal roles only**, with no special masking in V1 beyond role-based access. No additional regulatory handling assumed for V1.
 
-*Future enhancements (explicitly deferred):* account-synced contact details, email/SMS/push notifications, managed brand/model lists, holiday calendar, intake capacity, drafts/offline, staff-assisted intake, service modes, EXIF stripping.
+*Future enhancements (explicitly deferred):* account-synced contact details, email/SMS/push notifications, managed brand/model lists, holiday calendar, intake capacity, drafts/offline, service modes, EXIF stripping. **Staff-assisted intake is no longer deferred** — see [staff-assisted-intake.md](staff-assisted-intake.md).
 

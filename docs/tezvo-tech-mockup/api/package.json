@@ -1,0 +1,13 @@
+{
+  "name": "tezvo-tech-api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/functions/*.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@azure/communication-email": "^1.0.0",
+    "@azure/functions": "^4.6.0"
+  }
+}

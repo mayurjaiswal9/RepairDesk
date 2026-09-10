@@ -1,6 +1,6 @@
 # RepairDesk V1 — Implementation Progress
 
-**Last updated:** 2026-08-11 (Admin panel: AP-10 Customers directory implemented)
+**Last updated:** 2026-08-27 (AP-18 staff-assisted intake spec + mockup)
 **Source of truth:** [Tasks.md](Tasks.md) · [admin-panel/Tasks.md](admin-panel/Tasks.md)
 
 ---
@@ -335,11 +335,13 @@ Both shipped with new regression tests (`CustomerControllerTest`, `GlobalExcepti
 
 ## Phase 7 — Admin Panel (Angular web client)
 
-A **new** Angular web admin panel (`admin-web/`) consuming the same unchanged `/api/v1` backend. Feature parity with the existing admin capabilities; no new backend features. The Flutter app remains the mobile client.
+A **new** Angular web admin panel (`admin-web/`) consuming `/api/v1`. Feature parity with existing admin capabilities; **AP-18 staff-assisted intake** is a new increment that needs backend (`POST /customers`, assisted `POST /requests`). The Flutter app remains the mobile client.
 
 | Deliverable | Status | Notes |
 |---|---|---|
-| UI specification set | ✅ Specified | [`docs/admin-panel/`](admin-panel/README.md) — IA/route map, design system, and 17 per-page specs (AP-01 … AP-17) with element inventories and **282 acceptance criteria** |
+| UI specification set | ✅ Specified | [`docs/admin-panel/`](admin-panel/README.md) — IA/route map, design system, AP-01 … AP-17, plus **AP-18 Create Request** (draft) |
+| Staff-assisted intake spec | 🔄 Draft | [features/staff-assisted-intake.md](features/staff-assisted-intake.md) · [AP-18](admin-panel/pages/AP-18-create-request.md) · mockup in review |
+| Implementation (AP-18) | ⏳ Pending | Needs `POST /customers` + assisted `POST /requests` (APB-SAI-001/002) |
 | API contract verification | ✅ Complete | [API-Contract-Gaps.md](admin-panel/API-Contract-Gaps.md) — every cited endpoint checked against backend source |
 | Batch 1 task plan (AP-01 … AP-04) | ✅ Planned | [admin-panel/Tasks.md](admin-panel/Tasks.md) — 43 tasks: mockups → sign-off gate → foundation → implementation → verification |
 | Batch 1 mockups | ✅ Signed off | Gate `AP00-M3` closed 2026-08-07 — [`admin-panel/mockups/`](admin-panel/mockups/index.html) |
@@ -357,5 +359,5 @@ A **new** Angular web admin panel (`admin-web/`) consuming the same unchanged `/
 
 ### Remaining deferred items (post-V1)
 
-- **TEST-009 / TEST-020–024** — Flutter widget tests and repository-level integration tests. Deferred to post-launch; the backend is covered by 55+ unit + integration tests (plus `CustomerControllerTest` / `GlobalExceptionHandlerTest` added for bugs 9–10).
+- **Request vs Work Order rename** — specified, not started. [Request-to-Work-Order-Rename.md](Request-to-Work-Order-Rename.md). Product decision (A/B/C) required; a column rename is not sufficient.
 - These items do not block a production V1 launch.

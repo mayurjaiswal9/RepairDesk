@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { toFileFormData } from './multipart';
 import { AttachmentMeta } from '../models/request.models';
 import { AppointmentSummary, JobDetail, Priority } from '../models/job.models';
 import { JobSummary, PageResponse } from '../models/dashboard.models';
@@ -91,9 +92,7 @@ export class JobsApi {
   }
 
   uploadAttachment(jobId: string, file: File): Observable<AttachmentMeta> {
-    const body = new FormData();
-    body.append('file', file, file.name);
-    return this.http.post<AttachmentMeta>(`${this.base}/jobs/${jobId}/attachments`, body);
+    return this.http.post<AttachmentMeta>(`${this.base}/jobs/${jobId}/attachments`, toFileFormData(file));
   }
 
   downloadAttachment(storageKey: string): Observable<Blob> {

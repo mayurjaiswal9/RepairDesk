@@ -3,7 +3,7 @@
 **Product:** RepairDesk (built for ACE Telecom)
 **Document type:** UI specification index / information architecture
 **Client:** New **Angular** web application (`admin-web/`), separate from the existing Flutter mobile app
-**Backend:** **Unchanged** — consumes the same REST API at `/api/v1` documented in [API.md](../API.md)
+**Backend:** Same REST API at `/api/v1` documented in [API.md](../API.md). Feature parity pages consume shipped endpoints. [AP-18](pages/AP-18-create-request.md) **requires new backend** (`POST /customers`, assisted `POST /requests`).
 **Status:** Draft for review
 
 > This document set specifies the **screens, elements, and acceptance criteria** for the Angular Admin Panel. It defines *what each page contains and must do*, not how to implement it in Angular (no component code). Data shapes and endpoint contracts are owned by [API.md](../API.md); domain rules are owned by the feature specs in [`docs/features/`](../features/); visual tokens and shared component behavior are owned by [Design-System.md](Design-System.md).
@@ -12,11 +12,13 @@
 
 ## 1. Scope & intent
 
-The Admin Panel brings the **existing** admin capabilities of the Flutter app to a desktop-first web client. It introduces **no new backend features** — every action maps to an endpoint that already exists and is already exercised by the mobile app.
+The Admin Panel brings the **existing** admin capabilities of the Flutter app to a desktop-first web client. Aside from [AP-18](pages/AP-18-create-request.md), every action maps to an endpoint that already exists and is already exercised by the mobile app.
 
 **In scope (feature parity):** repair request review, job management, technician assignment, appointment scheduling, customer lookup, staff/user administration, device category + brand catalog, business settings, notifications, own-account management.
 
-**Out of scope for V1 of the panel:** customer-facing flows (request submission, repair tracking) — those stay in the mobile app; analytics/reporting dashboards (PRD §6 explicitly keeps the dashboard a navigation hub, not analytics); invoicing/payments (not in the product at all).
+**Post-V1 increment (new backend):** [AP-18 Create Request](pages/AP-18-create-request.md) — staff-assisted / walk-in intake. Requires `POST /requests` with `customerId` + optional `approveOnCreate`, and `POST /customers`. See [features/staff-assisted-intake.md](../features/staff-assisted-intake.md).
+
+**Out of scope for V1 of the panel:** customer-facing flows (request submission, repair tracking) — those stay in the mobile app; analytics/reporting dashboards (PRD §6 explicitly keeps the dashboard a navigation hub, not analytics); invoicing/payments (not in the product at all). Direct **Create job** (bypassing a request) stays out of scope.
 
 **Why a web panel:** the mobile app's dashboard-of-tiles + `Navigator.push` model forces admins back to the dashboard between tasks, and cannot show list + detail together. Back-office work (triaging a queue, assigning technicians, editing catalogs) benefits from a persistent sidebar, wider data tables, and master-detail layouts. Those are the main deliberate departures from the mobile UI; each is called out per page under **Deviations from the mobile app**.
 
@@ -93,6 +95,7 @@ Every authenticated page renders inside one persistent shell (specified in [AP-0
 | *(shell)* | App shell / navigation | [AP-02](pages/AP-02-app-shell.md) | Authenticated |
 | `/dashboard` | Dashboard hub | [AP-03](pages/AP-03-dashboard.md) | All internal |
 | `/requests` | Repair request queue | [AP-04](pages/AP-04-repair-requests.md) | `ADMIN` |
+| `/requests/new` | Create request (staff-assisted) | [AP-18](pages/AP-18-create-request.md) | `ADMIN`, `STAFF` |
 | `/requests/:id` | Request detail | [AP-05](pages/AP-05-request-detail.md) | `ADMIN` |
 | `/jobs` | Jobs list | [AP-06](pages/AP-06-jobs.md) | All internal |
 | `/jobs/:id` | Job detail | [AP-07](pages/AP-07-job-detail.md) | All internal |
@@ -120,11 +123,15 @@ flowchart LR
   Dash --> Staff["/staff"]
   Dash --> Cat["/catalog/categories"]
   Dash --> Set["/settings"]
+  Req --> ReqNew["/requests/new"]
   Req --> ReqD["/requests/:id"]
-  ReqD --> JobD["/jobs/:id"]
+  ReqNew --> ReqD
+  ReqNew --> JobD["/jobs/:id"]
+  ReqD --> JobD
   Jobs --> JobD
   JobD --> Sched["/jobs/:id/schedule"]
   Cust --> CustD["/customers/:id"]
+  CustD --> ReqNew
   CustD --> ReqD
   CustD --> JobD
   Cat --> Brands["/catalog/categories/:id/brands"]
@@ -140,7 +147,8 @@ flowchart LR
 | [Design-System.md](Design-System.md) | Brand tokens, typography, spacing, shared components (data table, status chip, dialog, toast, attachment viewer), the five canonical page states, responsive breakpoints, accessibility baseline, form/validation patterns. |
 | [API-Contract-Gaps.md](API-Contract-Gaps.md) | **Read before implementing.** Verified drift between [API.md](../API.md) and the deployed backend, gaps the panel needs closed, security findings, and the product decisions still outstanding. |
 | [Tasks.md](Tasks.md) | Implementation plan, batched by page. Batch 1 (AP-01 … AP-04) is broken into mockups → sign-off gate → foundation → implementation → verification, with blockers tracked separately. |
-| [pages/AP-01 … AP-17](pages/) | One spec per page: purpose, layout anatomy, **element inventory**, interactions, states, permissions, API calls, **acceptance criteria**, deviations from the mobile app, open questions. |
+| [pages/AP-01 … AP-18](pages/) | One spec per page: purpose, layout anatomy, **element inventory**, interactions, states, permissions, API calls, **acceptance criteria**, deviations from the mobile app, open questions. |
+| [Request-to-Work-Order-Rename.md](../Request-to-Work-Order-Rename.md) | Impact analysis: Request vs Job vs Work Order. **Not a column rename.** Decision required (Job → Work Order recommended). |
 
 > ⚠️ **API.md is not currently a reliable contract.** While writing these specs, every cited endpoint was checked against the backend source, and API.md was found to be wrong about several paths and payloads — including the user edit verb, enable/disable paths, the technician roster, the login body, the dashboard counters, and all appointment mutation paths. **Where API.md and the backend disagree, build against the backend**, as recorded in [API-Contract-Gaps.md](API-Contract-Gaps.md) §1. The page specs follow the verified behavior. Correcting API.md is listed as step 1 of the recommended sequencing.
 

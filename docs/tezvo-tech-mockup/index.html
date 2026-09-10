@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NextGen Tech Solutions — Web, Apps & AI Automation</title>
+<title>TEZVO TECH — Web, Apps & AI Automation</title>
+<link rel="icon" href="logo-mark.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Nunito:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
     --white: #ffffff;
@@ -24,10 +25,10 @@
     --radius: 18px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; background: #fff8f3; }
   body {
     font-family: "Inter", system-ui, sans-serif;
-    background: var(--white); color: var(--ink);
+    background: #fff8f3; color: var(--ink);
     -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
   h1,h2,h3,h4,h5,h6 { font-family: "Sora", sans-serif; letter-spacing: -0.03em; }
@@ -58,16 +59,34 @@
   /* ============ NAV ============ */
   header.top {
     position: sticky; top: 0; z-index: 100;
-    background: transparent; border-bottom: 1px solid transparent;
+    background: #fff8f3; border-bottom: 1px solid transparent;
     transition: background .3s, border-color .3s;
   }
-  header.top.scrolled { background: rgba(255,245,238,.9); backdrop-filter: blur(14px); border-color: var(--line); }
-  nav.site { display: flex; align-items: center; padding: 22px 0; }
-  .logo { font-family: "Sora"; font-weight: 800; font-size: 19px; display: flex; align-items: center; gap: 10px; }
-  .logo .mark-dot {
-    width: 30px; height: 30px; border-radius: 9px; background: var(--orange);
-    display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 15px;
+  header.top.scrolled { background: rgba(255,245,238,.94); backdrop-filter: blur(14px); border-color: var(--line); }
+  nav.site { display: flex; align-items: center; padding: 17px 0 22px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo .logo-mark { width: 42px; height: 42px; display: block; flex-shrink: 0; }
+  .logo .logo-type { display: flex; flex-direction: column; justify-content: center; gap: 4px; line-height: 1; width: fit-content; }
+  .logo .logo-name {
+    font-family: "Nunito", "Sora", sans-serif; font-weight: 800; font-size: 19px;
+    letter-spacing: .2em; word-spacing: .26em; color: var(--ink); white-space: nowrap;
   }
+  .logo .logo-name em { font-style: normal; color: var(--orange); }
+  /* width:0 / min-width:100% locks this row to the wordmark width so the
+     tagline + rules cannot grow wider than "TEZVO TECH". */
+  .logo .logo-tag {
+    display: flex; align-items: center; gap: 5px;
+    width: 0; min-width: 100%; overflow: hidden;
+    font-family: "Nunito", "Sora", sans-serif; font-weight: 700; font-size: 7px; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--muted); white-space: nowrap;
+  }
+  .logo .logo-tag::before, .logo .logo-tag::after {
+    content: ""; flex: 1 1 0; height: 1px; background: #c9c2ba; min-width: 0;
+  }
+  .logo .logo-tag i { color: var(--orange); font-style: normal; }
+  footer .logo .logo-mark { width: 34px; height: 34px; }
+  footer .logo .logo-name { font-size: 16px; }
+  footer .logo .logo-tag { font-size: 7.5px; }
   nav.site .links { display: flex; gap: 34px; margin: 0 auto; }
   nav.site .links a { font-size: 14.5px; font-weight: 500; color: var(--ink-soft); position: relative; padding: 4px 0; display: inline-flex; align-items: center; gap: 5px; }
   nav.site .links a svg { width: 13px; height: 13px; opacity: .7; }
@@ -103,7 +122,7 @@
 
   /* ============ HERO ============ */
   .hero {
-    position: relative; overflow: hidden; margin-top: -75px; padding: 104px 0 48px;
+    position: relative; overflow: hidden; margin-top: -96px; padding: 124px 0 48px;
     background:
       radial-gradient(820px 420px at 82% 12%, #ffd9c4, transparent 58%),
       radial-gradient(640px 400px at 8% 70%, #fff1e6, transparent 60%),
@@ -369,6 +388,25 @@
   .wwd h4 { font-size: 14.5px; margin-bottom: 5px; }
   .wwd p { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
 
+  .prod-promo {
+    margin-top: 28px; border-radius: 24px; border: 1px solid var(--line); overflow: hidden;
+    display: grid; grid-template-columns: 1.15fr .85fr; background:
+      radial-gradient(500px 240px at 92% 0%, #ffe2d0, transparent 60%), var(--peach-2);
+  }
+  .prod-promo .copy { padding: 42px 44px; }
+  .prod-promo h3 { font-size: clamp(22px, 2.4vw, 30px); margin: 8px 0 12px; }
+  .prod-promo h3 em { font-style: normal; color: var(--orange); }
+  .prod-promo p { color: var(--ink-soft); font-size: 15px; line-height: 1.7; max-width: 460px; margin-bottom: 22px; }
+  .prod-promo .shot { padding: 28px 28px 0 0; display: flex; align-items: flex-end; justify-content: flex-end; }
+  .mini-board {
+    width: 100%; max-width: 420px; background: #fff; border-radius: 16px 16px 0 0;
+    box-shadow: 0 20px 40px -24px rgba(28,22,16,.3); overflow: hidden;
+  }
+  .mini-board .mh { padding: 12px 14px; border-bottom: 1px solid #f2eae2; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; }
+  .mini-board .mh span { color: var(--orange); font-weight: 600; font-size: 11px; }
+  .mini-board .row { display: flex; justify-content: space-between; padding: 10px 14px; font-size: 12px; border-bottom: 1px solid #f6efe8; }
+  .mini-board .row em { font-style: normal; font-size: 10px; font-weight: 700; color: #2fa363; background: #e6f8ed; padding: 2px 7px; border-radius: 999px; }
+
   /* premium panel */
   .premium {
     border-radius: 26px; border: 1px solid var(--line); overflow: hidden;
@@ -459,7 +497,10 @@
     transition: border-color .25s, background .25s, transform .2s; width: 100%;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--orange); background: #fff; transform: translateY(-2px); }
-  textarea { min-height: 116px; resize: vertical; }
+  .form-note { font-size: 13.5px; line-height: 1.5; min-height: 1.4em; }
+  .form-note.ok { color: #1f7a4d; }
+  .form-note.err { color: #b42318; }
+  .hp { position: absolute; left: -9999px; opacity: 0; height: 0; width: 0; overflow: hidden; }
   .contact-side h3 { font-size: 19px; margin-bottom: 14px; }
   .contact-side > p { color: var(--ink-soft); font-size: 14.5px; line-height: 1.75; margin-bottom: 24px; }
   .contact-side .fact { display: flex; gap: 15px; padding: 14px 0; border-top: 1px solid var(--line); font-size: 14px; }
@@ -476,10 +517,12 @@
     .dots, .curve-arrow { display: none; }
     .hero p.lede { max-width: none; }
     .hero-visual { max-width: 780px; margin: 0 auto; }
+    .prod-promo { grid-template-columns: 1fr; }
+    .prod-promo .shot { padding: 0 28px 0 44px; }
   }
   @media (max-width: 940px) {
     .hero { padding: 110px 0 52px; }
-    .premium, .contact-grid { grid-template-columns: 1fr; }
+      .premium, .contact-grid, .prod-promo { grid-template-columns: 1fr; }
     .chips, .band, .steps, .wwd { grid-template-columns: 1fr 1fr; }
     .trio { grid-template-columns: 1fr; }
     nav.site .links { display: none; }
@@ -506,7 +549,7 @@
 </head>
 <body>
 
-<div id="loader"><div class="mark"><span>NEXTGEN</span><span class="o">·</span><span>TECH</span></div></div>
+<div id="loader"><div class="mark"><span>TEZVO</span><span class="o">·</span><span>TECH</span></div></div>
 <div id="progress"></div>
 <div id="cursor-dot"></div>
 <div id="cursor-ring"></div>
@@ -514,8 +557,15 @@
 <header class="top" id="topbar">
   <div class="wrap">
     <nav class="site">
-      <a href="#home" class="logo"><span class="mark-dot">N</span> NextGen Tech</a>
+      <a href="#home" class="logo" aria-label="TEZVO TECH">
+        <img class="logo-mark" src="logo-mark.svg" alt="" />
+        <span class="logo-type">
+          <span class="logo-name">TEZVO <em>TECH</em></span>
+          <span class="logo-tag">Smart Digital. Real Growth<i>.</i></span>
+        </span>
+      </a>
       <div class="links">
+        <a href="products-v2.html">Products</a>
         <a href="#services">Services
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
         </a>
@@ -573,7 +623,7 @@
         <div class="browser dv" data-depth="5">
           <div class="bchrome">
             <i></i><i></i><i></i>
-            <span class="url">smilecaredental.in — built by NextGen Tech Solutions</span>
+            <span class="url">smilecaredental.in — built by TEZVO TECH</span>
           </div>
           <div class="bbody">
             <div class="mini-nav">
@@ -695,6 +745,22 @@
         <div><h4>Integration</h4><p>APIs, systems &amp; third-party tools</p></div>
       </div>
     </div>
+    <div class="prod-promo rv">
+      <div class="copy">
+        <span class="eyebrow" style="justify-content:flex-start">Products</span>
+        <h3>Meet TEZVO<em>Flow</em></h3>
+        <p>Field service management for teams that work on the road — dispatch, live GPS, technician app, and same-day invoicing.</p>
+        <a class="btn btn-primary magnetic" href="products-v2.html">See TEZVOFlow wireframes <span class="arr">→</span></a>
+      </div>
+      <div class="shot">
+        <div class="mini-board">
+          <div class="mh">Dispatch · today <span>Live</span></div>
+          <div class="row"><span>AC-1842 · Split AC leak</span><em>On site</em></div>
+          <div class="row"><span>PL-0901 · Blocked drain</span><em>En route</em></div>
+          <div class="row"><span>EL-2210 · Panel trip</span><em style="color:#d97706;background:#fff4e5">Queued</em></div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -703,7 +769,7 @@
   <div class="wrap">
     <div class="premium rv" id="premiumPanel">
       <div>
-        <span class="eyebrow">Why NextGen</span>
+        <span class="eyebrow">Why TEZVO</span>
         <h2>Engineered for <em>growth.</em></h2>
         <p>Sleek builds. Powerful automation. Made to elevate every customer moment.</p>
         <div class="check-list">
@@ -793,7 +859,7 @@
   <div class="wrap">
     <div class="cta-banner rv">
       <div class="orb"></div><div class="orb two"></div>
-      <h2>Ready to build with <em>NextGen?</em></h2>
+      <h2>Ready to build with <em>TEZVO?</em></h2>
       <p>Tell us where your business is today. We'll show you the smartest next step — in plain language.</p>
       <a class="btn btn-primary magnetic" href="#contact">Book a free discovery call <span class="arr">→</span></a>
     </div>
@@ -809,29 +875,31 @@
       <div class="rule"></div>
     </div>
     <div class="contact-grid">
-      <form class="contact rv" onsubmit="return false;">
+      <form class="contact rv" id="inquiry-form">
         <div class="two">
-          <label>Name <input type="text" placeholder="Your name" /></label>
-          <label>Email <input type="email" placeholder="you@company.com" /></label>
+          <label>Name <input name="name" type="text" placeholder="Your name" required autocomplete="name" /></label>
+          <label>Email <input name="email" type="email" placeholder="you@company.com" required autocomplete="email" /></label>
         </div>
         <div class="two">
-          <label>Company <input type="text" placeholder="Company name" /></label>
+          <label>Company <input name="company" type="text" placeholder="Company name" autocomplete="organization" /></label>
           <label>What do you need?
-            <select>
+            <select name="need">
               <option>Website</option><option>Mobile app</option>
+              <option>TEZVOFlow / Field service</option>
               <option>AI / Automation</option><option>Digital strategy</option>
               <option>Not sure yet</option>
             </select>
           </label>
         </div>
-        <label>Message <textarea placeholder="Tell us about your business and your biggest bottleneck…"></textarea></label>
-        <div><button class="btn btn-primary magnetic" type="submit">Book my discovery call <span class="arr">→</span></button></div>
+        <label>Message <textarea name="message" placeholder="Tell us about your business and your biggest bottleneck…" required></textarea></label>
+        <label class="hp" aria-hidden="true">Leave blank <input name="company_website" tabindex="-1" autocomplete="off" /></label>
+        <div><button class="btn btn-primary magnetic" type="submit" id="inquiry-submit">Book my discovery call <span class="arr">→</span></button></div>
+        <p class="form-note" id="inquiry-note" role="status"></p>
       </form>
       <div class="contact-side rv rv-d2">
         <h3>What happens next</h3>
         <p>We review your message, schedule a short call, and send a clear recommendation — usually within one business day.</p>
-        <div class="fact"><b>Email</b><span>hello@nextgentechsolutions.com</span></div>
-        <div class="fact"><b>WhatsApp</b><span>+91 ······ ····</span></div>
+        <div class="fact"><b>Email</b><span>support@tezvo-tech.com</span></div>
         <div class="fact"><b>Location</b><span>Hyderabad, India</span></div>
         <div class="fact"><b>Response</b><span>Within 1 business day</span></div>
       </div>
@@ -841,9 +909,16 @@
 
 <footer>
   <div class="wrap">
-    <a href="#home" class="logo" style="font-size:15px;"><span class="mark-dot" style="width:26px;height:26px;border-radius:8px;font-size:13px;">N</span> NextGen Tech</a>
-    <p>© 2026 NEXTGEN TECH SOLUTIONS PRIVATE LIMITED · Hyderabad, India</p>
+    <a href="#home" class="logo" aria-label="TEZVO TECH">
+      <img class="logo-mark" src="logo-mark.svg" alt="" />
+      <span class="logo-type">
+        <span class="logo-name">TEZVO <em>TECH</em></span>
+        <span class="logo-tag">Smart Digital. Real Growth<i>.</i></span>
+      </span>
+    </a>
+    <p>© 2026 TEZVO TECH PRIVATE LIMITED · Hyderabad, India</p>
     <div class="right">
+      <a href="products-v2.html">Products</a>
       <a href="#services">Services</a>
       <a href="#why">Why Us</a>
       <a href="#process">Process</a>
@@ -951,6 +1026,46 @@
   setInterval(function () {
     msgs.forEach(function (m) { m.style.animation = "none"; void m.offsetWidth; m.style.animation = ""; });
   }, 10000);
+
+  /* Inquiry form → Azure Function emails support@tezvo-tech.com */
+  var form = document.getElementById("inquiry-form");
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var btn = document.getElementById("inquiry-submit");
+      var note = document.getElementById("inquiry-note");
+      var data = {
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        company: form.company.value.trim(),
+        need: form.need.value,
+        message: form.message.value.trim(),
+        company_website: form.company_website.value
+      };
+      btn.disabled = true;
+      note.className = "form-note";
+      note.textContent = "Sending…";
+      fetch("/api/inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(function (res) { return res.json().then(function (body) { return { ok: res.ok && body.ok, body: body }; }); })
+        .then(function (result) {
+          if (result.ok) {
+            note.className = "form-note ok";
+            note.textContent = "Thanks — we received your message and will reply to " + data.email + " within one business day.";
+            form.reset();
+          } else {
+            throw new Error((result.body && result.body.message) || "Could not send.");
+          }
+        })
+        .catch(function (err) {
+          note.className = "form-note err";
+          note.textContent = err.message || "Could not send. Please email support@tezvo-tech.com.";
+        })
+        .finally(function () { btn.disabled = false; });
+    });
+  }
 })();
 </script>
 </body>

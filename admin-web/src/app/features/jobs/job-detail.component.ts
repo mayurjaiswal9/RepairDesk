@@ -27,6 +27,7 @@ import { JobsApi } from '../../core/api/jobs.api';
 import { RequestsApi } from '../../core/api/requests.api';
 import { UsersApi } from '../../core/api/users.api';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
+import { objectUrlForPhoto } from '../../core/api/photo-blob';
 import { SessionService } from '../../core/auth/session.service';
 import { UserProfile } from '../../core/models/dashboard.models';
 import {
@@ -611,13 +612,10 @@ export class JobDetailComponent implements OnInit, OnDestroy {
       next: (blob) => {
         const current = source === 'job' ? this.jobPhotos() : this.customerPhotos();
         if (!current[index] || current[index].meta.id !== meta.id) return;
-        const typed = blob.type?.startsWith('image/')
-          ? blob
-          : new Blob([blob], { type: meta.contentType || 'image/jpeg' });
         const next = [...current];
         next[index] = {
           meta,
-          objectUrl: URL.createObjectURL(typed),
+          objectUrl: objectUrlForPhoto(blob, meta.contentType),
           loading: false,
           error: false,
         };

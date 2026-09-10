@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,11 +39,11 @@ public class AttachmentController {
     }
 
     /** Upload attachment to a repair request. */
-    @PostMapping("/requests/{id}/attachments")
+    @PostMapping(path = "/requests/{id}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Secured({ "ROLE_CUSTOMER", "ROLE_STAFF", "ROLE_ADMIN" })
     @ResponseStatus(HttpStatus.CREATED)
     public AttachmentResponse uploadToRequest(@PathVariable UUID id,
-            @RequestParam("file") MultipartFile file) {
+            @RequestPart("file") MultipartFile file) {
         return attachmentService.upload("REPAIR_REQUEST", id, file, currentUser.get());
     }
 
@@ -59,11 +59,11 @@ public class AttachmentController {
     }
 
     /** Upload attachment to a job (internal). */
-    @PostMapping("/jobs/{id}/attachments")
+    @PostMapping(path = "/jobs/{id}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Secured({ "ROLE_STAFF", "ROLE_ADMIN", "ROLE_TECHNICIAN" })
     @ResponseStatus(HttpStatus.CREATED)
     public AttachmentResponse uploadToJob(@PathVariable UUID id,
-            @RequestParam("file") MultipartFile file) {
+            @RequestPart("file") MultipartFile file) {
         return attachmentService.upload("JOB", id, file, currentUser.get());
     }
 
@@ -108,25 +108,29 @@ public class AttachmentController {
 
     private static ResponseEntity<InputStreamResource> toInlineResponse(OpenedAttachment opened) {
         Attachment att = opened.attachment();
-        MediaType mediaType = resolveMediaType(att.getContentType());
+        MediaType mediaType = resolveMediaType(opened.contentType());
         String filename = att.getOriginalFilename() != null && !att.getOriginalFilename().isBlank()
                 ? att.getOriginalFilename()
                 : att.getStorageKey();
+        // Force a browser-safe filename extension that matches the served MIME.
+        if (mediaType.equals(MediaType.IMAGE_JPEG) && filename.toLowerCase().endsWith(".heic")) {
+            filename = filename.substring(0, filename.length() - 5) + ".jpg";
+        }
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "inline; filename=\"" + filename.replace("\"", "") + "\"")
+                .header(HttpHeaders.CONTENT_TYPE, mediaType.toString())
                 .contentType(mediaType)
                 .body(new InputStreamResource(opened.stream()));
     }
 
-    /** Prefer stored MIME; fall back to image/jpeg for legacy octet-stream rows. */
+    /** Never serve {@code image/jpg} or octet-stream — clients reject those. */
     private static MediaType resolveMediaType(String contentType) {
-        if (contentType == null || contentType.isBlank()) {
-            return MediaType.IMAGE_JPEG;
-        }
+        String type = AttachmentService.normalizeServeType(contentType);
         try {
-            MediaType parsed = MediaType.parseMediaType(contentType);
-            if (MediaType.APPLICATION_OCTET_STREAM.includes(parsed)) {
+            MediaType parsed = MediaType.parseMediaType(type);
+            if (MediaType.APPLICATION_OCTET_STREAM.includes(parsed)
+                    || "image/jpg".equals(parsed.toString())) {
                 return MediaType.IMAGE_JPEG;
             }
             return parsed;

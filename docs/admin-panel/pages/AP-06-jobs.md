@@ -64,7 +64,7 @@ The operational board for every repair currently in flight. Staff and admins use
 
 ## 5. Interactions & dialogs
 
-This page has no mutating actions and therefore no dialogs — every job action is on [AP-07](AP-07-job-detail.md).
+This page has no mutating actions and therefore no dialogs — every job action is on [AP-07](AP-07-job-detail.md). **There is no Create job control.** Walk-in work starts as a request on [AP-18](AP-18-create-request.md).
 
 | Action | Trigger | Dialog / form | Endpoint | Result |
 | --- | --- | --- | --- | --- |

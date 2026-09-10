@@ -21,6 +21,7 @@ import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { RequestsApi } from '../../core/api/requests.api';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
+import { objectUrlForPhoto } from '../../core/api/photo-blob';
 import { SessionService } from '../../core/auth/session.service';
 import {
   AttachmentMeta,
@@ -380,10 +381,7 @@ export class RequestDetailComponent implements OnInit, OnDestroy {
       next: (blob) => {
         const current = this.photos();
         if (!current[index] || current[index].meta.id !== meta.id) return;
-        const typed = blob.type?.startsWith('image/')
-          ? blob
-          : new Blob([blob], { type: meta.contentType || 'image/jpeg' });
-        const objectUrl = URL.createObjectURL(typed);
+        const objectUrl = objectUrlForPhoto(blob, meta.contentType);
         const next = [...current];
         next[index] = { meta, objectUrl, loading: false, error: false };
         this.photos.set(next);

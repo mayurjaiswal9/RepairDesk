@@ -9,6 +9,7 @@ import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
+import com.acetelecom.repairdesk.feature.request.domain.RequestOrigin;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
 import com.acetelecom.repairdesk.feature.request.domain.WarrantyStatus;
 
@@ -31,6 +32,7 @@ public record RepairRequestResponse(
         LocalDate preferredDate,
         LocalTime preferredTime,
         RequestStatus status,
+        RequestOrigin origin,
         Priority priority,
         String rejectionReasonCode,
         String customerFacingMessage,
@@ -64,6 +66,7 @@ public record RepairRequestResponse(
                 r.getPreferredDate(),
                 r.getPreferredTime(),
                 r.getStatus(),
+                r.getOrigin() == null ? RequestOrigin.CUSTOMER_APP : r.getOrigin(),
                 r.getPriority(),
                 r.getRejectionReasonCode(),
                 r.getCustomerFacingMessage(),

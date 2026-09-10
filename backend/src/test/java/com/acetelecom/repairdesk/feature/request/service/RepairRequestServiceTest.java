@@ -22,6 +22,8 @@ import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.devicecategory.repository.DeviceCategoryRepository;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
+import com.acetelecom.repairdesk.feature.job.service.JobService;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
@@ -42,6 +44,8 @@ class RepairRequestServiceTest {
     @Mock private JobRepository jobRepo;
     @Mock private JdbcTemplate jdbc;
     @Mock private AuditService auditService;
+    @Mock private JobService jobService;
+    @Mock private NotificationService notifService;
 
     private RepairRequestService service;
     private AuthenticatedUser customerActor;
@@ -50,7 +54,7 @@ class RepairRequestServiceTest {
     @BeforeEach
     void setUp() {
         service = new RepairRequestService(requestRepo, categoryRepo,
-                userRepo, jobRepo, jdbc, auditService);
+                userRepo, jobRepo, jdbc, auditService, jobService, notifService);
 
         UUID customerId = UUID.randomUUID();
         customerActor = new AuthenticatedUser(customerId, "cust1", "CUSTOMER");
@@ -132,6 +136,45 @@ class RepairRequestServiceTest {
         assertThatThrownBy(() -> service.setPriority(reqId, "HIGH", customerActor))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining("Staff or Admin");
+    }
+
+    @Test
+    void create_staffAssisted_usesCustomerIdNotCaller() {
+        UUID ownerId = UUID.randomUUID();
+        User owner = new User();
+        owner.setId(ownerId);
+        owner.setUsername("anita");
+        owner.setRole(Role.CUSTOMER);
+        owner.setStatus(com.acetelecom.repairdesk.feature.user.domain.AccountStatus.ACTIVE);
+        User staff = new User();
+        staff.setId(staffActor.id());
+        staff.setUsername("staff1");
+        DeviceCategory cat = new DeviceCategory();
+        cat.setId(UUID.randomUUID());
+        cat.setName("Mobile Phone");
+        when(userRepo.findById(staffActor.id())).thenReturn(Optional.of(staff));
+        when(userRepo.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(categoryRepo.findById(cat.getId())).thenReturn(Optional.of(cat));
+        when(jdbc.queryForObject(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.eq(Long.class))).thenReturn(42L);
+        when(requestRepo.save(any())).thenAnswer(inv -> {
+            RepairRequest r = inv.getArgument(0);
+            r.setId(UUID.randomUUID());
+            return r;
+        });
+
+        CreateRequestDto dto = new CreateRequestDto(
+                cat.getId(), "Anita", "9876543210", null,
+                "Samsung", "S23", null, null, null,
+                "Screen cracked after a drop.",
+                LocalDate.now().plusDays(1), LocalTime.of(10, 0),
+                ownerId, false, null, null, "WALK_IN");
+
+        var res = service.create(dto, staffActor);
+
+        assertThat(res.customerId()).isEqualTo(ownerId);
+        assertThat(res.origin().name()).isEqualTo("STAFF_ASSISTED");
+        assertThat(res.referenceNumber()).startsWith("RD-");
     }
 
     // ── Builders ──────────────────────────────────────────────────────────────

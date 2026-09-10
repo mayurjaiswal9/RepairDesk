@@ -712,7 +712,7 @@ The following decisions resolve the previously open questions, optimized for a s
 
 **Roles, security & governance**
 15. **Reviewer oversight:** **No four-eyes/second-approver** in V1; any Staff/Admin may approve or reject.
-16. **Self-review conflict:** N/A in V1 because staff-assisted intake is not supported.
+16. **Self-review conflict:** Allowed for staff-assisted intake. A Staff/Admin who created the request on behalf of a customer **may** approve it (they are not the customer). See [staff-assisted-intake.md](staff-assisted-intake.md).
 17. **Notifications:** Staff are alerted via the **queue badge/counter** (no per-event spam); customers are notified in-app on status change with a courteous, reason-bearing message on rejection.
 
 **Reporting & retention**

@@ -162,6 +162,22 @@ export function slotStartsForDate(
   return slots;
 }
 
+/** First remaining shop slot within the booking horizon, or null. */
+export function nextShopSlot(
+  config: SchedulingConfig,
+  now: Date = new Date(),
+): { date: string; time: string } | null {
+  for (let i = 0; i <= config.bookingHorizonDays; i++) {
+    const date = addDays(startOfToday(), i);
+    const dateStr = toDateInputValue(date);
+    const slots = slotStartsForDate(config, dateStr, now);
+    if (slots.length > 0) {
+      return { date: dateStr, time: slots[0] };
+    }
+  }
+  return null;
+}
+
 export function endTimeForStart(startTime: string, slotMinutes: number): string {
   const start = parseTimeToMinutes(startTime);
   if (start == null) return '';

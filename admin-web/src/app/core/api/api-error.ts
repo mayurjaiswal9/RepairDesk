@@ -7,6 +7,7 @@ export interface MappedApiError {
   message: string;
   correlationId?: string;
   fieldErrors: Record<string, string>;
+  existingCustomerId?: string;
   raw: HttpErrorResponse;
 }
 
@@ -41,6 +42,7 @@ export function mapHttpError(err: unknown, fallback = 'Something went wrong. Ple
     message: body.message || fallback,
     correlationId: body.correlationId,
     fieldErrors,
+    existingCustomerId: body.details?.existingCustomerId,
     raw: err,
   };
 }

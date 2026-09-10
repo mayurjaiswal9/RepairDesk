@@ -267,7 +267,9 @@ When a request is rejected, the customer is notified with a reason. The customer
 
 The permissions matrix confirms Staff Members and Admins can submit repair requests (role "Customer" row: Staff Yes, Admin Yes). A technician submitting a request as a customer is not defined.
 
-**V1 decision:** Any authenticated user (any role) can submit a repair request. The request is owned by the submitting account. A technician submitting a personal request is treated as a customer. A Staff member submitting for a walk-in customer is **not supported in V1** (walk-in intake is deferred). The form is the same for all roles.
+**V1 decision:** Any authenticated user (any role) can submit a repair request **as themselves**. The request is owned by the submitting account. A technician submitting a personal request is treated as a customer.
+
+**Staff-assisted intake (FEAT-SAI-001):** A Staff member or Admin submitting **for** a walk-in / phone customer is specified in [staff-assisted-intake.md](features/staff-assisted-intake.md). The request is owned by the **customer**, not the staff account.
 
 ---
 
@@ -384,7 +386,7 @@ Not explicitly stated. **V1 decision:** Staff view all jobs regardless of status
 Not specified. **V1 decision:** Yes — technicians can see all jobs assigned to them, including completed ones (for personal record). Read-only.
 
 **PERM-03 — Can Staff submit repair requests on behalf of customers?**
-Covered in WORK-04 above. Staff can submit requests as themselves; walk-in assisted intake is not in V1.
+Yes — [FEAT-SAI-001](features/staff-assisted-intake.md). Staff/Admin pick or create the customer, then Save for review or Create and approve. Staff submitting as **themselves** remains the self-submit path.
 
 **PERM-04 — Who can view audit logs?**
 Not explicitly stated in one place. **V1 decision:** Administrators only can view full audit logs. Staff can see the audit/history section of individual requests and jobs they can access (read).
@@ -489,11 +491,11 @@ Once a request is approved and a job exists, only Staff/Admin can cancel. The cu
 
 **V1 decision:** Accept this as a V1 limitation with one practical mitigation: the rejection notification and completed notification both include "Contact us if you have questions" to direct customers to the right channel. Self-service cancellation of jobs is Phase 2.
 
-## OP-03 — No walk-in / same-day intake path
+## OP-03 — Walk-in / same-day intake path
 
-A walk-in customer has no digital path in V1. Staff cannot create requests/jobs on behalf of a customer. The entire workflow assumes the customer self-registers and submits digitally.
+**Superseded (2026-08-27).** Staff-assisted intake is specified in [features/staff-assisted-intake.md](features/staff-assisted-intake.md) and [AP-18](admin-panel/pages/AP-18-create-request.md). Staff create a **request** on behalf of a customer (find or create the account), then Save for review or Create and approve (atomic job). Jobs are still never created without a request.
 
-**V1 decision:** Accepted and documented. ACE Telecom must either guide walk-ins to self-register on-site (using their own device or a kiosk device) or handle walk-in jobs outside the system in V1. Walk-in intake is deferred to a future version.
+**Prior V1 decision (historical):** A walk-in customer had no digital path; ACE Telecom would guide walk-ins to self-register or handle jobs outside the system.
 
 ## OP-04 — Notification polling may cause slight delays in customer updates
 
@@ -600,7 +602,7 @@ Final V1 decisions to be accepted before architecture begins. All items above ar
 30. All notifications in-app only; push/SMS/email deferred to Phase 2.
 
 **Operational scope:**
-31. No walk-in intake in V1. Customers self-register and self-submit.
+31. Walk-in / phone intake is staff-assisted: create a **request** owned by the customer ([FEAT-SAI-001](features/staff-assisted-intake.md)). No create-job-without-request.
 32. No customer self-service job cancellation in V1.
 33. No structured parts management in V1 (`Awaiting Parts` + free text).
 34. No invoicing/payments in V1.

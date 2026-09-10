@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { toFileFormData } from './multipart';
 import { PageResponse } from '../models/dashboard.models';
 import {
   ApproveRequestBody,
@@ -11,6 +12,23 @@ import {
   RepairRequestDetail,
   RepairRequestSummary,
 } from '../models/request.models';
+
+export interface CreateRequestBody {
+  customerId: string;
+  deviceCategoryId: string;
+  contactName: string;
+  contactMobile: string;
+  contactEmail?: string;
+  deviceBrand?: string;
+  deviceModel?: string;
+  issueDescription: string;
+  preferredDate: string;
+  preferredTime: string;
+  approveOnCreate?: boolean;
+  priority?: string;
+  note?: string;
+  intakeChannel?: string;
+}
 
 export interface RequestListQuery {
   status?: string;
@@ -39,6 +57,17 @@ export class RequestsApi {
 
   get(id: string): Observable<RepairRequestDetail> {
     return this.http.get<RepairRequestDetail>(`${this.base}/requests/${id}`);
+  }
+
+  create(body: CreateRequestBody): Observable<RepairRequestDetail> {
+    return this.http.post<RepairRequestDetail>(`${this.base}/requests`, body);
+  }
+
+  uploadAttachment(requestId: string, file: File): Observable<AttachmentMeta> {
+    return this.http.post<AttachmentMeta>(
+      `${this.base}/requests/${requestId}/attachments`,
+      toFileFormData(file),
+    );
   }
 
   listAttachments(requestId: string): Observable<AttachmentMeta[]> {

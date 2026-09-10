@@ -18,7 +18,6 @@ Dio apiClient(Ref ref) {
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 60),
     sendTimeout: const Duration(seconds: 60),
-    headers: {'Content-Type': 'application/json'},
   ));
 
   // Auth interceptor: attaches bearer token and handles 401 by signing out.
@@ -29,11 +28,21 @@ Dio apiClient(Ref ref) {
         if (session.token != null) {
           options.headers['Authorization'] = 'Bearer ${session.token}';
         }
-        // BaseOptions defaults to application/json — that breaks multipart
-        // uploads (camera photos). Let Dio set the boundary Content-Type.
-        if (options.data is FormData) {
+        // Dio defaults every request to application/json. That produces
+        // "Unable to set different content type" on photo downloads (response
+        // is image/jpeg) and breaks multipart uploads. Only JSON bodies need it.
+        final binary = options.data is FormData
+            || options.data == null
+            || options.responseType == ResponseType.bytes
+            || options.responseType == ResponseType.stream;
+        if (binary) {
           options.headers.remove(Headers.contentTypeHeader);
           options.contentType = null;
+        } else {
+          options.headers.putIfAbsent(
+            Headers.contentTypeHeader,
+            () => Headers.jsonContentType,
+          );
         }
         handler.next(options);
       },

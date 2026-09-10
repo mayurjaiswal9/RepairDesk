@@ -107,6 +107,14 @@ export class CustomerDetailComponent implements OnInit {
     () => this.isAdmin() && !!this.profile() && !this.isDeleted() && this.profileState() === 'ready',
   );
 
+  readonly canNewRequest = computed(
+    () =>
+      this.isStaffOrAdmin() &&
+      this.profileState() === 'ready' &&
+      !!this.profile() &&
+      this.profile()?.status === 'ACTIVE',
+  );
+
   readonly historyEmpty = computed(
     () =>
       this.historyState() === 'ready' &&

@@ -39,5 +39,22 @@ public record CreateRequestDto(
         LocalDate preferredDate,
 
         @NotNull
-        LocalTime preferredTime) {
+        LocalTime preferredTime,
+
+        UUID customerId,
+
+        Boolean approveOnCreate,
+
+        @Size(max = 20)
+        String priority,
+
+        @Size(max = 2000)
+        String note,
+
+        @Size(max = 20)
+        String intakeChannel) {
+
+    public boolean shouldApproveOnCreate() {
+        return Boolean.TRUE.equals(approveOnCreate);
+    }
 }

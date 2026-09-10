@@ -1,5 +1,6 @@
 package com.acetelecom.repairdesk.feature.attachment.service;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -54,12 +55,13 @@ public class AttachmentService {
 
     public AttachmentResponse upload(String ownerType, UUID ownerId,
             MultipartFile file, AuthenticatedUser actor) {
-        String resolvedType = resolveAndValidate(file, ownerType, ownerId);
+        byte[] bytes = readAllBytes(file);
+        String resolvedType = resolveAndValidate(file, bytes, ownerType, ownerId);
 
         String ext = extensionFor(resolvedType);
         String storageKey;
         try {
-            storageKey = storageService.store(file.getInputStream(), ext);
+            storageKey = storageService.store(new java.io.ByteArrayInputStream(bytes), ext);
         } catch (IOException e) {
             throw new ApiException(ErrorCode.INTERNAL_ERROR,
                     "File storage failed: " + e.getMessage());
@@ -70,8 +72,8 @@ public class AttachmentService {
         att.setOwnerId(ownerId);
         att.setUploadedBy(actor.id());
         att.setContentType(resolvedType);
-        att.setFileSizeBytes(file.getSize());
-        att.setOriginalFilename(file.getOriginalFilename());
+        att.setFileSizeBytes(bytes.length);
+        att.setOriginalFilename(sanitizeFilename(file.getOriginalFilename()));
         att.setStorageKey(storageKey);
         attachmentRepo.save(att);
 
@@ -85,8 +87,8 @@ public class AttachmentService {
                 .stream().map(AttachmentResponse::from).toList();
     }
 
-    /** Opened attachment stream plus metadata for Content-Type on download. */
-    public record OpenedAttachment(Attachment attachment, InputStream stream) {}
+    /** Opened attachment stream plus the MIME type that must be sent to clients. */
+    public record OpenedAttachment(Attachment attachment, InputStream stream, String contentType) {}
 
     @Transactional(readOnly = true)
     public OpenedAttachment streamById(UUID attachmentId, AuthenticatedUser actor) {
@@ -123,7 +125,9 @@ public class AttachmentService {
         }
 
         try {
-            return new OpenedAttachment(att, storageService.load(att.getStorageKey()));
+            BufferedInputStream buffered = new BufferedInputStream(
+                    storageService.load(att.getStorageKey()));
+            return new OpenedAttachment(att, buffered, servedContentType(att, buffered));
         } catch (java.io.FileNotFoundException e) {
             // Ephemeral container disks lose files across restarts — surface as
             // NOT_FOUND so clients show a clear re-upload message.
@@ -156,12 +160,45 @@ public class AttachmentService {
      * (never {@code application/octet-stream}). Mobile camera uploads often omit
      * or mis-declare the part MIME type.
      */
-    private String resolveAndValidate(MultipartFile file, String ownerType, UUID ownerId) {
-        if (file.isEmpty()) {
+    private static byte[] readAllBytes(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "File is empty");
         }
+        try {
+            byte[] bytes = file.getBytes();
+            if (bytes.length < 4) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR, "File too small to validate");
+            }
+            return bytes;
+        } catch (ApiException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Could not read file for validation");
+        }
+    }
 
-        byte[] header = readHeader(file, 12);
+    /** Multipart filenames with spaces/commas (e.g. ChatGPT exports) break some parsers if stored raw. */
+    static String sanitizeFilename(String original) {
+        if (original == null || original.isBlank()) {
+            return "photo";
+        }
+        String base = original.replace('\\', '/');
+        base = base.substring(base.lastIndexOf('/') + 1);
+        String cleaned = base.replaceAll("[^A-Za-z0-9._-]+", "_").replaceAll("_+", "_");
+        cleaned = cleaned.replaceAll("^_+", "").replaceAll("_+$", "");
+        if (cleaned.isBlank()) {
+            return "photo";
+        }
+        if (cleaned.length() > 200) {
+            int dot = cleaned.lastIndexOf('.');
+            String ext = dot > 0 ? cleaned.substring(dot) : "";
+            cleaned = cleaned.substring(0, Math.min(200 - ext.length(), cleaned.length())) + ext;
+        }
+        return cleaned;
+    }
+
+    private String resolveAndValidate(MultipartFile file, byte[] bytes, String ownerType, UUID ownerId) {
+        byte[] header = bytes.length <= 12 ? bytes : java.util.Arrays.copyOf(bytes, 12);
         String declared = normalizeDeclaredType(file.getContentType());
         String sniffed = sniffImageType(header);
 
@@ -195,14 +232,14 @@ public class AttachmentService {
         }
 
         if ("REPAIR_REQUEST".equals(ownerType)) {
-            if (file.getSize() > REQUEST_MAX_SINGLE_BYTES) {
+            if (bytes.length > REQUEST_MAX_SINGLE_BYTES) {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR,
                         "File exceeds 10 MB limit");
             }
             long totalBytes = attachmentRepo
                     .findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(ownerType, ownerId)
                     .stream().mapToLong(Attachment::getFileSizeBytes).sum();
-            if (totalBytes + file.getSize() > REQUEST_MAX_TOTAL_BYTES) {
+            if (totalBytes + bytes.length > REQUEST_MAX_TOTAL_BYTES) {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR,
                         "Total attachment size would exceed 25 MB limit");
             }
@@ -222,26 +259,32 @@ public class AttachmentService {
         return type;
     }
 
-    private static byte[] readHeader(MultipartFile file, int length) {
-        try (InputStream in = file.getInputStream()) {
-            byte[] header = new byte[length];
-            int read = in.read(header);
-            if (read < 4) {
-                throw new ApiException(ErrorCode.VALIDATION_ERROR,
-                        "File too small to validate");
-            }
-            if (read < length) {
-                byte[] trimmed = new byte[read];
-                System.arraycopy(header, 0, trimmed, 0, read);
-                return trimmed;
-            }
-            return header;
-        } catch (ApiException e) {
-            throw e;
-        } catch (IOException e) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR,
-                    "Could not read file for validation");
+    /**
+     * Serve the real file type, not a stale DB value. Camera uploads often
+     * stored {@code image/heic} or {@code application/octet-stream} while the
+     * bytes are JPEG — clients then refuse to render the photo.
+     */
+    private static String servedContentType(Attachment att, BufferedInputStream buffered)
+            throws IOException {
+        buffered.mark(16);
+        byte[] header = buffered.readNBytes(12);
+        buffered.reset();
+        String sniffed = sniffImageType(header);
+        if (sniffed != null) {
+            return sniffed;
         }
+        return normalizeServeType(att.getContentType());
+    }
+
+    public static String normalizeServeType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return "image/jpeg";
+        }
+        String type = contentType.split(";")[0].trim().toLowerCase();
+        return switch (type) {
+            case "image/jpg", "application/octet-stream", "binary/octet-stream" -> "image/jpeg";
+            default -> type;
+        };
     }
 
     /** SEC-002 — sniff common image signatures from the first bytes. */

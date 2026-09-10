@@ -71,7 +71,7 @@
 
 Goal: agree what these four pages look and behave like **before** committing to Angular code. Mockups are throwaway artifacts whose only job is to make disagreement cheap.
 
-**Approach (assumption to confirm):** static HTML + CSS mockups in `docs/admin-panel/mockups/`, no framework and no build step, using the real design tokens. This is deliberate — a static mockup opens in a browser from disk, can be iterated in minutes, doesn't presuppose the Angular scaffold, and can be thrown away without sunk cost. The alternative (mocking up directly in Angular with stub services) gives higher fidelity but makes every review round expensive and creates pressure to keep whatever was built. It follows the precedent already in the repo at `docs/tej-infotech-mockup/index.html`.
+**Approach (assumption to confirm):** static HTML + CSS mockups in `docs/admin-panel/mockups/`, no framework and no build step, using the real design tokens. This is deliberate — a static mockup opens in a browser from disk, can be iterated in minutes, doesn't presuppose the Angular scaffold, and can be thrown away without sunk cost. The alternative (mocking up directly in Angular with stub services) gives higher fidelity but makes every review round expensive and creates pressure to keep whatever was built. It follows the precedent already in the repo at `docs/tezvo-tech-mockup/index.html`.
 
 **Mockups must show real states, not just the happy path.** Every mockup task below lists its required states explicitly, because states invented during implementation are exactly where this project has previously shipped bugs (silent counter failures, raw error dumps, letter-by-letter text wrapping).
 
@@ -435,6 +435,34 @@ Goal: a running, themed, authenticated Angular shell with the shared kit in plac
 | **AP17-V1** | Verify every `AC-AP17-nn` | `[QA]` | M | Pending |
 
 **AP17-V1 acceptance criteria:** criteria in [AP-17 §8](pages/AP-17-account.md) pass; wrong current password stays a field error (not forbidden page); local logout clears session even if `POST /auth/logout` fails.
+
+---
+
+# Batch 3 — Staff-assisted intake (AP-18)
+
+Walk-in / phone create-request. **Create the request first; schedule and assign later.** Backend is required before the Angular page can ship. Domain: [features/staff-assisted-intake.md](../features/staff-assisted-intake.md). UI: [AP-18](pages/AP-18-create-request.md). Mockup: [mockups/AP-18-create-request.html](mockups/AP-18-create-request.html).
+
+> Mockup is **in review** (progressive rail + customer device fields, 2026-09-02). Do not start AP18-D* until the mockup is signed off **and** APB-SAI-001 / APB-SAI-002 are available on the API the panel points at.
+
+| ID | Task | Layer | Effort | Status |
+| --- | --- | --- | --- | --- |
+| **AP18-M1** | Create-request mockup — 3 cards; rail only after customer; Device type / Brand / Model same as the customer app; Create request primary | `[UX]` | M | **Done (in review)** — [`mockups/AP-18-create-request.html`](mockups/AP-18-create-request.html) |
+| **APB-SAI-001** | `POST /customers` (STAFF, ADMIN) — name+mobile, optional username/password, generated password shown once | `[BE]` | M | **Done** |
+| **APB-SAI-002** | `POST /requests` with `customerId` + same device/issue body as customer create (`deviceCategoryId`, brand, model, issue) + optional `approveOnCreate` (atomic approve+job) + `origin=STAFF_ASSISTED`. Preferred slot still required on the API — client may send next shop slot. Optional `intakeChannel` if cheap; otherwise omit. | `[BE]` | L | **Done** |
+| **APB-SAI-003** | Persist `origin` + actor on the request; skip "under review" notification when approve-on-create | `[BE]` | S | **Done** |
+| **AP18-D1** | Form: customer typeahead / no-results **Create new customer**; contact (name, +91 mobile, email); **Device type \*** + Brand + Model (same catalog / `brandMode` as the customer app); issue; channel chips; photos | `[FE]` | L | **Done** |
+| **AP18-D2** | Contextual rail **only after** a customer is selected or created: snapshot, previous requests, equipment (pre-fill device fields or add-equipment dialog). Hidden on empty / search / no-results. Change customer hides the rail. | `[FE]` | M | **Done** |
+| **AP18-D3** | Finishes: **Cancel** · **Save for review** · **Create request →** (primary, lands on request detail). Optional **Create and approve** confirm (priority + note, no schedule/assign). Dirty prompt. Silent **next shop slot** on submit. Photos upload after `201`. | `[FE]` | M | **Done** |
+| **AP18-D4** | Entry points: AP-04 **Create request**, AP-11 **New request**, STAFF dashboard quick link; route `/requests/new` **before** `:id`; technician forbidden panel | `[FE]` | S | **Done** |
+| **AP18-V1** | Verify every `AC-AP18-nn` and `AC-SAI-nn` | `[QA]` | M | Pending |
+
+**AP18-V1 acceptance criteria:** all criteria in [AP-18 §8](pages/AP-18-create-request.md) and [FEAT-SAI-001](../features/staff-assisted-intake.md) pass; Device type is required and catalog-driven; the right rail is absent until a customer is selected; preferred date/time and assign-technician are not on this page; a technician hitting `/requests/new` is forbidden; create-as-self (no `customerId`) is not used for walk-in; Jobs list still has no Create job button.
+
+---
+
+# Naming — Request vs Work Order
+
+See **[Request-to-Work-Order-Rename.md](../Request-to-Work-Order-Rename.md)** before renaming lists, APIs, or columns. Recommendation: user-facing **Job → Work order**; do not rename `repair_requests` to `work_orders` (that collides with Job). Not a single-column Flyway change.
 
 ---
 

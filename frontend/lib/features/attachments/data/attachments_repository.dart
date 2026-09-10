@@ -243,13 +243,13 @@ class AttachmentsRepository {
         path,
         options: Options(
           responseType: ResponseType.bytes,
+          contentType: null,
           headers: {
-            Headers.acceptHeader: '*/*',
-            Headers.contentTypeHeader: null,
+            Headers.acceptHeader: 'image/*,*/*',
           },
         ),
       );
-      return _asUint8List(res.data);
+      return _asImageBytes(res.data);
     } on DioException catch (e) {
       throw e.error is AppException
           ? e.error as AppException
@@ -262,28 +262,79 @@ class AttachmentsRepository {
     }
   }
 
-  static Uint8List _asUint8List(dynamic data) {
+  static Uint8List _asImageBytes(dynamic data) {
     if (data == null) {
       throw const AppException(
           errorCode: 'NOT_FOUND', message: 'Image data was empty.');
     }
+    late final Uint8List bytes;
     if (data is Uint8List) {
-      if (data.isEmpty) {
-        throw const AppException(
-            errorCode: 'NOT_FOUND', message: 'Image data was empty.');
-      }
-      return data;
+      bytes = data;
+    } else if (data is List<int>) {
+      bytes = Uint8List.fromList(data);
+    } else {
+      throw AppException(
+        errorCode: 'UNKNOWN',
+        message: 'Unexpected image payload type: ${data.runtimeType}',
+      );
     }
-    if (data is List<int>) {
-      if (data.isEmpty) {
-        throw const AppException(
-            errorCode: 'NOT_FOUND', message: 'Image data was empty.');
-      }
-      return Uint8List.fromList(data);
+    if (bytes.isEmpty) {
+      throw const AppException(
+          errorCode: 'NOT_FOUND', message: 'Image data was empty.');
     }
-    throw AppException(
-      errorCode: 'UNKNOWN',
-      message: 'Unexpected image payload type: ${data.runtimeType}',
-    );
+    // Error JSON sometimes arrives as bytes when responseType is bytes.
+    if (bytes[0] == 0x7B) {
+      throw AppException.fromDioError(
+        DioException(
+          requestOptions: RequestOptions(),
+          response: Response(
+            requestOptions: RequestOptions(),
+            data: bytes,
+            statusCode: 400,
+          ),
+        ),
+      );
+    }
+    if (!_looksLikeImage(bytes)) {
+      throw const AppException(
+        errorCode: 'VALIDATION_ERROR',
+        message: 'This photo is in a format the app cannot display. Please upload a JPEG or PNG.',
+      );
+    }
+    return bytes;
+  }
+
+  static bool _looksLikeImage(Uint8List bytes) {
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF) {
+      return true;
+    }
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
+      return true;
+    }
+    if (bytes.length >= 3 &&
+        bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46) {
+      return true;
+    }
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return true;
+    }
+    return false;
   }
 }

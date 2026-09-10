@@ -21,7 +21,7 @@
 | **Related Features** | Authentication & Registration (account source of truth), Staff Management (account create/edit/disable/delete), Repair Request (FEAT-RR-001), Request Review (FEAT-RV-002), Job Management (FEAT-JOB-003), Scheduling (FEAT-SCH-005), Repair Status Tracking (customer-facing view), Notifications. |
 | **Dependencies** | A. Authentication & RBAC (Staff/Administrator roles). B. Customer accounts (created via self-registration). C. Repair Request, Job, and Appointment records linked to a customer account. D. Search/listing capability scalable to PRD's 10,000+ records. |
 
-**Scope note (V1):** Customer Management is **read-only** for both Staff and Administrators. It does not create, edit, merge, disable, or delete customer accounts — those operations live in Authentication (self-registration), the customer's own Account Settings (self-edit of mobile/password), and Staff Management (Admin account administration). This feature is purely a **lookup and history** view.
+**Scope note (V1):** Customer Management on the directory/detail screens is **read-only** lookup and history, plus Admin account-lifecycle actions. **Creating a walk-in customer** is not done here — it lives on staff-assisted intake ([FEAT-SAI-001](staff-assisted-intake.md) / [AP-18](../admin-panel/pages/AP-18-create-request.md)) via `POST /customers`. Self-registration and Staff Management (internal users) are unchanged.
 
 ---
 

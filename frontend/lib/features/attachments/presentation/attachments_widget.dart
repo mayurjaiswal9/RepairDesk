@@ -280,7 +280,17 @@ class _ThumbnailState extends State<_Thumbnail> {
     }
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
-      child: Image.memory(_bytes!, width: 40, height: 40, fit: BoxFit.cover),
+      child: Image.memory(
+        _bytes!,
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const Icon(
+          Icons.broken_image_outlined,
+          color: AppTheme.error,
+          size: 36,
+        ),
+      ),
     );
   }
 }
@@ -362,7 +372,19 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
                     ),
                   )
                 : InteractiveViewer(
-                    child: Image.memory(_bytes!, fit: BoxFit.contain)),
+                    child: Image.memory(
+                      _bytes!,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'This photo could not be displayed. Please upload it again as JPEG or PNG.',
+                          style: TextStyle(color: Colors.white),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
       ),
     );
   }

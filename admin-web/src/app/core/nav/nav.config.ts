@@ -116,7 +116,23 @@ export function navGroupsForRole(role: UserRole | null): NavGroupDef[] {
 }
 
 export function quickLinksForRole(role: UserRole | null): NavItemDef[] {
-  return navGroupsForRole(role).flatMap((g) => g.items).filter((i) => i.id !== 'dashboard');
+  const links = navGroupsForRole(role)
+    .flatMap((g) => g.items)
+    .filter((i) => i.id !== 'dashboard');
+  if (role === 'ADMIN' || role === 'STAFF') {
+    const create: NavItemDef = {
+      id: 'create-request',
+      label: 'Create request',
+      path: '/requests/new',
+      icon: 'add_circle',
+      roles: ['ADMIN', 'STAFF'],
+      description: 'Walk-in or phone intake',
+    };
+    const idx = links.findIndex((l) => l.id === 'requests');
+    if (idx >= 0) links.splice(idx + 1, 0, create);
+    else links.unshift(create);
+  }
+  return links;
 }
 
 export function isNavActive(currentUrl: string, path: string): boolean {

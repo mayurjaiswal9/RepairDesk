@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TEZVOFlow v2 — Planner, Work Orders & WhatsApp | TEZVO TECH</title>
+<link rel="icon" href="logo-mark.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Nunito:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --white: #fff; --peach: #ffeadd; --peach-2: #fff5ee;
+    --ink: #17130f; --ink-soft: #5a4f45; --muted: #948a80;
+    --orange: #ff6a2b; --orange-deep: #ec5313; --orange-soft: #ffeade;
+    --line: #f1e7dd; --wa: #075e54; --wa-2: #128c7e; --wa-bg: #ece5dd; --wa-out: #dcf8c6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; background: #fff8f3; }
+  body { font-family: Inter, system-ui, sans-serif; background: #fff8f3; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  h1,h2,h3,h4,h5,h6 { font-family: Sora, sans-serif; letter-spacing: -0.03em; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: 100%; max-width: 1780px; margin: 0 auto; padding: 0 clamp(24px, 2.6vw, 48px); }
+
+  header.top { position: sticky; top: 0; z-index: 100; background: #fff8f3; border-bottom: 1px solid var(--line); }
+  nav.site { display: flex; align-items: center; padding: 17px 0 22px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo .logo-mark { width: 42px; height: 42px; display: block; }
+  .logo .logo-type { display: flex; flex-direction: column; gap: 4px; line-height: 1; width: fit-content; }
+  .logo .logo-name { font-family: Nunito, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: .2em; word-spacing: .26em; white-space: nowrap; }
+  .logo .logo-name em { font-style: normal; color: var(--orange); }
+  .logo .logo-tag { display: flex; align-items: center; gap: 5px; width: 0; min-width: 100%; overflow: hidden; font-family: Nunito, sans-serif; font-weight: 700; font-size: 7px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .logo .logo-tag::before, .logo .logo-tag::after { content: ""; flex: 1 1 0; height: 1px; background: #c9c2ba; }
+  .logo .logo-tag i { color: var(--orange); font-style: normal; }
+  footer .logo .logo-mark { width: 34px; height: 34px; }
+  footer .logo .logo-name { font-size: 16px; }
+  nav.site .links { display: flex; gap: 34px; margin: 0 auto; }
+  nav.site .links a { font-size: 14.5px; font-weight: 500; color: var(--ink-soft); position: relative; padding: 4px 0; }
+  nav.site .links a::after { content: ""; position: absolute; left: 0; bottom: 0; width: 0; height: 2px; background: var(--orange); transition: width .3s; }
+  nav.site .links a:hover, nav.site .links a.on { color: var(--ink); }
+  nav.site .links a.on::after, nav.site .links a:hover::after { width: 100%; }
+
+  .btn { display: inline-flex; align-items: center; gap: 9px; font-family: Inter; font-weight: 600; font-size: 14.5px; padding: 14px 28px; border-radius: 999px; cursor: pointer; border: none; }
+  .btn-primary { background: var(--orange); color: #fff; box-shadow: 0 14px 30px -12px rgba(255,106,43,.6); }
+  .btn-ghost { background: #fff; color: var(--ink); border: 1.5px solid #f0d9c8; }
+  .btn-sm { padding: 11px 22px; font-size: 13.5px; }
+
+  .hero { padding: 24px 0 52px; background: radial-gradient(820px 420px at 82% 12%, #ffd9c4, transparent 58%), linear-gradient(170deg, #fff8f3 0%, #ffe9d8 70%, #ffe3d0 100%); }
+  .hero-grid { display: grid; grid-template-columns: minmax(280px, .82fr) minmax(0, 1.28fr); gap: 36px; align-items: center; }
+  .pill-kicker { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #ffd4b8; border-radius: 999px; padding: 7px 16px; margin-bottom: 16px; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--orange); }
+  .hero h1 { font-size: clamp(34px, 4vw, 50px); line-height: 1.06; font-weight: 800; margin-bottom: 14px; }
+  .hero h1 .accent { color: var(--orange); }
+  .hero .lede { font-size: 16px; color: var(--ink-soft); line-height: 1.7; max-width: 480px; margin-bottom: 22px; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-stats { display: flex; gap: 22px; margin-top: 26px; flex-wrap: wrap; }
+  .hero-stats b { display: block; font-family: Sora; font-size: 15px; }
+  .hero-stats span { font-size: 12px; color: var(--muted); }
+
+  /* Rotating product picture */
+  .viewer { position: relative; }
+  .frame {
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 36px 70px -28px rgba(28,22,16,.32), 0 0 0 1px #fff;
+  }
+  .chrome { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid #f0e8e0; background: #faf7f4; }
+  .chrome i { width: 9px; height: 9px; border-radius: 50%; }
+  .chrome i:nth-child(1) { background: #ff6057; } .chrome i:nth-child(2) { background: #ffbd2e; } .chrome i:nth-child(3) { background: #28ca42; }
+  .chrome .url { margin-left: 10px; flex: 1; background: #fff; border: 1px solid #efe7df; border-radius: 8px; font-size: 11px; color: #a2988e; padding: 5px 12px; }
+  .slides { position: relative; height: 470px; background: #f7f2ed; }
+  .slide { position: absolute; inset: 0; opacity: 0; transform: translateY(8px) scale(.985); transition: opacity .45s ease, transform .45s ease; pointer-events: none; }
+  .slide.on { opacity: 1; transform: none; pointer-events: auto; }
+  .dots { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+  .dots button { width: 8px; height: 8px; border-radius: 50%; border: 0; background: #e0d5cb; cursor: pointer; padding: 0; }
+  .dots button.on { background: var(--orange); width: 22px; border-radius: 8px; }
+  .cap { text-align: center; margin-top: 8px; font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+  .cap small { display: block; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+  /* Shared app chrome inside slides */
+  .app { display: grid; grid-template-columns: 56px 1fr; height: 100%; }
+  .rail { background: #17130f; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 12px; }
+  .rail .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--orange); display: flex; align-items: center; justify-content: center; font-family: Sora; font-weight: 800; font-size: 12px; }
+  .rail a { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #b9aea4; }
+  .rail a.on { background: #2a241f; color: #fff; }
+  .rail svg { width: 15px; height: 15px; }
+  .pane { display: flex; flex-direction: column; min-width: 0; background: #f6f1ec; }
+  .bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #fff; border-bottom: 1px solid #efe7df; gap: 10px; }
+  .bar h6 { font-size: 13.5px; }
+  .bar p { font-size: 11px; color: var(--muted); }
+  .tools { display: flex; gap: 6px; align-items: center; }
+  .tools b { font-size: 10.5px; font-weight: 600; background: #fff; border: 1px solid #efe7df; padding: 5px 10px; border-radius: 8px; color: var(--ink-soft); }
+  .tools b.p { background: var(--orange); color: #fff; border-color: var(--orange); }
+
+  /* PLANNER */
+  .planner { display: grid; grid-template-columns: 52px repeat(5, 1fr); flex: 1; overflow: hidden; font-size: 10.5px; }
+  .planner .h { padding: 8px 4px; text-align: center; background: #fff; border-bottom: 1px solid #efe7df; border-left: 1px solid #f4ece4; }
+  .planner .h strong { display: block; font-size: 12px; }
+  .planner .h.today { background: #fff5ee; color: var(--orange); }
+  .planner .t { padding: 0 6px; color: #b0a59b; border-bottom: 1px solid #f4ece4; display: flex; align-items: flex-start; background: #fff; font-size: 10px; }
+  .planner .c { position: relative; border-left: 1px solid #f4ece4; border-bottom: 1px solid #f4ece4; background: repeating-linear-gradient(#fff, #fff 35px, #faf7f4 35px, #faf7f4 36px); min-height: 36px; }
+  .planner .c.today { background: repeating-linear-gradient(#fffaf6, #fffaf6 35px, #fdeee3 35px, #fdeee3 36px); }
+  .now { position: absolute; left: 0; right: 0; height: 2px; background: #e11d48; z-index: 3; box-shadow: 0 0 0 2px rgba(225,29,72,.15); }
+  .now::before { content: ""; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #e11d48; }
+  .apt { position: absolute; left: 4px; right: 4px; border-radius: 8px; padding: 5px 7px; color: #fff; overflow: hidden; box-shadow: 0 8px 16px -10px rgba(28,22,16,.35); }
+  .apt b { display: block; font-size: 11px; font-weight: 700; }
+  .apt span { font-size: 9.5px; opacity: .9; }
+  .apt.o { background: linear-gradient(180deg, #ff7a3d, #ff6a2b); }
+  .apt.g { background: linear-gradient(180deg, #3dba7a, #2fa363); }
+  .apt.n { background: linear-gradient(180deg, #2c2621, #17130f); }
+  .apt.b { background: linear-gradient(180deg, #6b8cff, #4b7bec); }
+
+  /* WORK ORDER */
+  .wo { display: grid; grid-template-columns: 1.15fr .85fr; gap: 0; flex: 1; min-height: 0; }
+  .wo-main { padding: 14px 16px; overflow: hidden; }
+  .pipe { display: flex; gap: 0; margin-bottom: 14px; }
+  .pipe span { flex: 1; text-align: center; font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 7px 4px; background: #fff; border: 1px solid #efe7df; color: #b0a59b; }
+  .pipe span:first-child { border-radius: 8px 0 0 8px; }
+  .pipe span:last-child { border-radius: 0 8px 8px 0; }
+  .pipe span.on { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .pipe span.done { background: #e6f8ed; color: #2fa363; border-color: #cfeedd; }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .meta div { background: #fff; border: 1px solid #efe7df; border-radius: 12px; padding: 10px 12px; }
+  .meta s { display: block; font-size: 10px; color: var(--muted); text-decoration: none; margin-bottom: 3px; }
+  .meta b { font-size: 12.5px; }
+  .parts { background: #fff; border: 1px solid #efe7df; border-radius: 12px; overflow: hidden; }
+  .parts .rh { display: flex; justify-content: space-between; padding: 8px 12px; font-size: 11px; font-weight: 700; background: #faf7f4; }
+  .parts .pr { display: flex; justify-content: space-between; padding: 8px 12px; font-size: 11.5px; border-top: 1px solid #f4ece4; }
+  .wo-side { background: #fff; border-left: 1px solid #efe7df; padding: 14px; }
+  .wo-side h6 { font-size: 12px; margin-bottom: 12px; }
+  .tl { display: grid; gap: 12px; }
+  .tl .ev { display: grid; grid-template-columns: 14px 1fr; gap: 10px; font-size: 11.5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); margin-top: 3px; }
+  .dot.g { background: #2fa363; } .dot.n { background: #c3b8ad; }
+  .tl span { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
+
+  /* WHATSAPP IN WEB APP */
+  .wa-app { display: grid; grid-template-columns: .92fr 1.08fr; height: 100%; }
+  .wa-col { display: flex; flex-direction: column; background: var(--wa-bg); background-image: radial-gradient(rgba(0,0,0,.04) 1px, transparent 1px); background-size: 18px 18px; }
+  .wa-head { background: var(--wa); color: #fff; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .wa-av { width: 32px; height: 32px; border-radius: 50%; background: #25d366; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+  .wa-head b { display: block; font-size: 12.5px; }
+  .wa-head span { font-size: 10px; opacity: .85; }
+  .wa-thread { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .bub { max-width: 86%; font-size: 11.5px; line-height: 1.45; padding: 7px 10px; border-radius: 10px; box-shadow: 0 1px 1px rgba(0,0,0,.06); }
+  .bub.in { background: #fff; align-self: flex-start; border-top-left-radius: 3px; }
+  .bub.out { background: var(--wa-out); align-self: flex-end; border-top-right-radius: 3px; }
+  .bub time { display: block; font-size: 9px; color: #7a8a82; text-align: right; margin-top: 3px; }
+  .wa-input { background: #f0f0f0; padding: 8px; display: flex; gap: 6px; }
+  .wa-input span { flex: 1; background: #fff; border-radius: 18px; padding: 8px 12px; font-size: 11px; color: #9aa; }
+  .book-card { background: #fff; border-radius: 10px; padding: 8px; border-left: 3px solid var(--orange); }
+  .book-card b { display: block; font-size: 12px; }
+  .book-card span { font-size: 10.5px; color: var(--muted); }
+  .sync { background: #fff; display: flex; flex-direction: column; }
+  .sync .bar { border-left: 1px solid #efe7df; }
+  .sync-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .toast { background: #e6f8ed; color: #1f7a48; border-radius: 10px; padding: 9px 12px; font-size: 12px; font-weight: 600; }
+  .slot { display: flex; justify-content: space-between; align-items: center; background: #faf7f4; border: 1px solid #efe7df; border-radius: 12px; padding: 10px 12px; font-size: 12px; }
+  .slot.on { border-color: #ffd4b8; background: #fff5ee; }
+  .slot em { font-style: normal; font-size: 10px; font-weight: 700; color: #2fa363; background: #e6f8ed; padding: 3px 8px; border-radius: 999px; }
+
+  .white-top { background: #fff; border-radius: 34px 34px 0 0; margin-top: -16px; position: relative; z-index: 2; }
+  section { padding: 64px 0; }
+  .sec-head { text-align: center; max-width: 860px; margin: 0 auto 36px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; justify-content: center; font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--orange); margin-bottom: 12px; }
+  .eyebrow::before, .eyebrow::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--orange); opacity: .6; }
+  .sec-head h2 { font-size: clamp(26px, 3.1vw, 36px); line-height: 1.16; }
+  .sec-head h2 em { font-style: normal; color: var(--orange); }
+  .sec-head p { color: var(--ink-soft); font-size: 15.5px; line-height: 1.7; margin: 14px auto 0; max-width: 640px; }
+  .mods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .mod { background: var(--peach-2); border: 1px solid var(--line); border-radius: 18px; padding: 22px 20px; }
+  .mod .ic { width: 40px; height: 40px; border-radius: 12px; background: #fff; color: var(--orange); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+  .mod .ic svg { width: 19px; height: 19px; }
+  .mod h3 { font-size: 15px; margin-bottom: 6px; }
+  .mod p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+  .who { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .who .card { border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+  .who h3 { font-size: 16px; margin-bottom: 8px; }
+  .who p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+  .cta-banner { border-radius: 26px; background: var(--ink); color: #fff; padding: 56px; text-align: center; }
+  .cta-banner h2 { font-size: clamp(24px, 3vw, 34px); margin-bottom: 10px; }
+  .cta-banner h2 em { font-style: normal; color: var(--orange); }
+  .cta-banner p { color: #cfc6bc; margin-bottom: 22px; }
+  footer { padding: 40px 0 56px; border-top: 1px solid var(--line); background: #fff; }
+  footer .wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  footer p, footer a { font-size: 13px; color: var(--muted); }
+  footer .right { margin-left: auto; display: flex; gap: 22px; }
+
+  @media (max-width: 1080px) {
+    .hero-grid, .wo, .wa-app, .mods { grid-template-columns: 1fr 1fr; }
+    .hero-grid { grid-template-columns: 1fr; }
+    nav.site .links { display: none; }
+    .slides { height: 420px; }
+  }
+  @media (max-width: 720px) {
+    .mods, .who { grid-template-columns: 1fr; }
+    .planner { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <nav class="site">
+      <a href="index.html" class="logo" aria-label="TEZVO TECH">
+        <img class="logo-mark" src="logo-mark.svg" alt="" />
+        <span class="logo-type">
+          <span class="logo-name">TEZVO <em>TECH</em></span>
+          <span class="logo-tag">Smart Digital. Real Growth<i>.</i></span>
+        </span>
+      </a>
+      <div class="links">
+        <a href="products-v2.html" class="on">Products</a>
+        <a href="index.html#services">Services</a>
+        <a href="index.html#why">Why Us</a>
+        <a href="index.html#process">Process</a>
+        <a href="index.html#contact">Contact</a>
+      </div>
+      <a class="btn btn-primary btn-sm" href="index.html#contact">Book a call →</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="pill-kicker">TEZVOFlow · v2</span>
+        <h1>Book it on WhatsApp.<br>Plan it on the <em class="accent">board.</em></h1>
+        <p class="lede">A field-service web app with a real appointment planner, a work-order overview, and WhatsApp booking that writes straight into the schedule — no double entry.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#screens">Watch the screens</a>
+          <a class="btn btn-ghost" href="products.html">View v1 wireframes</a>
+        </div>
+        <div class="hero-stats">
+          <div><b>Planner</b><span>Week view, live now-line</span></div>
+          <div><b>Work orders</b><span>Status, parts, timeline</span></div>
+          <div><b>WhatsApp</b><span>Chat → booked slot</span></div>
+        </div>
+      </div>
+
+      <div class="viewer" id="screens">
+        <div class="frame">
+          <div class="chrome"><i></i><i></i><i></i><span class="url" id="slide-url">app.tezvoflow.com / planner</span></div>
+          <div class="slides">
+
+            <!-- 1. PLANNER -->
+            <div class="slide on" data-url="app.tezvoflow.com / planner" data-cap="Appointment planner" data-sub="Week board · techs as columns · live now-line">
+              <div class="app">
+                <div class="rail">
+                  <div class="mark">T</div>
+                  <a class="on" title="Planner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/></svg></a>
+                  <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></a>
+                  <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></a>
+                </div>
+                <div class="pane">
+                  <div class="bar">
+                    <div><h6>Planner · Hyderabad North</h6><p>27–31 Aug · 18 jobs · 5 technicians</p></div>
+                    <div class="tools"><b>Day</b><b class="p">Week</b><b>+ Appointment</b></div>
+                  </div>
+                  <div class="planner">
+                    <div class="h"></div>
+                    <div class="h"><strong>Mon 25</strong>Ravi</div>
+                    <div class="h"><strong>Tue 26</strong>Anika</div>
+                    <div class="h today"><strong>Wed 27</strong>Imran</div>
+                    <div class="h"><strong>Thu 28</strong>Priya</div>
+                    <div class="h"><strong>Fri 29</strong>Karthik</div>
+                    <div class="t">8am</div><div class="c"></div><div class="c"></div><div class="c today"></div><div class="c"></div><div class="c"></div>
+                    <div class="t">9am</div>
+                    <div class="c"><div class="apt o" style="top:4px;height:62px"><b>AC install</b><span>9:00–11:00 · WO-110</span></div></div>
+                    <div class="c"></div>
+                    <div class="c today"><div class="apt g" style="top:4px;height:28px"><b>Callback</b><span>9:00–9:45</span></div></div>
+                    <div class="c"></div>
+                    <div class="c"><div class="apt n" style="top:4px;height:62px"><b>Training</b><span>9:00–11:00</span></div></div>
+                    <div class="t">10am</div><div class="c"></div>
+                    <div class="c"><div class="apt o" style="top:4px;height:62px"><b>Split AC leak</b><span>10:00–12:00 · WO-1842</span></div></div>
+                    <div class="c today"><div class="now" style="top:18px"></div></div>
+                    <div class="c"><div class="apt b" style="top:4px;height:44px"><b>Site survey</b><span>10:00–11:30</span></div></div>
+                    <div class="c"></div>
+                    <div class="t">11am</div><div class="c"></div><div class="c"></div>
+                    <div class="c today"><div class="apt o" style="top:8px;height:52px"><b>Panel trip</b><span>11:15–12:45 · WO-2210</span></div></div>
+                    <div class="c"></div><div class="c"><div class="apt g" style="top:4px;height:28px"><b>Filter AMC</b><span>11:00–11:40</span></div></div>
+                    <div class="t">12pm</div><div class="c"></div><div class="c"></div><div class="c today"></div>
+                    <div class="c"><div class="apt o" style="top:4px;height:70px"><b>Water heater</b><span>12:00–14:00</span></div></div>
+                    <div class="c"></div>
+                    <div class="t">1pm</div>
+                    <div class="c"><div class="apt g" style="top:4px;height:44px"><b>Drain · PL-0901</b><span>13:00–14:30</span></div></div>
+                    <div class="c"></div><div class="c today"></div><div class="c"></div>
+                    <div class="c"><div class="apt o" style="top:4px;height:52px"><b>Outdoor unit</b><span>13:30–15:00</span></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. WORK ORDER OVERVIEW -->
+            <div class="slide" data-url="app.tezvoflow.com / work-orders / WO-1842" data-cap="Work order overview" data-sub="Pipeline, parts, SLA and a live activity feed">
+              <div class="app">
+                <div class="rail">
+                  <div class="mark">T</div>
+                  <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/></svg></a>
+                  <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></a>
+                  <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></a>
+                </div>
+                <div class="pane">
+                  <div class="bar">
+                    <div><h6>WO-1842 · Split AC leak</h6><p>Banjara Hills · SLA 2h remaining · Anika N.</p></div>
+                    <div class="tools"><b>Print</b><b class="p">Update status</b></div>
+                  </div>
+                  <div class="wo">
+                    <div class="wo-main">
+                      <div class="pipe">
+                        <span class="done">New</span>
+                        <span class="done">Scheduled</span>
+                        <span class="on">In progress</span>
+                        <span>QA</span>
+                        <span>Invoiced</span>
+                      </div>
+                      <div class="meta">
+                        <div><s>Customer</s><b>Mrs. Reddy · +91 98×× ××4412</b></div>
+                        <div><s>Site</s><b>12, Road No. 12, Banjara Hills</b></div>
+                        <div><s>Technician</s><b>Anika N. · En route 8 min</b></div>
+                        <div><s>Window</s><b>Today 10:00–12:00</b></div>
+                      </div>
+                      <div class="parts">
+                        <div class="rh"><span>Line items</span><span>On van</span></div>
+                        <div class="pr"><span>Copper flare kit</span><span>Yes</span></div>
+                        <div class="pr"><span>R32 top-up 200g</span><span>Yes</span></div>
+                        <div class="pr"><span>Indoor drain pan</span><span>Warehouse</span></div>
+                      </div>
+                    </div>
+                    <div class="wo-side">
+                      <h6>Activity</h6>
+                      <div class="tl">
+                        <div class="ev"><i class="dot g"></i><div>Job created from WhatsApp chat<span>Yesterday 18:12</span></div></div>
+                        <div class="ev"><i class="dot"></i><div>Slot booked · Wed 10:00 Anika<span>Yesterday 18:13</span></div></div>
+                        <div class="ev"><i class="dot"></i><div>Customer notified — “tech on the way”<span>Today 09:52</span></div></div>
+                        <div class="ev"><i class="dot n"></i><div>Waiting on-site photos<span>Now</span></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. WHATSAPP IN WEB APP -->
+            <div class="slide" data-url="app.tezvoflow.com / inbox · WhatsApp" data-cap="WhatsApp booking in the web app" data-sub="Chat on the left · slot lands on the planner on the right">
+              <div class="app">
+                <div class="rail">
+                  <div class="mark">T</div>
+                  <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/></svg></a>
+                  <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></a>
+                  <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></a>
+                </div>
+                <div class="wa-app">
+                  <div class="wa-col">
+                    <div class="wa-head">
+                      <span class="wa-av">MR</span>
+                      <div><b>Mrs. Reddy</b><span>WhatsApp · +91 98×× ××4412</span></div>
+                    </div>
+                    <div class="wa-thread">
+                      <div class="bub in">Hi, AC is leaking from the indoor unit. Can someone come tomorrow?<time>18:04</time></div>
+                      <div class="bub out">Hi Mrs. Reddy — we can do Banjara Hills tomorrow. 10:00–12:00 with Anika, or 3:00–5:00 with Ravi.<time>18:05</time></div>
+                      <div class="bub in">10:00 with Anika please.<time>18:11</time></div>
+                      <div class="bub out">
+                        <div class="book-card"><b>Appointment confirmed</b><span>Wed 27 Aug · 10:00–12:00<br>WO-1842 · Anika N.</span></div>
+                        <time>18:13 ✓✓</time>
+                      </div>
+                    </div>
+                    <div class="wa-input"><span>Message…</span></div>
+                  </div>
+                  <div class="sync">
+                    <div class="bar"><div><h6>Inbox → Planner</h6><p>WhatsApp created this job automatically</p></div></div>
+                    <div class="sync-body">
+                      <div class="toast">✓ Work order WO-1842 opened · slot locked</div>
+                      <div class="slot on"><div><b>Wed 27 · 10:00–12:00</b><div style="font-size:11px;color:#948a80;margin-top:2px">Anika N. · Split AC leak</div></div><em>Booked</em></div>
+                      <div class="slot"><div><b>Wed 27 · 15:00–17:00</b><div style="font-size:11px;color:#948a80;margin-top:2px">Ravi K. · free</div></div><em style="background:#fff4e5;color:#d97706">Offered</em></div>
+                      <div class="slot"><div><b>Thu 28 · 09:00–11:00</b><div style="font-size:11px;color:#948a80;margin-top:2px">Priya · free</div></div><em style="background:#f0eeeb;color:#948a80">Alt</em></div>
+                      <div class="parts">
+                        <div class="rh"><span>Synced to TEZVOFlow</span></div>
+                        <div class="pr"><span>Customer</span><span>Mrs. Reddy</span></div>
+                        <div class="pr"><span>Channel</span><span>WhatsApp</span></div>
+                        <div class="pr"><span>Status</span><span>Scheduled</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="dots" id="dots"></div>
+        <div class="cap" id="cap">Appointment planner<small>Week board · techs as columns · live now-line</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="white-top">
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">What’s new in v2</span>
+      <h2>Three screens the office actually lives in</h2>
+      <p>The picture on the right rotates every 2 seconds. Hover it to pause. Click a dot to jump.</p>
+    </div>
+    <div class="mods">
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/></svg></div>
+        <h3>Appointment planner</h3>
+        <p>A real week board — hour rows, technician columns, coloured job blocks, and a live now-line. Not a list pretending to be a calendar.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></div>
+        <h3>Work order overview</h3>
+        <p>One WO: pipeline, customer, SLA, van parts, and the activity feed from WhatsApp through to invoice.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+        <h3>WhatsApp in the web app</h3>
+        <p>The same thread the customer sees, docked next to the planner. A “10am please” becomes a locked slot and a work order.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-4.4 7-10a7 7 0 10-14 0c0 5.6 7 10 7 10z"/></svg></div>
+        <h3>Still field-ready</h3>
+        <p>Dispatch map, technician phone, and on-site closeout from v1 sit underneath this office layer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top: 8px;">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Who it’s for</span>
+      <h2>If the phone rings and a van leaves, this is the product</h2>
+    </div>
+    <div class="who">
+      <div class="card"><h3>HVAC &amp; facilities</h3><p>AMC rounds and leak callouts booked on WhatsApp, then dropped onto Anika’s Wednesday morning.</p></div>
+      <div class="card"><h3>Plumbing &amp; electrical</h3><p>Emergency slots offered in chat. The first “yes” locks the window so two customers never get 10am.</p></div>
+      <div class="card"><h3>Multi-branch service</h3><p>One inbox, many planners. The work order stays the source of truth across cities.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top: 10px; padding-bottom: 72px;">
+  <div class="wrap">
+    <div class="cta-banner">
+      <h2>See TEZVOFlow v2 on a <em>real job list.</em></h2>
+      <p>Bring last week’s WhatsApp export. We’ll map it onto the planner in the walkthrough.</p>
+      <a class="btn btn-primary" href="index.html#contact">Book a walkthrough →</a>
+    </div>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <a href="index.html" class="logo" aria-label="TEZVO TECH">
+      <img class="logo-mark" src="logo-mark.svg" alt="" />
+      <span class="logo-type">
+        <span class="logo-name">TEZVO <em>TECH</em></span>
+        <span class="logo-tag">Smart Digital. Real Growth<i>.</i></span>
+      </span>
+    </a>
+    <p>© 2026 TEZVO TECH PRIVATE LIMITED · Hyderabad, India</p>
+    <div class="right">
+      <a href="products-v2.html">Products</a>
+      <a href="products.html">v1 wireframes</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var slides = [].slice.call(document.querySelectorAll(".slide"));
+  var url = document.getElementById("slide-url");
+  var cap = document.getElementById("cap");
+  var dotsWrap = document.getElementById("dots");
+  var i = 0, timer, paused = false;
+
+  slides.forEach(function (_, n) {
+    var b = document.createElement("button");
+    b.type = "button";
+    if (n === 0) b.className = "on";
+    b.addEventListener("click", function () { go(n, true); });
+    dotsWrap.appendChild(b);
+  });
+  var dots = [].slice.call(dotsWrap.children);
+
+  function go(n) {
+    i = (n + slides.length) % slides.length;
+    slides.forEach(function (s, k) { s.classList.toggle("on", k === i); });
+    dots.forEach(function (d, k) { d.classList.toggle("on", k === i); });
+    var s = slides[i];
+    url.textContent = s.dataset.url;
+    cap.innerHTML = s.dataset.cap + "<small>" + s.dataset.sub + "</small>";
+  }
+  function tick() { if (!paused) go(i + 1); }
+
+  timer = setInterval(tick, 2000);
+  var viewer = document.querySelector(".viewer");
+  viewer.addEventListener("mouseenter", function () { paused = true; });
+  viewer.addEventListener("mouseleave", function () { paused = false; });
+})();
+</script>
+</body>
+</html>

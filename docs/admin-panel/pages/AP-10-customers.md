@@ -42,7 +42,7 @@ The ⋮ column renders only for `ADMIN`. For `STAFF` the table ends at the last 
 
 | # | Element | Type | Content / source | Behavior & rules |
 | --- | --- | --- | --- | --- |
-| 1 | Page title | `<h1>` | "Customers" | Static. No primary action — customers self-register ([features/customer-management.md](../../features/customer-management.md) §Business Rules 1), so the panel never creates one. |
+| 1 | Page title | `<h1>` | "Customers" | Static. No create action on this list — walk-in accounts are created from [AP-18](AP-18-create-request.md) **New customer**, not from this directory. |
 | 2 | Result summary | Text, `body-small` | Length of the returned array (see element #12) | "1,284 customers", or "12 customers match 'kumar'" while a search is active. Hidden during first load. |
 | 3 | Search | Debounced text input (350ms) | Maps to the `q` param of `GET /customers`, which the API searches over name, username, and mobile ([API.md §9](../../API.md)) | Trimmed before sending. A clear (✕) button appears when non-empty and returns the page to the unfiltered list. The 350ms debounce is the fix from [Bugs.md](../../Bugs.md) #6, where a per-keystroke request made the page feel permanently loading. |
 | 4 | Empty-search default | — | `GET /customers` with **no** `q` param | The unfiltered list is the page's normal resting state and must load successfully. A null `q` reaching the repository caused a production 500 on every visit ([Bugs.md](../../Bugs.md) #9); the client sends no `q` at all when the box is empty, and the page treats a failure here as a hard error state, not an empty list. |

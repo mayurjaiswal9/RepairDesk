@@ -107,6 +107,18 @@ public class RepairRequest extends BaseEntity {
     @JoinColumn(name = "reviewed_by")
     private User reviewedBy;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private RequestOrigin origin = RequestOrigin.CUSTOMER_APP;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "intake_channel", length = 20)
+    private IntakeChannel intakeChannel;
+
     public boolean isEditableByOwner() {
         return status == RequestStatus.PENDING_REVIEW
                 || status == RequestStatus.INFORMATION_REQUIRED;

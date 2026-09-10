@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TEZVOFlow — Field Service Management | TEZVO TECH</title>
+<link rel="icon" href="logo-mark.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Nunito:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --white: #ffffff;
+    --peach: #ffeadd;
+    --peach-2: #fff5ee;
+    --ink: #17130f;
+    --ink-soft: #5a4f45;
+    --muted: #948a80;
+    --orange: #ff6a2b;
+    --orange-deep: #ec5313;
+    --orange-soft: #ffeade;
+    --line: #f1e7dd;
+    --radius: 18px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; background: #fff8f3; }
+  body { font-family: "Inter", system-ui, sans-serif; background: #fff8f3; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  h1,h2,h3,h4,h5,h6 { font-family: "Sora", sans-serif; letter-spacing: -0.03em; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: 100%; max-width: 1780px; margin: 0 auto; padding: 0 clamp(24px, 2.6vw, 48px); }
+  ::selection { background: var(--orange); color: #fff; }
+
+  header.top {
+    position: sticky; top: 0; z-index: 100;
+    background: #fff8f3; border-bottom: 1px solid var(--line);
+  }
+  nav.site { display: flex; align-items: center; padding: 17px 0 22px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo .logo-mark { width: 42px; height: 42px; display: block; flex-shrink: 0; }
+  .logo .logo-type { display: flex; flex-direction: column; justify-content: center; gap: 4px; line-height: 1; width: fit-content; }
+  .logo .logo-name {
+    font-family: "Nunito", sans-serif; font-weight: 800; font-size: 19px;
+    letter-spacing: .2em; word-spacing: .26em; color: var(--ink); white-space: nowrap;
+  }
+  .logo .logo-name em { font-style: normal; color: var(--orange); }
+  .logo .logo-tag {
+    display: flex; align-items: center; gap: 5px;
+    width: 0; min-width: 100%; overflow: hidden;
+    font-family: "Nunito", sans-serif; font-weight: 700; font-size: 7px; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--muted); white-space: nowrap;
+  }
+  .logo .logo-tag::before, .logo .logo-tag::after { content: ""; flex: 1 1 0; height: 1px; background: #c9c2ba; min-width: 0; }
+  .logo .logo-tag i { color: var(--orange); font-style: normal; }
+  footer .logo .logo-mark { width: 34px; height: 34px; }
+  footer .logo .logo-name { font-size: 16px; }
+  nav.site .links { display: flex; gap: 34px; margin: 0 auto; }
+  nav.site .links a { font-size: 14.5px; font-weight: 500; color: var(--ink-soft); position: relative; padding: 4px 0; display: inline-flex; align-items: center; gap: 5px; }
+  nav.site .links a::after {
+    content: ""; position: absolute; left: 0; bottom: 0; width: 0; height: 2px;
+    background: var(--orange); border-radius: 2px; transition: width .3s;
+  }
+  nav.site .links a:hover, nav.site .links a.on { color: var(--ink); }
+  nav.site .links a.on::after, nav.site .links a:hover::after { width: 100%; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: "Inter"; font-weight: 600; font-size: 14.5px;
+    padding: 14px 28px; border-radius: 999px; cursor: pointer;
+    border: none; position: relative; overflow: hidden; isolation: isolate;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .btn-primary { background: var(--orange); color: #fff; box-shadow: 0 14px 30px -12px rgba(255,106,43,.6); }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-ghost { background: #fff; color: var(--ink); border: 1.5px solid #f0d9c8; }
+  .btn-sm { padding: 11px 22px; font-size: 13.5px; }
+
+  .hero {
+    padding: 28px 0 56px;
+    background:
+      radial-gradient(820px 420px at 82% 12%, #ffd9c4, transparent 58%),
+      linear-gradient(170deg, #fff8f3 0%, #ffe9d8 70%, #ffe3d0 100%);
+  }
+  .hero-grid { display: grid; grid-template-columns: minmax(320px, 1.05fr) minmax(0, 1.15fr); gap: 48px; align-items: center; }
+  .pill-kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid #ffd4b8; border-radius: 999px;
+    padding: 7px 16px 7px 12px; margin-bottom: 18px;
+    font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--orange);
+  }
+  .hero h1 { font-size: clamp(36px, 4.2vw, 52px); line-height: 1.06; font-weight: 800; margin-bottom: 16px; }
+  .hero h1 .accent { color: var(--orange); }
+  .hero .lede { font-size: 16.5px; color: var(--ink-soft); line-height: 1.7; max-width: 520px; margin-bottom: 26px; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-stats { display: flex; gap: 28px; margin-top: 32px; flex-wrap: wrap; }
+  .hero-stats b { display: block; font-family: "Sora"; font-size: 22px; font-weight: 700; }
+  .hero-stats span { font-size: 12px; color: var(--muted); }
+
+  .white-top { background: #fff; border-radius: 34px 34px 0 0; margin-top: -18px; position: relative; z-index: 2; }
+  section { padding: 64px 0; }
+  .sec-head { text-align: center; max-width: 860px; margin: 0 auto 36px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px; justify-content: center;
+    font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--orange); margin-bottom: 12px;
+  }
+  .eyebrow::before, .eyebrow::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--orange); opacity: .6; }
+  .sec-head h2 { font-size: clamp(26px, 3.1vw, 36px); line-height: 1.16; font-weight: 700; }
+  .sec-head h2 em { font-style: normal; color: var(--orange); }
+  .sec-head p { color: var(--ink-soft); font-size: 15.5px; line-height: 1.7; margin: 14px auto 0; max-width: 640px; }
+
+  .mods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .mod {
+    background: var(--peach-2); border: 1px solid var(--line); border-radius: 18px; padding: 22px 20px;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .mod:hover { transform: translateY(-4px); box-shadow: 0 18px 36px -24px rgba(28,22,16,.28); background: #fff; }
+  .mod .ic { width: 40px; height: 40px; border-radius: 12px; background: #fff; color: var(--orange); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+  .mod .ic svg { width: 19px; height: 19px; }
+  .mod h3 { font-size: 15px; margin-bottom: 6px; }
+  .mod p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+  /* Wireframes */
+  .wf-wrap { background: var(--peach-2); border: 1px solid var(--line); border-radius: 28px; padding: 22px 22px 28px; }
+  .wf-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .wf-tabs button {
+    font-family: Inter; font-size: 13.5px; font-weight: 600; padding: 10px 16px; border-radius: 999px;
+    border: 1px solid #f0d9c8; background: #fff; color: var(--ink-soft); cursor: pointer;
+  }
+  .wf-tabs button.on { background: var(--orange); color: #fff; border-color: var(--orange); }
+  .wf-stage { display: none; min-height: 520px; }
+  .wf-stage.on { display: grid; grid-template-columns: 1.35fr .85fr; gap: 22px; align-items: start; }
+  .wf-note h3 { font-size: 22px; margin-bottom: 10px; }
+  .wf-note p { color: var(--ink-soft); font-size: 14.5px; line-height: 1.7; margin-bottom: 14px; }
+  .wf-note ul { padding-left: 18px; color: var(--ink-soft); font-size: 14px; line-height: 1.7; }
+  .wf-note li { margin-bottom: 6px; }
+
+  .desk {
+    background: #fff; border-radius: 18px; overflow: hidden;
+    box-shadow: 0 28px 50px -28px rgba(28,22,16,.28); border: 1px solid #fff;
+  }
+  .dchrome { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid #f6efe8; background: #fff; }
+  .dchrome i { width: 9px; height: 9px; border-radius: 50%; }
+  .dchrome i:nth-child(1) { background: #ff6057; }
+  .dchrome i:nth-child(2) { background: #ffbd2e; }
+  .dchrome i:nth-child(3) { background: #28ca42; }
+  .dchrome .url { margin-left: 10px; flex: 1; background: #faf6f2; border-radius: 8px; font-size: 11px; color: #a2988e; padding: 5px 12px; }
+  .dapp { display: grid; grid-template-columns: 58px 1fr; min-height: 430px; }
+  .rail { background: #17130f; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 14px 0; gap: 14px; }
+  .rail .mark { width: 30px; height: 30px; border-radius: 9px; background: var(--orange); display: flex; align-items: center; justify-content: center; font-family: Sora; font-weight: 800; font-size: 13px; }
+  .rail a { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #b9aea4; }
+  .rail a.on { background: #2a241f; color: #fff; }
+  .rail svg { width: 16px; height: 16px; }
+  .dbody { background: #fbf8f5; }
+  .dtop { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #fff; border-bottom: 1px solid #f2eae2; }
+  .dtop h6 { font-size: 14px; }
+  .dtop span { font-size: 11px; color: var(--muted); }
+  .chips-mini { display: flex; gap: 6px; }
+  .chips-mini b { font-size: 10.5px; font-weight: 600; background: var(--orange-soft); color: var(--orange); padding: 4px 9px; border-radius: 999px; }
+  .board { display: grid; grid-template-columns: 1.2fr .9fr; min-height: 360px; }
+  .map {
+    position: relative; background:
+      linear-gradient(#f3ebe3 1px, transparent 1px),
+      linear-gradient(90deg, #f3ebe3 1px, transparent 1px),
+      #f7f1eb;
+    background-size: 28px 28px;
+    overflow: hidden;
+  }
+  .pin { position: absolute; width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--orange); box-shadow: 0 6px 12px -6px rgba(255,106,43,.8); }
+  .pin.g { background: #2fa363; }
+  .pin.b { background: #4b7bec; }
+  .pin::after { content: ""; position: absolute; inset: 6px; background: #fff; border-radius: 50%; }
+  .tech-card {
+    position: absolute; background: #fff; border-radius: 12px; padding: 8px 10px; font-size: 11px;
+    box-shadow: 0 10px 22px -14px rgba(28,22,16,.35); display: flex; gap: 8px; align-items: center;
+  }
+  .av { width: 24px; height: 24px; border-radius: 50%; background: var(--orange); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .jobs { background: #fff; border-left: 1px solid #f2eae2; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .job { border: 1px solid #f2eae2; border-radius: 12px; padding: 10px; display: grid; gap: 4px; }
+  .job.on { border-color: #ffd4b8; background: var(--peach-2); }
+  .job .row { display: flex; justify-content: space-between; align-items: center; }
+  .job b { font-size: 12px; }
+  .job span { font-size: 10.5px; color: var(--muted); }
+  .tag { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; }
+  .tag.live { background: #e6f8ed; color: #2fa363; }
+  .tag.wait { background: #fff4e5; color: #d97706; }
+  .tag.done { background: #eef2ff; color: #4b7bec; }
+
+  .cal { display: grid; grid-template-columns: 70px repeat(5, 1fr); font-size: 11px; }
+  .cal .hd { padding: 10px 8px; font-weight: 700; background: #fff; border-bottom: 1px solid #f2eae2; text-align: center; }
+  .cal .tm { padding: 8px; color: var(--muted); border-bottom: 1px solid #f6efe8; background: #fff; }
+  .cal .cell { border-bottom: 1px solid #f6efe8; border-left: 1px solid #f6efe8; min-height: 52px; padding: 4px; background: #fbf8f5; }
+  .blk { border-radius: 8px; padding: 6px 7px; font-size: 10px; line-height: 1.3; color: #fff; }
+  .blk.o { background: var(--orange); }
+  .blk.g { background: #2fa363; }
+  .blk.n { background: #17130f; }
+
+  .phone {
+    width: 230px; background: #16151a; border-radius: 36px; padding: 8px; margin: 0 auto;
+    box-shadow: 0 32px 50px -24px rgba(28,22,16,.4);
+  }
+  .screen { background: #fbf8f5; border-radius: 28px; overflow: hidden; height: 460px; display: flex; flex-direction: column; }
+  .notch { width: 72px; height: 18px; background: #16151a; border-radius: 10px; margin: 8px auto 0; }
+  .ph-head { background: var(--orange); color: #fff; padding: 10px 14px 14px; }
+  .ph-head h6 { font-size: 14px; }
+  .ph-head p { font-size: 10px; opacity: .9; margin-top: 2px; }
+  .ph-body { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+  .jc { background: #fff; border: 1px solid #f2eae2; border-radius: 12px; padding: 10px; }
+  .jc b { display: block; font-size: 12.5px; margin-bottom: 3px; }
+  .jc span { font-size: 10.5px; color: var(--muted); }
+  .ph-tab { display: flex; justify-content: space-around; padding: 8px 4px 12px; background: #fff; border-top: 1px solid #f2eae2; }
+  .ph-tab span { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8px; color: #c3b8ad; font-weight: 600; }
+  .ph-tab span.on { color: var(--orange); }
+  .ph-tab svg { width: 15px; height: 15px; }
+  .ck { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; padding: 6px 0; border-bottom: 1px solid #f6efe8; }
+  .box { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid #d7cdc3; flex-shrink: 0; margin-top: 1px; }
+  .box.on { background: var(--orange); border-color: var(--orange); }
+  .sig { height: 54px; border: 1.5px dashed #e3d8ce; border-radius: 10px; background: #fff; display: flex; align-items: flex-end; padding: 8px 12px; color: var(--muted); font-size: 11px; font-style: italic; }
+
+  .who { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .who .card { border: 1px solid var(--line); border-radius: 18px; padding: 24px; background: #fff; }
+  .who h3 { font-size: 16px; margin-bottom: 8px; }
+  .who p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+  .cta-banner { border-radius: 26px; background: var(--ink); color: #fff; padding: 56px; text-align: center; }
+  .cta-banner h2 { font-size: clamp(24px, 3vw, 34px); margin-bottom: 10px; }
+  .cta-banner h2 em { font-style: normal; color: var(--orange); }
+  .cta-banner p { color: #cfc6bc; margin-bottom: 22px; }
+
+  footer { padding: 40px 0 56px; border-top: 1px solid var(--line); background: #fff; }
+  footer .wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  footer p, footer a { font-size: 13px; color: var(--muted); }
+  footer a:hover { color: var(--orange); }
+  footer .right { margin-left: auto; display: flex; gap: 22px; }
+
+  @media (max-width: 1080px) {
+    .hero-grid, .wf-stage.on, .board, .mods, .who { grid-template-columns: 1fr; }
+    .mods { grid-template-columns: 1fr 1fr; }
+    nav.site .links { display: none; }
+    .phone { margin-top: 8px; }
+  }
+  @media (max-width: 720px) {
+    .mods, .who, .cal { grid-template-columns: 1fr; }
+    .cta-banner { padding: 36px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <nav class="site">
+      <a href="index.html" class="logo" aria-label="TEZVO TECH">
+        <img class="logo-mark" src="logo-mark.svg" alt="" />
+        <span class="logo-type">
+          <span class="logo-name">TEZVO <em>TECH</em></span>
+          <span class="logo-tag">Smart Digital. Real Growth<i>.</i></span>
+        </span>
+      </a>
+      <div class="links">
+        <a href="products-v2.html" class="on">Products</a>
+        <a href="index.html#services">Services</a>
+        <a href="index.html#why">Why Us</a>
+        <a href="index.html#process">Process</a>
+        <a href="index.html#contact">Contact</a>
+      </div>
+      <a class="btn btn-primary btn-sm" href="index.html#contact">Book a call <span>→</span></a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="pill-kicker">Product · Field Service Management</span>
+        <h1>TEZVO<em class="accent">Flow</em><br>Dispatch the day.<br>Close the job.</h1>
+        <p class="lede">Field service software for teams on the road — schedule jobs, track technicians, capture work on-site, and invoice before they leave the driveway.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#wireframes">See the wireframes →</a>
+          <a class="btn btn-ghost" href="index.html#contact">Talk to us about a rollout</a>
+        </div>
+        <div class="hero-stats">
+          <div><b>Live map</b><span>See every tech, every job</span></div>
+          <div><b>Mobile-first</b><span>Works in the van, even offline</span></div>
+          <div><b>Same-day invoice</b><span>Sign, bill, collect</span></div>
+        </div>
+      </div>
+      <div class="desk" aria-hidden="true">
+        <div class="dchrome"><i></i><i></i><i></i><span class="url">app.tezvoflow.com / dispatch</span></div>
+        <div class="dapp">
+          <div class="rail">
+            <div class="mark">T</div>
+            <a class="on" title="Dispatch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg></a>
+            <a title="Schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/></svg></a>
+            <a title="Team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/></svg></a>
+            <a title="Reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M10 19V9M16 19v-7M22 19V7"/></svg></a>
+          </div>
+          <div class="dbody">
+            <div class="dtop">
+              <div><h6>Today · Hyderabad North</h6><span>12 open · 4 in progress · 7 techs on shift</span></div>
+              <div class="chips-mini"><b>Live</b><b>SLA watch</b></div>
+            </div>
+            <div class="board">
+              <div class="map">
+                <span class="pin" style="top:28%;left:32%"></span>
+                <span class="pin g" style="top:46%;left:58%"></span>
+                <span class="pin b" style="top:62%;left:40%"></span>
+                <span class="pin g" style="top:34%;left:72%"></span>
+                <div class="tech-card" style="top:18%;left:12%"><span class="av">RK</span><div><b>Ravi K.</b><br><span style="color:#2fa363;font-size:10px">En route · 8 min</span></div></div>
+                <div class="tech-card" style="bottom:16%;right:10%"><span class="av" style="background:#2fa363">AN</span><div><b>Anika N.</b><br><span style="color:#2fa363;font-size:10px">On site · AC-1842</span></div></div>
+              </div>
+              <div class="jobs">
+                <div class="job on"><div class="row"><b>AC-1842 · Split AC leak</b><span class="tag live">On site</span></div><span>Banjara Hills · Anika · SLA 2h</span></div>
+                <div class="job"><div class="row"><b>PL-0901 · Blocked drain</b><span class="tag wait">En route</span></div><span>Gachibowli · Ravi · ETA 11:42</span></div>
+                <div class="job"><div class="row"><b>EL-2210 · Panel trip</b><span class="tag wait">Queued</span></div><span>Hitech City · Unassigned</span></div>
+                <div class="job"><div class="row"><b>HV-0444 · Filter change</b><span class="tag done">Done</span></div><span>Jubilee Hills · Signed 10:18</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="white-top">
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">What TEZVOFlow covers</span>
+      <h2>The field day, in one system</h2>
+      <p>Built for HVAC, plumbing, electrical, facilities, and any team that takes a van to a job.</p>
+    </div>
+    <div class="mods">
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4"/></svg></div>
+        <h3>Smart dispatch</h3>
+        <p>Assign by skill, parts on the van, travel time, and SLA — not a whiteboard and a WhatsApp group.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-4.4 7-10a7 7 0 10-14 0c0 5.6 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg></div>
+        <h3>Live GPS &amp; ETA</h3>
+        <p>See where every technician is. Customers get an honest arrival window, automatically.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2.6"/></svg></div>
+        <h3>Technician app</h3>
+        <p>Today’s route, job history, checklists, photos, and parts — usable with one thumb, including offline.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+        <h3>Work orders</h3>
+        <p>Fault codes, safety steps, required photos, and customer sign-off on the same screen.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
+        <h3>Van stock &amp; parts</h3>
+        <p>Know what’s on the truck before you send someone. Reorder when a job consumes the last filter.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div>
+        <h3>Invoice on site</h3>
+        <p>Quote extras, take a signature, send the bill, and collect UPI or card before the van moves.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.17L4 17.17V4z"/><path d="M8 8h8M8 12h5"/></svg></div>
+        <h3>Customer updates</h3>
+        <p>SMS / WhatsApp: “we’re on the way”, “tech has arrived”, “job complete — here’s your invoice”.</p>
+      </div>
+      <div class="mod">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M10 19V9M16 19v-7M22 19V7"/></svg></div>
+        <h3>SLA &amp; first-time fix</h3>
+        <p>Watch callbacks, travel waste, and jobs that miss the window — so the next week is tighter.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="wireframes" style="padding-top: 10px;">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Product wireframes</span>
+      <h2>How TEZVOFlow looks in use</h2>
+      <p>Click through the four core screens. These are working layout wireframes — dispatcher on the web, technician on the phone.</p>
+    </div>
+    <div class="wf-wrap">
+      <div class="wf-tabs">
+        <button class="on" data-wf="dispatch">1. Dispatch board</button>
+        <button data-wf="schedule">2. Weekly schedule</button>
+        <button data-wf="tech">3. Technician app</button>
+        <button data-wf="close">4. Job closeout</button>
+      </div>
+
+      <div class="wf-stage on" id="wf-dispatch">
+        <div class="desk">
+          <div class="dchrome"><i></i><i></i><i></i><span class="url">app.tezvoflow.com / dispatch</span></div>
+          <div class="dapp">
+            <div class="rail">
+              <div class="mark">T</div>
+              <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg></a>
+              <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/></svg></a>
+              <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5"/></svg></a>
+            </div>
+            <div class="dbody">
+              <div class="dtop"><div><h6>Dispatch · 27 Aug</h6><span>Drop a job onto a tech, or let auto-assign pick travel + skill</span></div></div>
+              <div class="board">
+                <div class="map">
+                  <span class="pin" style="top:30%;left:36%"></span>
+                  <span class="pin g" style="top:52%;left:61%"></span>
+                  <span class="pin b" style="top:40%;left:22%"></span>
+                  <div class="tech-card" style="top:14%;left:10%"><span class="av">RK</span><div><b>Ravi</b><br><span style="font-size:10px;color:#2fa363">8 min out</span></div></div>
+                </div>
+                <div class="jobs">
+                  <div class="job on"><div class="row"><b>AC-1842</b><span class="tag live">On site</span></div><span>Anika · Banjara Hills</span></div>
+                  <div class="job"><div class="row"><b>PL-0901</b><span class="tag wait">En route</span></div><span>Ravi · Gachibowli</span></div>
+                  <div class="job"><div class="row"><b>EL-2210</b><span class="tag wait">Needs tech</span></div><span>Skill: electrical · SLA 4h</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wf-note">
+          <h3>Dispatch board</h3>
+          <p>The office screen. A live map of vans plus a job queue. Dispatchers drag work to a technician or let the engine pick the next best person based on skill, van stock, and drive time.</p>
+          <ul>
+            <li>Colour pins: queued, en route, on site</li>
+            <li>SLA badges when a window is about to break</li>
+            <li>Click a job to see history, parts, and the last visit notes</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wf-stage" id="wf-schedule">
+        <div class="desk">
+          <div class="dchrome"><i></i><i></i><i></i><span class="url">app.tezvoflow.com / schedule</span></div>
+          <div class="dapp">
+            <div class="rail">
+              <div class="mark">T</div>
+              <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg></a>
+              <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/></svg></a>
+            </div>
+            <div class="dbody">
+              <div class="dtop"><div><h6>Week of 24 Aug · 5 technicians</h6><span>Drag blocks to rebalance. Grey = travel buffer.</span></div></div>
+              <div class="cal">
+                <div class="hd"></div>
+                <div class="hd">Mon</div><div class="hd">Tue</div><div class="hd">Wed</div><div class="hd">Thu</div><div class="hd">Fri</div>
+                <div class="tm">Ravi</div>
+                <div class="cell"><div class="blk o">AC-110 · 9:00</div></div>
+                <div class="cell"><div class="blk g">PL-88 · 10:30</div></div>
+                <div class="cell"></div>
+                <div class="cell"><div class="blk o">AC-201</div></div>
+                <div class="cell"><div class="blk n">Off</div></div>
+                <div class="tm">Anika</div>
+                <div class="cell"></div>
+                <div class="cell"><div class="blk o">AC-1842</div></div>
+                <div class="cell"><div class="blk o">HV-12 · AM</div></div>
+                <div class="cell"><div class="blk g">EL-40</div></div>
+                <div class="cell"><div class="blk o">PM round</div></div>
+                <div class="tm">Imran</div>
+                <div class="cell"><div class="blk g">PL-22</div></div>
+                <div class="cell"></div>
+                <div class="cell"><div class="blk o">Install · 2 slots</div></div>
+                <div class="cell"></div>
+                <div class="cell"><div class="blk g">Callback</div></div>
+                <div class="tm">Priya</div>
+                <div class="cell"><div class="blk n">Training</div></div>
+                <div class="cell"><div class="blk o">AC-77</div></div>
+                <div class="cell"><div class="blk o">AC-90</div></div>
+                <div class="cell"></div>
+                <div class="cell"><div class="blk o">AC-91</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wf-note">
+          <h3>Weekly schedule</h3>
+          <p>A board of people × days. Planned jobs, installs that need two slots, and time off sit on the same grid so nobody double-books a van.</p>
+          <ul>
+            <li>Colour = job type (repair, install, callback)</li>
+            <li>Capacity view before you accept a contract visit</li>
+            <li>Recurring maintenance drops in automatically</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wf-stage" id="wf-tech">
+        <div>
+          <div class="phone">
+            <div class="screen">
+              <div class="notch"></div>
+              <div class="ph-head">
+                <h6>Good morning, Ravi</h6>
+                <p>3 jobs today · next in 12 min</p>
+              </div>
+              <div class="ph-body">
+                <div class="jc" style="border-color:#ffd4b8;background:#fff5ee">
+                  <span class="tag wait">Next · 11:30</span>
+                  <b>Blocked drain · PL-0901</b>
+                  <span>Plot 12, Gachibowli · Mrs. Reddy<br>Bring: 9mm snake, extra trap</span>
+                </div>
+                <div class="jc">
+                  <span class="tag live">After · 1:15</span>
+                  <b>Water heater check</b>
+                  <span>Kondapur · 45 min window</span>
+                </div>
+                <div class="jc">
+                  <span class="tag done">Later · 4:00</span>
+                  <b>Annual AMC · BrightPath</b>
+                  <span>Hitech City · 2 indoor units</span>
+                </div>
+              </div>
+              <div class="ph-tab">
+                <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V20h-6v-6H9v6H3z"/></svg>Today</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-4.4 7-10a7 7 0 10-14 0c0 5.6 7 10 7 10z"/></svg>Map</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/></svg>Jobs</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3"/><path d="M4 20c0-3 3.5-5 8-5s8 2 8 5"/></svg>Me</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wf-note">
+          <h3>Technician app — Today</h3>
+          <p>What the person in the van actually opens. Ordered by drive time. Each card has address, customer, and the parts they were told to take from the warehouse.</p>
+          <ul>
+            <li>One-tap navigate, call, or “I’m on site”</li>
+            <li>Job notes from the last visit sit on the card</li>
+            <li>Works if the basement has no signal — syncs later</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wf-stage" id="wf-close">
+        <div>
+          <div class="phone">
+            <div class="screen">
+              <div class="notch"></div>
+              <div class="ph-head">
+                <h6>Close job · PL-0901</h6>
+                <p>Mrs. Reddy · Gachibowli</p>
+              </div>
+              <div class="ph-body">
+                <div class="ck"><span class="box on"></span>Isolated supply &amp; tested</div>
+                <div class="ck"><span class="box on"></span>Cleared trap · replaced washer</div>
+                <div class="ck"><span class="box"></span>Photo of completed work</div>
+                <div class="jc" style="margin-top:4px"><b>Parts used</b><span>P-trap 32mm × 1 · Washer kit × 1</span></div>
+                <div class="sig">Customer signature</div>
+                <div class="jc" style="background:#17130f;color:#fff;border:0"><b style="color:#fff">Invoice ₹2,400</b><span style="color:#cfc6bc">UPI / card · send to customer</span></div>
+              </div>
+              <div class="ph-tab">
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V20h-6v-6H9v6H3z"/></svg>Today</span>
+                <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg>Close</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/></svg>Pay</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3"/></svg>Me</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wf-note">
+          <h3>Job closeout</h3>
+          <p>The last screen before they drive off. Checklist, parts consumed (which updates van stock), photos, signature, and a bill — no paper, no office typing it up tomorrow.</p>
+          <ul>
+            <li>Required photos can block “complete”</li>
+            <li>Extras quoted on the spot, then added to the invoice</li>
+            <li>Office sees the job flip to Done in real time</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top: 20px;">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Who it’s for</span>
+      <h2>If vans leave the yard, this is the product</h2>
+    </div>
+    <div class="who">
+      <div class="card">
+        <h3>HVAC &amp; facilities</h3>
+        <p>Split ACs, chillers, AMC rounds. Recurring visits, two-person installs, and first-time-fix pressure.</p>
+      </div>
+      <div class="card">
+        <h3>Plumbing &amp; electrical</h3>
+        <p>Emergency callouts, SLA clocks, and parts that must already be on the van — not a second trip.</p>
+      </div>
+      <div class="card">
+        <h3>Multi-branch service firms</h3>
+        <p>One dispatch brain across cities. Local techs, shared parts, and a single number for the customer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top: 10px; padding-bottom: 72px;">
+  <div class="wrap">
+    <div class="cta-banner">
+      <h2>Want TEZVOFlow for your <em>field team?</em></h2>
+      <p>We’ll map your current dispatch (whiteboard, Excel, WhatsApp) and show a rollout that doesn’t freeze the week.</p>
+      <a class="btn btn-primary" href="index.html#contact">Book a TEZVOFlow walkthrough →</a>
+    </div>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <a href="index.html" class="logo" aria-label="TEZVO TECH">
+      <img class="logo-mark" src="logo-mark.svg" alt="" />
+      <span class="logo-type">
+        <span class="logo-name">TEZVO <em>TECH</em></span>
+        <span class="logo-tag">Smart Digital. Real Growth<i>.</i></span>
+      </span>
+    </a>
+    <p>© 2026 TEZVO TECH PRIVATE LIMITED · Hyderabad, India</p>
+    <div class="right">
+      <a href="products-v2.html">Products</a>
+      <a href="index.html#services">Services</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var tabs = document.querySelectorAll(".wf-tabs button");
+  var stages = document.querySelectorAll(".wf-stage");
+  tabs.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      tabs.forEach(function (b) { b.classList.remove("on"); });
+      stages.forEach(function (s) { s.classList.remove("on"); });
+      btn.classList.add("on");
+      document.getElementById("wf-" + btn.dataset.wf).classList.add("on");
+    });
+  });
+})();
+</script>
+</body>
+</html>

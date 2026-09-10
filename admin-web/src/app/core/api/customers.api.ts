@@ -4,6 +4,24 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CustomerHistory, UserProfile } from '../models/dashboard.models';
 
+export interface CreateCustomerBody {
+  name: string;
+  mobile: string;
+  username?: string;
+  password?: string;
+}
+
+export interface CreateCustomerResponse {
+  id: string;
+  username: string;
+  name: string;
+  mobile: string;
+  role: string;
+  status: string;
+  mustChangePassword: boolean;
+  generatedPassword?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CustomersApi {
   private readonly http = inject(HttpClient);
@@ -23,5 +41,9 @@ export class CustomersApi {
 
   history(id: string): Observable<CustomerHistory> {
     return this.http.get<CustomerHistory>(`${this.base}/customers/${id}/history`);
+  }
+
+  create(body: CreateCustomerBody): Observable<CreateCustomerResponse> {
+    return this.http.post<CreateCustomerResponse>(`${this.base}/customers`, body);
   }
 }

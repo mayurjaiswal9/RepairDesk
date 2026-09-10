@@ -609,7 +609,7 @@ File Storage:
 These decisions keep Version 1 simple and reusable across customers; each can be enhanced later.
 
 * **Notifications:** In-app only (no email/SMS/push/WhatsApp). Email is not collected at registration. Two-layer model: customers get a persisted **notification inbox** (last 30 items, polling ~30s in foreground); staff/technicians get **counter badges / transient alerts** (no inbox). See [Repair Status Tracking](features/repair-status-tracking.md) for the customer inbox.
-* **Customer intake:** Customers self-submit requests; no staff-assisted/walk-in intake in V1; no drafts or offline submission.
+* **Customer intake:** Customers self-submit in the mobile app. **Staff-assisted / walk-in intake** is specified in [Staff-Assisted Intake](features/staff-assisted-intake.md) (Admin Panel AP-18): staff create a request owned by the customer, then **Save for review** or **Create and approve**. Direct job creation without a request is not supported. No drafts or offline submission.
 * **Device selection:** Managed catalog at Category level; brand/model optional free text.
 * **Appointments:** Preference-only at intake; 60-day horizon; slot duration from Settings; weekly working hours only (no holiday calendar); no capacity enforcement at intake.
 * **Attachments:** Up to 5 images per request; 10 MB/file, 25 MB total; JPEG/PNG/HEIC/WebP.

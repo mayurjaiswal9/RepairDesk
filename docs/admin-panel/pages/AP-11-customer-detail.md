@@ -10,7 +10,7 @@
 | **Entry points** | Row click from [AP-10](AP-10-customers.md) · customer link on [AP-05 Request Detail](AP-05-request-detail.md) and [AP-07 Job Detail](AP-07-job-detail.md) · global search result · direct URL |
 | **Primary endpoints** | `GET /customers/{id}` · `GET /customers/{id}/history` · `POST /users/{id}/reset-password` (`ADMIN`) · `DELETE /users/{id}` (`ADMIN`) |
 | **Archetype** | Detail page ([Design-System §4](../Design-System.md)) |
-| **Related** | [AP-10 Customers](AP-10-customers.md) · [AP-05 Request Detail](AP-05-request-detail.md) · [AP-07 Job Detail](AP-07-job-detail.md) · [features/customer-management.md](../../features/customer-management.md) · [API.md §9](../../API.md) |
+| **Related** | [AP-10 Customers](AP-10-customers.md) · [AP-05 Request Detail](AP-05-request-detail.md) · [AP-07 Job Detail](AP-07-job-detail.md) · [AP-18 Create Request](AP-18-create-request.md) · [features/customer-management.md](../../features/customer-management.md) · [API.md §9](../../API.md) |
 
 > **Contract note:** endpoints below are verified against the deployed backend controllers, which differ from [API.md](../../API.md) in places. See [API-Contract-Drift.md](../API-Contract-Drift.md).
 
@@ -23,7 +23,7 @@ Everything known about one customer on a single screen: the authoritative accoun
 ```
 Customers  ›  Anand Kumar                                              breadcrumb
 ┌────────────────────────────────────────────────────────────────────┐
-│ Anand Kumar   [Active]                        [ Account actions ▾ ]│  record header
+│ Anand Kumar   [Active]         [ New request ] [ Account actions ▾ ]│  record header
 │ @akumar                                                            │
 ├───────────────────────────────┬────────────────────────────────────┤
 │ Repair requests (3)           │  Account profile                   │
@@ -53,6 +53,7 @@ Below 1024px the right panel moves beneath the history sections ([Design-System 
 | 3 | Record header — username | Text, `body-medium`, `text-secondary` | `username`, rendered `@akumar` | Static. Username is never editable in the panel. |
 | 4 | Record header — status | Status chip | `status` | Active / Disabled / Deleted, shared mapping ([Design-System §5.2](../Design-System.md)). |
 | 5 | Account actions | Menu button | Reset password · Delete customer | **`ADMIN` only** — absent from the DOM for `STAFF`. Same two actions, same endpoints, and same gating as [AP-10](AP-10-customers.md) element #11. |
+| 5a | New request | Primary button | — | Visible to `ADMIN` and `STAFF`. Navigates to `/requests/new?customerId={id}` ([AP-18](AP-18-create-request.md)). Disabled with tooltip when status is `DISABLED` or `DELETED`. |
 | 6 | Account profile panel | Key–value block ([Design-System §5.4](../Design-System.md)) | `GET /customers/{id}` → `{ username, mobile, status, registeredAt, repairCount }`, plus `name` | Fixed 160px label column; a missing optional value renders an em-dash, never a blank or "null". `registeredAt` uses `d MMM yyyy`; `repairCount` renders as a plain number. |
 | 7 | Authoritative-contact note | Helper text, `body-small` | Static copy | Sits directly under the profile panel: "This is the account contact, used for sign-in and for anything not tied to one repair. An individual request may carry different contact details entered at submission time." Makes the distinction in [Database.md §1](../../Database.md) and [features/customer-management.md](../../features/customer-management.md) Business Rule 3 visible rather than assumed. |
 | 8 | Requests section header | `<h2>` + count | "Repair requests (3)" | Count comes from the length of the `requests` array in `GET /customers/{id}/history`. |
@@ -72,6 +73,7 @@ Below 1024px the right panel moves beneath the history sections ([Design-System 
 | --- | --- | --- | --- | --- |
 | **Open request** | Request row click | — | — | Navigates to `/requests/{id}` ([AP-05](AP-05-request-detail.md)). |
 | **Open job** | Job row click | — | — | Navigates to `/jobs/{id}` ([AP-07](AP-07-job-detail.md)). |
+| **New request** | Header primary | — | — | Navigates to `/requests/new?customerId={id}` ([AP-18](AP-18-create-request.md)). |
 | **Back to list** | Breadcrumb "Customers" | — | — | Returns to [AP-10](AP-10-customers.md) with its previous query string intact. |
 | **Reset password** | Account actions → Reset password (`ADMIN`) | **New password** * — masked, show/hide toggle, minimum 8 characters, never pre-filled | `POST /users/{id}/reset-password` with `{ newPassword }` | Toast "Password reset for Anand Kumar". Nothing on the page changes; no refetch. |
 | **Delete customer** | Account actions → Delete customer (`ADMIN`) | Error-styled confirmation, wording per §5.2 | `DELETE /users/{id}` | Toast "Anand Kumar's account deleted", then navigates back to `/customers`, since the record being viewed no longer belongs in the list. |

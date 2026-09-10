@@ -18,6 +18,10 @@ export class CategoriesApi {
     return this.http.get<DeviceCategory[]>(`${this.base}/device-categories`);
   }
 
+  listActiveBrands(categoryId: string): Observable<DeviceBrand[]> {
+    return this.http.get<DeviceBrand[]>(`${this.base}/device-categories/${categoryId}/brands`);
+  }
+
   listAll(): Observable<DeviceCategory[]> {
     return this.http.get<DeviceCategory[]>(`${this.base}/device-categories/all`);
   }

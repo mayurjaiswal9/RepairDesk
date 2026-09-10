@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP-18 · Create Request — Mockup (In review)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="mockup.css" />
+  <style>
+    .shell { min-height: 100vh; }
+    .sidebar { display: flex; flex-direction: column; }
+    .sidebar nav { flex: 1; }
+    .sidebar-brand .wordmark {
+      display: flex; flex-direction: column; line-height: 1.05;
+    }
+    .sidebar-brand .wordmark .brand { font-size: 11px; letter-spacing: .14em; opacity: .55; font-weight: 600; }
+    .sidebar-brand .wordmark .product { font-size: 15px; font-weight: 700; }
+    .sidebar-end {
+      margin-top: auto; padding: var(--space-m);
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-end .help {
+      display: flex; align-items: center; gap: 10px;
+      color: rgba(255,255,255,.75); font-size: 13px; margin-bottom: 14px;
+      text-decoration: none;
+    }
+    .sidebar-end .help:hover { color: #fff; text-decoration: none; }
+    .sidebar-end .who { display: flex; align-items: center; gap: 10px; color: #fff; }
+    .sidebar-end .who .meta { font-size: 12px; opacity: .65; }
+
+    .create-page { max-width: 1080px; padding-bottom: 108px; }
+    .create-page.is-solo { max-width: 720px; }
+    .page-title {
+      display: flex; align-items: flex-start; gap: 14px;
+      margin: 0 0 8px;
+    }
+    .page-title .doc {
+      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      background: var(--color-primary-soft); color: var(--color-primary-dark);
+      display: grid; place-items: center; font-size: 18px;
+    }
+    .create-page h1 { font-size: 30px; letter-spacing: -0.03em; margin: 0; font-weight: 700; }
+    .lede { color: var(--color-text-secondary); margin: 0 0 28px; max-width: 54ch; }
+
+    .create-grid {
+      display: grid; grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 28px; align-items: start;
+    }
+    .create-grid.is-solo { grid-template-columns: 1fr; }
+    @media (max-width: 960px) { .create-grid { grid-template-columns: 1fr; } }
+
+    .block {
+      background: #fff;
+      border: 1px solid var(--color-divider);
+      border-radius: 12px;
+      padding: 20px 22px 18px;
+      margin-bottom: 16px;
+    }
+    .block-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+    .step {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: var(--color-primary-soft); color: var(--color-primary-dark);
+      display: grid; place-items: center; font-size: 12px; font-weight: 800;
+    }
+    .block h2 { margin: 0; font-size: 16px; font-weight: 700; }
+    .block .hint { margin: 3px 0 0; font-size: 13px; color: var(--color-text-secondary); }
+
+    .search-pill {
+      display: flex; align-items: center; gap: 10px;
+      height: 46px; padding: 0 14px;
+      border: 1px solid var(--color-divider); border-radius: 10px;
+      background: #fff;
+    }
+    .search-pill:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-soft); }
+    .search-pill input {
+      border: 0; outline: none; flex: 1; font: inherit; background: transparent;
+    }
+    .new-cust {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 12px; background: none; border: none;
+      color: var(--color-primary); font: inherit; font-weight: 600; padding: 0;
+    }
+    .phone {
+      display: flex; height: 44px; border: 1px solid var(--color-divider);
+      border-radius: 10px; overflow: hidden; background: #fff;
+    }
+    .phone select {
+      border: 0; border-right: 1px solid var(--color-divider);
+      padding: 0 8px; background: #fff; font: inherit; width: 92px;
+    }
+    .phone input { border: 0; flex: 1; padding: 0 12px; font: inherit; outline: none; }
+    .field.has-error .phone { border-color: var(--color-error); }
+
+    .picked {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border: 1px solid var(--color-divider);
+      border-radius: 10px; background: #fff;
+    }
+    .picked .face {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      background: #EDE4FF; color: #5B3FA6;
+      display: grid; place-items: center; font-size: 12px; font-weight: 700;
+    }
+    .picked .who { flex: 1; min-width: 0; }
+    .picked .name { font-weight: 700; }
+    .picked .meta { font-size: 12px; color: var(--color-text-secondary); }
+
+    .suggest {
+      margin-top: 8px; border: 1px solid var(--color-divider);
+      border-radius: 10px; overflow: hidden; background: #fff;
+    }
+    .suggest button {
+      display: block; width: 100%; text-align: left; padding: 10px 14px;
+      border: 0; border-bottom: 1px solid var(--color-divider);
+      background: transparent; font: inherit;
+    }
+    .suggest button:last-child { border-bottom: 0; }
+    .suggest button:hover { background: var(--color-primary-soft); }
+    .suggest .s-name { font-weight: 600; }
+    .suggest .s-meta { font-size: 12px; color: var(--color-text-secondary); }
+    .suggest-empty {
+      padding: 16px 14px;
+      text-align: left;
+    }
+    .suggest-empty p { margin: 0 0 10px; font-size: 13px; color: var(--color-text-secondary); }
+
+    .channels { display: flex; flex-wrap: wrap; gap: 8px; }
+    .channel {
+      height: 34px; padding: 0 12px;
+      border: 1px solid var(--color-divider); border-radius: 999px;
+      background: #fff; font: inherit; font-size: 13px; font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    .channel.is-on {
+      border-color: var(--color-primary);
+      background: var(--color-primary-soft);
+      color: var(--color-primary-dark);
+    }
+
+    .drop {
+      border: 1.5px dashed var(--color-divider);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      background: #FAFAFA;
+    }
+    .drop b { display: block; font-size: 13px; margin-bottom: 2px; }
+    .drop span { font-size: 12px; color: var(--color-text-secondary); }
+    .thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .thumb {
+      width: 56px; height: 56px; border-radius: 8px;
+      background: #EEE; border: 1px solid var(--color-divider);
+      display: grid; place-items: center; font-size: 11px; color: var(--color-text-secondary);
+      position: relative;
+    }
+
+    .rail { display: flex; flex-direction: column; gap: 12px; }
+    .rail-card {
+      background: #F7F7F8;
+      border: 1px solid var(--color-divider);
+      border-radius: 12px;
+      padding: 16px 16px 14px;
+    }
+    .rail-card h3 {
+      margin: 0 0 12px; font-size: 12px; font-weight: 700;
+      letter-spacing: .04em; text-transform: uppercase; color: var(--color-text-secondary);
+    }
+    .snap { display: flex; gap: 10px; align-items: flex-start; }
+    .snap .face {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #EDE4FF; color: #5B3FA6;
+      display: grid; place-items: center; font-weight: 700; font-size: 13px;
+    }
+    .snap .name { font-weight: 700; font-size: 14px; }
+    .snap .meta { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+    .snap-link {
+      display: inline-block; margin-top: 12px;
+      font-size: 13px; font-weight: 600; color: var(--color-primary);
+      text-decoration: none;
+    }
+    .asset {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px; background: #fff; border: 1px solid var(--color-divider);
+      border-radius: 10px;
+    }
+    .asset .ico {
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      background: var(--color-primary-soft); display: grid; place-items: center;
+    }
+    .asset .code { font-weight: 700; font-size: 13px; }
+    .asset .spec { font-size: 12px; color: var(--color-text-secondary); }
+    .add-link {
+      display: inline-flex; margin-top: 10px;
+      background: none; border: none; padding: 0;
+      color: var(--color-primary); font: inherit; font-size: 13px; font-weight: 600;
+    }
+    .hist { list-style: none; margin: 0; padding: 0; }
+    .hist li {
+      display: flex; justify-content: space-between; gap: 8px;
+      padding: 8px 0; border-bottom: 1px solid var(--color-divider);
+      font-size: 12px;
+    }
+    .hist li:last-child { border-bottom: 0; padding-bottom: 0; }
+    .hist .ref { font-weight: 600; }
+    .hist .when { color: var(--color-text-secondary); white-space: nowrap; }
+    .next-note { margin: 0; font-size: 12px; color: var(--color-text-secondary); line-height: 1.45; }
+
+    .sticky-foot {
+      position: sticky; bottom: 0;
+      margin: 24px calc(-1 * var(--space-l)) calc(-1 * var(--space-l));
+      padding: 14px var(--space-l);
+      background: rgba(255,255,255,.96);
+      border-top: 1px solid var(--color-divider);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .foot-hint { font-size: 12px; color: var(--color-text-secondary); max-width: 36ch; }
+    .foot-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-m); }
+    @media (max-width: 640px) {
+      .form-row { grid-template-columns: 1fr; }
+      .foot-hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-bar">
+    <span class="tag" style="background:#E65100">In review</span>
+    <strong>AP-18 · Create Request</strong>
+    <span style="opacity:.7">Spec: <a href="../pages/AP-18-create-request.md">AP-18-create-request.md</a> · Right panel only after a customer is selected</span>
+    <div class="controls">
+      <label>
+        State
+        <select id="stateSelect">
+          <option value="empty">Ready — no customer (no right panel)</option>
+          <option value="search">Customer search results (no right panel)</option>
+          <option value="noresults">No customer found (no right panel)</option>
+          <option value="selected" selected>Customer selected — right panel</option>
+          <option value="prefill">Prefill from customer detail</option>
+          <option value="newcust">Dialog — New customer</option>
+          <option value="password">Dialog — Generated password</option>
+          <option value="newasset">Dialog — Add equipment</option>
+          <option value="approve">Dialog — Create and approve</option>
+          <option value="invalid">Validation errors</option>
+          <option value="submitting">Submitting</option>
+          <option value="loading">Loading skeletons</option>
+          <option value="forbidden">Forbidden (Technician)</option>
+        </select>
+      </label>
+      <a href="index.html">← All mockups</a>
+    </div>
+  </div>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="mark">T</div>
+        <div class="wordmark">
+          <span class="brand">TEZVO</span>
+          <span class="product">Flow</span>
+        </div>
+      </div>
+      <nav>
+        <div class="nav-group">
+          <div class="nav-group-label">Work</div>
+          <a class="nav-item" href="#"><span class="ico">▣</span><span class="label">Dashboard</span></a>
+          <a class="nav-item active" href="#" aria-current="page"><span class="ico">📥</span><span class="label">Service Requests</span></a>
+          <a class="nav-item" href="#"><span class="ico">🔧</span><span class="label">Jobs</span></a>
+          <a class="nav-item" href="#"><span class="ico">📅</span><span class="label">Appointments</span></a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-label">Directory</div>
+          <a class="nav-item" href="#"><span class="ico">👤</span><span class="label">Customers</span></a>
+          <a class="nav-item" href="#"><span class="ico">📦</span><span class="label">Assets</span></a>
+          <a class="nav-item" href="#"><span class="ico">▤</span><span class="label">Reports</span></a>
+        </div>
+      </nav>
+      <div class="sidebar-end">
+        <a class="help" href="#">❓ Help &amp; support</a>
+        <div class="who">
+          <div class="avatar">AS</div>
+          <div>
+            <div>Aman Sharma</div>
+            <div class="meta">Admin</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="breadcrumb">Work / Service Requests / <strong>Create request</strong></div>
+        <div class="topbar-spacer"></div>
+        <button class="bell" type="button" aria-label="Notifications, 3 unread">🔔<span class="badge">3</span></button>
+        <div class="avatar" title="Aman Sharma · ADMIN">AS</div>
+      </header>
+      <main class="content" id="content"></main>
+    </div>
+  </div>
+
+  <div id="dialogHost"></div>
+  <div class="toast-stack" id="toastHost"></div>
+
+  <script>
+    const footer = (opts = {}) => `
+      <div class="sticky-foot">
+        <p class="foot-hint">Create the request first. Schedule and assign come next.</p>
+        <div class="foot-actions">
+          <button class="btn btn-secondary" type="button">Cancel</button>
+          <button class="btn btn-secondary${opts.busy ? ' is-busy' : ''}" type="button" ${opts.enabled ? '' : 'disabled'}>
+            ${opts.busy ? '<span class="spinner"></span>' : ''} Save for review
+          </button>
+          <button class="btn btn-primary${opts.busy ? ' is-busy' : ''}" type="button" ${opts.enabled ? '' : 'disabled'}>
+            ${opts.busy ? '<span class="spinner"></span>' : ''} ${opts.primary || 'Create request →'}
+          </button>
+        </div>
+      </div>`;
+
+    function customerBlock(mode, opts = {}) {
+      const err = opts.invalid ? '<div class="error-msg">Select a customer this request belongs to.</div>' : '';
+      if (mode === 'selected' || mode === 'prefill' || mode === 'newcreated') {
+        const name = opts.name || 'Anika Sharma';
+        const initials = opts.initials || 'AS';
+        const meta = opts.meta || '@asharma · +91 98765 43210';
+        return `
+          <section class="block">
+            <div class="block-head">
+              <div class="step">1</div>
+              <div>
+                <h2>Customer</h2>
+                <p class="hint">Search or select the customer this request belongs to.</p>
+              </div>
+            </div>
+            <div class="picked">
+              <div class="face">${initials}</div>
+              <div class="who">
+                <div class="name">${name} <span class="chip chip-success">Active</span></div>
+                <div class="meta">${meta}</div>
+              </div>
+              <button class="btn btn-ghost" type="button">Change</button>
+            </div>
+          </section>`;
+      }
+      let results = '';
+      if (mode === 'search') {
+        results = `
+          <div class="suggest">
+            <button type="button"><div class="s-name">Anika Sharma</div><div class="s-meta">@asharma · +91 98765 43210 · 3 previous requests</div></button>
+            <button type="button"><div class="s-name">Aman Sharma</div><div class="s-meta">@aman · +91 90000 11122 · 1 previous request</div></button>
+          </div>`;
+      } else if (mode === 'noresults') {
+        results = `
+          <div class="suggest">
+            <div class="suggest-empty">
+              <p>No customer matches “nair”. Create one and keep going.</p>
+              <button class="btn btn-primary" type="button" style="height:36px">+ Create new customer</button>
+            </div>
+          </div>`;
+      }
+      return `
+        <section class="block">
+          <div class="block-head">
+            <div class="step">1</div>
+            <div>
+              <h2>Customer</h2>
+              <p class="hint">Search or select the customer this request belongs to.</p>
+            </div>
+          </div>
+          <div class="search-pill">
+            <span>🔍</span>
+            <input placeholder="Search name, username, or mobile number" value="${mode === 'search' ? 'sha' : mode === 'noresults' ? 'nair' : ''}" ${opts.disabled || ''} />
+          </div>
+          ${results}
+          ${err}
+          <button class="new-cust" type="button">＋ New customer</button>
+        </section>`;
+    }
+
+    function contactBlock(opts = {}) {
+      const err = !!opts.invalid;
+      const d = opts.disabled || '';
+      return `
+        <section class="block">
+          <div class="block-head">
+            <div class="step">2</div>
+            <div>
+              <h2>Contact (this request only)</h2>
+              <p class="hint">We’ll use this to reach out about this request.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field ${err ? 'has-error' : ''}">
+              <label>Name <span class="req">*</span></label>
+              <input placeholder="Enter full name" value="${opts.contactName || ''}" ${d} />
+              ${err ? '<div class="error-msg">Name is required</div>' : ''}
+            </div>
+            <div class="field ${err ? 'has-error' : ''}">
+              <label>Mobile <span class="req">*</span></label>
+              <div class="phone">
+                <select ${d} aria-label="Country code"><option selected>🇮🇳 +91</option></select>
+                <input placeholder="Enter mobile number" value="${opts.mobile || ''}" ${d} />
+              </div>
+              ${err ? '<div class="error-msg">Enter a valid mobile number</div>' : ''}
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Email (optional)</label>
+            <input placeholder="Enter email address" ${d} />
+          </div>
+        </section>`;
+    }
+
+    function detailsBlock(opts = {}) {
+      const err = !!opts.invalid;
+      const d = opts.disabled || '';
+      const type = opts.deviceType || '';
+      const brandEnabled = !!type && !d;
+      const channel = opts.channel || 'Phone';
+      const chips = ['Phone', 'Walk-in', 'WhatsApp', 'Other']
+        .map((c) => `<button class="channel${c === channel ? ' is-on' : ''}" type="button">${c}</button>`)
+        .join('');
+      const types = ['', 'Mobile Phone', 'Laptop', 'Tablet', 'Camera'];
+      const brands = type === 'Laptop'
+        ? ['', 'Dell', 'HP', 'Apple', 'Lenovo', 'Others']
+        : type === 'Tablet'
+          ? ['', 'Apple', 'Samsung', 'Lenovo', 'Others']
+          : type === 'Camera'
+            ? ['', 'Canon', 'Nikon', 'Sony', 'Others']
+            : ['', 'Samsung', 'Apple', 'OnePlus', 'Xiaomi', 'Others'];
+      const files = opts.files ? `
+        <div class="thumbs">
+          <div class="thumb">IMG<br>1</div>
+          <div class="thumb">PDF</div>
+        </div>` : '';
+      return `
+        <section class="block">
+          <div class="block-head">
+            <div class="step">3</div>
+            <div>
+              <h2>Request details</h2>
+              <p class="hint">Same device and issue fields the customer fills in the app.</p>
+            </div>
+          </div>
+          <div class="field ${err && !type ? 'has-error' : ''}">
+            <label>Device type <span class="req">*</span></label>
+            <select ${d} data-device-type>
+              ${types.map((t) => `<option value="${t}" ${t === type ? 'selected' : ''}>${t || 'Select device type'}</option>`).join('')}
+            </select>
+            ${err && !type ? '<div class="error-msg">Please select a device type</div>' : ''}
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Brand</label>
+              <select ${brandEnabled ? '' : 'disabled'}>
+                ${brandEnabled
+                  ? brands.map((b) => `<option ${b === (opts.brand || '') ? 'selected' : ''}>${b || 'Select brand'}</option>`).join('')
+                  : '<option>Select a device type first</option>'}
+              </select>
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <input placeholder="e.g. Galaxy S24" value="${opts.model || ''}" ${d} />
+            </div>
+          </div>
+          <div class="field ${err ? 'has-error' : ''}">
+            <label>Describe the issue <span class="req">*</span></label>
+            <textarea placeholder="Describe the issue in detail." ${d}>${opts.issue || ''}</textarea>
+            ${err ? '<div class="error-msg">Please describe the issue (min 10 characters)</div>' : ''}
+          </div>
+          <div class="field">
+            <label>How did the customer contact you?</label>
+            <div class="channels">${chips}</div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Photos <span style="font-weight:400;color:var(--color-text-secondary)">(optional)</span></label>
+            <div class="drop">
+              <b>+ Add photos</b>
+              <span>Up to 5 photos of the device or damage · JPG, PNG · 10 MB each</span>
+            </div>
+            ${files}
+          </div>
+        </section>`;
+    }
+
+    function contextRail(opts = {}) {
+      const name = opts.name || 'Anika Sharma';
+      const initials = opts.initials || 'AS';
+      const phone = opts.phone || '+91 98765 43210';
+      const count = opts.count ?? 3;
+      const history = opts.history || [
+        { ref: 'SR-1041', label: 'Battery drain', when: '12 Aug' },
+        { ref: 'SR-1018', label: 'Charging port', when: '3 Jun' },
+        { ref: 'SR-0988', label: 'Screen replace', when: '14 Jan' },
+      ];
+      const histHtml = count
+        ? `<ul class="hist">${history.map((h) => `<li><span><span class="ref">${h.ref}</span> · ${h.label}</span><span class="when">${h.when}</span></li>`).join('')}</ul>`
+        : `<p class="next-note">No previous requests. This will be their first.</p>`;
+      const asset = opts.asset === false
+        ? `<p class="next-note">No equipment on file yet.</p>`
+        : `<div class="asset">
+            <div class="ico">📱</div>
+            <div>
+              <div class="code">SM-1842</div>
+              <div class="spec">Mobile Phone · Samsung · Galaxy S23</div>
+            </div>
+          </div>`;
+      return `
+        <aside class="rail" aria-label="Customer context">
+          <div class="rail-card">
+            <h3>Customer snapshot</h3>
+            <div class="snap">
+              <div class="face">${initials}</div>
+              <div>
+                <div class="name">${name}</div>
+                <div class="meta">${phone}</div>
+                <div class="meta">${count} previous request${count === 1 ? '' : 's'}</div>
+              </div>
+            </div>
+            <a class="snap-link" href="#">View customer →</a>
+          </div>
+          <div class="rail-card">
+            <h3>Equipment / asset</h3>
+            ${asset}
+            <button class="add-link" type="button">+ Add equipment</button>
+          </div>
+          <div class="rail-card">
+            <h3>Previous requests</h3>
+            ${histHtml}
+          </div>
+          <div class="rail-card">
+            <h3>Next</h3>
+            <p class="next-note">After this request is created you can review it, then schedule and assign a technician. Those steps are not on this screen.</p>
+          </div>
+        </aside>`;
+    }
+
+    function page(inner, foot, opts = {}) {
+      const solo = !opts.context;
+      return `
+        <div class="create-page${solo ? ' is-solo' : ''}">
+          <div class="page-title">
+            <div class="doc">＋</div>
+            <div>
+              <h1>Create request</h1>
+            </div>
+          </div>
+          <p class="lede">Create a request for a walk-in or phone customer. The request is owned by them, not by you.</p>
+          <div class="create-grid${solo ? ' is-solo' : ''}">
+            <div>${inner}</div>
+            ${opts.context || ''}
+          </div>
+          ${footer(foot)}
+        </div>`;
+    }
+
+    const formSelected = (extra = {}) =>
+      customerBlock('selected', extra) +
+      contactBlock({ contactName: extra.contactName || 'Anika Sharma', mobile: extra.mobile || '98765 43210', disabled: extra.disabled }) +
+      detailsBlock({
+        deviceType: extra.deviceType || 'Mobile Phone',
+        brand: extra.brand || 'Samsung',
+        model: extra.model || 'Galaxy S23',
+        issue: extra.issue,
+        files: extra.files,
+        channel: extra.channel,
+        disabled: extra.disabled,
+        invalid: extra.invalid,
+      });
+
+    const states = {
+      empty: () => page(
+        customerBlock('empty') + contactBlock() + detailsBlock(),
+        { enabled: false }
+      ),
+      search: () => page(
+        customerBlock('search') + contactBlock() + detailsBlock(),
+        { enabled: false }
+      ),
+      noresults: () => page(
+        customerBlock('noresults') + contactBlock() + detailsBlock(),
+        { enabled: false }
+      ),
+      selected: () => page(
+        formSelected({ issue: 'Screen cracked after a drop. Touch works only on the top half.', files: true, channel: 'WhatsApp' }),
+        { enabled: true },
+        { context: contextRail() }
+      ),
+      prefill: () => page(
+        formSelected({ issue: '' }),
+        { enabled: false },
+        { context: contextRail() }
+      ),
+      invalid: () => page(
+        customerBlock('empty', { invalid: true }) +
+        contactBlock({ invalid: true }) +
+        detailsBlock({ invalid: true }),
+        { enabled: false }
+      ),
+      submitting: () => page(
+        formSelected({ issue: 'Screen cracked after a drop.', files: true, disabled: 'disabled' }),
+        { enabled: true, busy: true },
+        { context: contextRail() }
+      ),
+      loading: () => `
+        <div class="create-page is-solo">
+          <div class="skeleton-block" style="height:40px;width:280px;margin-bottom:12px"></div>
+          <div class="skeleton-block" style="height:20px;width:420px;margin-bottom:24px"></div>
+          <div class="skeleton-block" style="height:140px;margin-bottom:16px"></div>
+          <div class="skeleton-block" style="height:180px;margin-bottom:16px"></div>
+          <div class="skeleton-block" style="height:200px"></div>
+        </div>`,
+      forbidden: () => `
+        <div class="state-panel">
+          <div class="icon">🚫</div>
+          <h2>You can’t create requests for customers</h2>
+          <p>Creating requests for customers is limited to staff and administrators.</p>
+          <a class="btn btn-primary" href="#">Go to My jobs</a>
+        </div>`,
+      newcust: () => page(
+        customerBlock('empty') + contactBlock() + detailsBlock(),
+        { enabled: false }
+      ),
+      password: () => page(
+        customerBlock('newcreated', { name: 'Ravi Nair', initials: 'RN', meta: '@9123456780 · +91 91234 56780' }) +
+        contactBlock({ contactName: 'Ravi Nair', mobile: '91234 56780' }) +
+        detailsBlock(),
+        { enabled: false },
+        { context: contextRail({ name: 'Ravi Nair', initials: 'RN', phone: '+91 91234 56780', count: 0, history: [], asset: false }) }
+      ),
+      newasset: () => states.selected(),
+      approve: () => states.selected(),
+    };
+
+    function dialogNew() {
+      return `
+        <div class="dialog-backdrop"><div class="dialog">
+          <h2>New customer</h2>
+          <p class="body">Create an account so this request belongs to them. Keep it to name and mobile if that is all you have.</p>
+          <div class="field"><label>Name <span class="req">*</span></label><input value="Ravi Nair" /></div>
+          <div class="field"><label>Mobile <span class="req">*</span></label>
+            <div class="phone"><select><option selected>🇮🇳 +91</option></select><input value="91234 56780" /></div>
+          </div>
+          <div class="field"><label>Username <span style="font-weight:400;color:var(--color-text-secondary)">(optional)</span></label><input placeholder="Derived from mobile if empty" /></div>
+          <div class="field"><label>Password <span style="font-weight:400;color:var(--color-text-secondary)">(optional)</span></label><input type="password" placeholder="Generated if empty" /></div>
+          <p class="body-small">If you leave password empty, we generate one and you must give it to them now.</p>
+          <div class="actions">
+            <button class="btn btn-ghost" type="button">Cancel</button>
+            <button class="btn btn-primary" type="button">Create customer</button>
+          </div>
+        </div></div>`;
+    }
+    function dialogPassword() {
+      return `
+        <div class="dialog-backdrop"><div class="dialog">
+          <h2>Give this password to the customer</h2>
+          <p class="body">Ravi Nair can sign in as <strong>@9123456780</strong>. This password will not be shown again.</p>
+          <div class="field"><label>Temporary password</label><input readonly value="Td8#kL2pQ9" /></div>
+          <div class="actions">
+            <button class="btn btn-ghost" type="button">Copy</button>
+            <button class="btn btn-primary" type="button">Done</button>
+          </div>
+        </div></div>`;
+    }
+    function dialogAsset() {
+      return `
+        <div class="dialog-backdrop"><div class="dialog">
+          <h2>Add equipment</h2>
+          <p class="body">Optional. Associate an asset with this request, or add one the customer does not have on file yet.</p>
+          <div class="field"><label>Existing asset</label>
+            <select><option selected>SM-1842 — Mobile Phone · Samsung · Galaxy S23</option><option>TB-088 — Tablet · Apple · iPad 10</option><option>+ New asset…</option></select>
+          </div>
+          <div class="field"><label>Notes <span style="font-weight:400;color:var(--color-text-secondary)">(optional)</span></label>
+            <input placeholder="Indoor unit, living room" />
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" type="button">Cancel</button>
+            <button class="btn btn-primary" type="button">Add to request</button>
+          </div>
+        </div></div>`;
+    }
+    function dialogApprove() {
+      return `
+        <div class="dialog-backdrop"><div class="dialog">
+          <h2>Create and approve</h2>
+          <p class="body">This creates the request and accepts it so a job exists. Anika Sharma will be notified that the work was accepted — not that it is still under review. Scheduling and assignment happen on the job.</p>
+          <div class="field"><label>Priority</label>
+            <select><option>Low</option><option selected>Normal</option><option>High</option><option>Urgent</option></select>
+          </div>
+          <div class="field"><label>Internal note <span style="font-weight:400;color:var(--color-text-secondary)">(optional)</span></label>
+            <textarea placeholder="Walk-in; unit still at site"></textarea>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" type="button">Back</button>
+            <button class="btn btn-primary" type="button">Create and approve</button>
+          </div>
+        </div></div>`;
+    }
+
+    const dialogs = { newcust: dialogNew, password: dialogPassword, newasset: dialogAsset, approve: dialogApprove };
+
+    function setState(key) {
+      const sel = document.getElementById('stateSelect');
+      if (sel.value === key) return;
+      sel.value = key;
+      render();
+    }
+
+    function bindDemoClicks() {
+      document.querySelectorAll('.suggest button').forEach((btn) => {
+        btn.addEventListener('click', () => setState('selected'));
+      });
+      document.querySelectorAll('.new-cust').forEach((btn) => {
+        btn.addEventListener('click', () => setState('newcust'));
+      });
+      document.querySelectorAll('.suggest-empty .btn-primary').forEach((btn) => {
+        btn.addEventListener('click', () => setState('newcust'));
+      });
+      document.querySelectorAll('.picked .btn-ghost').forEach((btn) => {
+        btn.addEventListener('click', () => setState('empty'));
+      });
+      document.querySelectorAll('.add-link').forEach((btn) => {
+        btn.addEventListener('click', () => setState('newasset'));
+      });
+      const search = document.querySelector('.search-pill input');
+      if (search) {
+        search.addEventListener('input', () => {
+          const q = search.value.trim();
+          if (q.length >= 2) setState(q.toLowerCase() === 'nair' ? 'noresults' : 'search');
+          else if (!q) setState('empty');
+        });
+      }
+      const typeSel = document.querySelector('[data-device-type]');
+      const brandSel = typeSel && typeSel.closest('.block')?.querySelectorAll('select')[1];
+      if (typeSel && brandSel) {
+        typeSel.addEventListener('change', () => {
+          const map = {
+            'Mobile Phone': ['Samsung', 'Apple', 'OnePlus', 'Xiaomi', 'Others'],
+            Laptop: ['Dell', 'HP', 'Apple', 'Lenovo', 'Others'],
+            Tablet: ['Apple', 'Samsung', 'Lenovo', 'Others'],
+            Camera: ['Canon', 'Nikon', 'Sony', 'Others'],
+          };
+          const list = map[typeSel.value] || [];
+          brandSel.disabled = !typeSel.value;
+          brandSel.innerHTML = typeSel.value
+            ? ['<option value="">Select brand</option>'].concat(list.map((b) => `<option>${b}</option>`)).join('')
+            : '<option>Select a device type first</option>';
+        });
+      }
+    }
+
+    function render() {
+      const key = document.getElementById('stateSelect').value;
+      document.getElementById('content').innerHTML = (states[key] || states.empty)();
+      document.getElementById('dialogHost').innerHTML = dialogs[key] ? dialogs[key]() : '';
+      bindDemoClicks();
+    }
+    document.getElementById('stateSelect').addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>

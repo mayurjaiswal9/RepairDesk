@@ -109,8 +109,8 @@ Jobs exist to provide:
 # Job Creation
 
 * **Automatic on approval (V1 decision):** A job is created **automatically** when a request is `Approved`, **1:1** with the request. There is no separate "Convert to Job" step.
-* **Manual creation:** **Not supported in V1.** Because customer intake is self-service and staff-assisted intake is out of scope, all jobs originate from approved requests. (Manual/walk-in job creation is a future enhancement.)
-* **Who can create jobs:** Effectively the **system**, triggered by a Staff/Administrator approval decision. No role manually instantiates a job in V1.
+* **Manual creation of a job (no request):** **Not supported.** Staff-assisted work still starts as a request ([FEAT-SAI-001](staff-assisted-intake.md)); **Create and approve** is approval, not a separate job factory. There is no Create job action on the Jobs list.
+* **Who can create jobs:** The **system**, triggered by Staff/Administrator approval (from the queue or from Create and approve). No role instantiates a job row directly.
 * **Information copied from the request (snapshot at approval):**
   * Customer information (name, mobile, email if present, customer account reference).
   * Device information (category, brand, model, serial/IMEI, purchase date, warranty indication).

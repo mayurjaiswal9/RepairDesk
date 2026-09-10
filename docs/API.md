@@ -162,8 +162,16 @@ Customer Home / repairs and notifications also live under `/me` (§14, §15).
 | GET | `/customers` | STAFF, ADMIN | Search customers (role=CUSTOMER). Params: `q` (name/username/mobile), pagination. |
 | GET | `/customers/{id}` | STAFF, ADMIN | Profile: `{ id, username, mobile, status, registeredAt, repairCount }`. |
 | GET | `/customers/{id}/history` | STAFF, ADMIN | Combined requests + jobs (most-recently-updated first), each with reference, device category, status, date, and (jobs) technician/appointment. |
+| POST | `/customers` | STAFF, ADMIN | Create a **CUSTOMER** account for walk-in / phone intake. See below. |
 
-**Rules:** strictly read-only (no create/edit/delete/merge here — those are Staff Management / self). Profile shows the **authoritative** account contact (not request-local overrides). Full history regardless of status. `403` for Technician/Customer.
+**POST `/customers`** — body: `{ name, mobile, username?, password? }`. → `201` `{ id, username, mobile, name, role: "CUSTOMER", status: "ACTIVE", mustChangePassword, generatedPassword? }`.
+
+- Role is always `CUSTOMER`. Not signed in.
+- If `username` omitted, derive a unique username from `mobile`.
+- If `password` omitted, generate one, set `mustChangePassword: true`, and return `generatedPassword` **once** on this response only.
+- Errors: `422` (invalid mobile, short password), `409` (duplicate username/mobile) — include `existingCustomerId` when the clash is an existing customer so the UI can select them.
+
+**Rules:** directory search/history remain read-only except this create path. Do **not** use `POST /users` for walk-ins (`POST /users` stays admin-only internal roster). Profile shows the **authoritative** account contact (not request-local overrides). Full history regardless of status. `403` for Technician/Customer.
 
 ---
 
@@ -214,7 +222,7 @@ Customer Home / repairs and notifications also live under `/me` (§14, §15).
 
 | Method | Path | Roles | Description |
 | --- | --- | --- | --- |
-| POST | `/requests` | CUSTOMER, STAFF, ADMIN (as self) | Submit a repair request. |
+| POST | `/requests` | CUSTOMER (as self); STAFF, ADMIN (as self **or** on behalf of a customer) | Submit a repair request. |
 | GET | `/requests/{id}` | Owner, STAFF, ADMIN | Request detail. |
 | PUT | `/requests/{id}` | Owner (editable window) | Edit while `PENDING_REVIEW`/`INFORMATION_REQUIRED`. |
 | POST | `/requests/{id}/cancel` | Owner (editable window) | Cancel → `CANCELLED`. |
@@ -235,6 +243,39 @@ Customer Home / repairs and notifications also live under `/me` (§14, §15).
 `deviceBrand` is always a plain string snapshot server-side (unchanged shape), regardless of the category's `brandMode`. When `brandMode = CONFIGURED`, the client's brand picker (§10a) resolves the user's choice — a curated `DeviceBrand.name`, or free-typed text when "Others" is picked — down to this one string before submit; the server does not validate it against the curated list.
 
 **Notes:** attachments optional, added via §16. Contact name/mobile pre-filled from account but request-local. Issue Category/Symptom and Service Mode are **not** in V1.
+
+## 12.3 Staff-assisted create (walk-in / phone)
+
+When the caller is `STAFF` or `ADMIN`, `POST /requests` accepts extra fields. The request **must** be owned by a customer — never by the acting staff user when `customerId` is present.
+
+```json
+{
+  "customerId": "uuid",
+  "deviceCategoryId": "uuid",
+  "contactName": "string", "contactMobile": "string", "contactEmail": "string?",
+  "deviceBrand": "string?", "deviceModel": "string?", "deviceSerial": "string?",
+  "purchaseDate": "YYYY-MM-DD?", "warrantyStatus": "IN_WARRANTY|OUT_OF_WARRANTY|UNKNOWN?",
+  "issueDescription": "string",
+  "preferredDate": "YYYY-MM-DD", "preferredTime": "HH:mm",
+  "approveOnCreate": false,
+  "priority": "NORMAL?",
+  "note": "string?"
+}
+```
+
+| Field | Rules |
+| --- | --- |
+| `customerId` | **Required** for assisted intake. Target must be `role=CUSTOMER` and `status=ACTIVE`. `422` if missing on an assisted call; `409` if disabled/deleted; `404` if unknown. |
+| `approveOnCreate` | Default `false`. If `true`, create + approve + job **atomically** (same guarantees as `POST /requests/{id}/approve`). `priority` and `note` apply only when this is true. |
+| Origin | Server sets `origin: "STAFF_ASSISTED"` and records the actor. Customer self-submit remains `CUSTOMER_APP` (or unset for existing rows). |
+
+**Responses:**
+- Save for review: `201` request `{ id, referenceNumber, status: "PENDING_REVIEW", origin, … }`.
+- Create and approve: `201` `{ request, jobId, referenceNumber, status: "APPROVED" }`.
+- Customer notification: received (save for review) **or** accepted (approve-on-create) — not both.
+- If `customerId` is omitted, behaviour stays §12.1 (caller is the owner) so a staff member can still submit a personal device as themselves.
+
+Shipped with APB-SAI-002: `customerId` + `approveOnCreate` + `origin`. If `customerId` is omitted, behaviour stays §12.1 (caller is the owner).
 
 ## 12.2 Staff/Admin queue & review
 

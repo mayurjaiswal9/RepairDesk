@@ -51,6 +51,8 @@ The UI requirement is real and specified in the page specs; the API can't serve 
 | 2.11 | Working-hours validation | [AP-08](pages/AP-08-schedule-appointment.md) | The server validates only past-date, booking horizon, and end-after-start. **Closed days, out-of-hours times, and non-slot-aligned times are silently accepted**, leaving the client as the only enforcement — a rule enforced only in a client isn't enforced. | Needs backend work |
 | 2.12 | Overlap conflict not returned | [AP-08](pages/AP-08-schedule-appointment.md) | The server detects double-booking and writes it to the audit log only; the client never learns. The panel currently re-derives it from the calendar range endpoint. | Needs backend work |
 | 2.13 | Reschedule history unreadable | [AP-08](pages/AP-08-schedule-appointment.md) | Rescheduling cancels the prior appointment, but `GET /jobs/{id}/appointments` excludes cancelled rows — so the retained history is unreachable, defeating its purpose. | Needs backend work |
+| 2.14 | Walk-in customer create | [AP-18](pages/AP-18-create-request.md) | No `POST /customers`. `POST /users` is admin-only and aimed at internal roles. Staff cannot register a walk-in. | Needs backend work — APB-SAI-001 |
+| 2.15 | Assisted `POST /requests` | [AP-18](pages/AP-18-create-request.md) | `RepairRequestService.create` always sets owner = **caller**. No `customerId`, `approveOnCreate`, or `origin`. Walk-in would create a request owned by staff. Device type / brand / model / issue stay the same as customer create. | Needs backend work — APB-SAI-002 |
 
 ---
 

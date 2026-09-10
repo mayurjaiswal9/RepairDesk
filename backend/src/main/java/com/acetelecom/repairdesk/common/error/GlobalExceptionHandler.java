@@ -10,6 +10,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestAttributes;
@@ -42,7 +44,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiError> handleApiException(ApiException ex) {
-        return build(ex.getErrorCode(), ex.getMessage(), List.of());
+        return build(ex.getErrorCode(), ex.getMessage(), List.of(), ex.getDetails());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -87,6 +89,15 @@ public class GlobalExceptionHandler {
                 "Could not read the photo. Please try taking or choosing it again.", List.of());
     }
 
+    @ExceptionHandler({
+            MissingServletRequestPartException.class,
+            MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<ApiError> handleMissingUploadPart(Exception ex) {
+        log.warn("Upload part missing: {}", ex.getMessage());
+        return build(ErrorCode.VALIDATION_ERROR, "A photo file is required.", List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex) {
         // Log the detail server-side; never leak internals to the client.
@@ -95,7 +106,13 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiError> build(ErrorCode code, String message, List<ApiError.FieldError> fieldErrors) {
-        ApiError body = ApiError.of(code, message, MDC.get(CORRELATION_ID_KEY), currentPath(), fieldErrors);
+        return build(code, message, fieldErrors, java.util.Map.of());
+    }
+
+    private ResponseEntity<ApiError> build(ErrorCode code, String message,
+            List<ApiError.FieldError> fieldErrors, java.util.Map<String, Object> details) {
+        ApiError body = ApiError.of(code, message, MDC.get(CORRELATION_ID_KEY), currentPath(),
+                fieldErrors, details);
         return ResponseEntity.status(code.status()).body(body);
     }
 

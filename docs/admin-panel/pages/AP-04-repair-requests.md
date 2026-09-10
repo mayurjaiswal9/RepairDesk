@@ -7,10 +7,10 @@
 | **Page ID** | AP-04 |
 | **Route** | `/requests` (filters/sort/page in query string, e.g. `/requests?status=PENDING_REVIEW&page=0&size=20`) |
 | **Roles** | `ADMIN` only — see §7 and the conflict note in [README §3](../README.md) |
-| **Entry points** | Sidebar → Work → Repair Requests · Dashboard "Pending review" and "Needs info" counters · Notification deep link |
+| **Entry points** | Sidebar → Work → Repair Requests · Dashboard "Pending review" and "Needs info" counters · Notification deep link · return from [AP-18](AP-18-create-request.md) |
 | **Primary endpoints** | `GET /requests?page=&size=&status=` · `POST /requests/{id}/approve` · `POST /requests/{id}/reject` · `POST /requests/{id}/request-info` |
 | **Archetype** | List page ([Design-System §4](../Design-System.md)) |
-| **Related** | [AP-05 Request Detail](AP-05-request-detail.md) · [features/request-review.md](../../features/request-review.md) |
+| **Related** | [AP-05 Request Detail](AP-05-request-detail.md) · [AP-18 Create Request](AP-18-create-request.md) · [features/request-review.md](../../features/request-review.md) · [features/staff-assisted-intake.md](../../features/staff-assisted-intake.md) |
 
 ## 2. Purpose
 
@@ -20,7 +20,7 @@ The triage desk for incoming customer repair requests. An admin scans what's wai
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│ Repair Requests                                    [ Refresh ]     │  page header
+│ Repair Requests                  [ Refresh ]  [ + Create request ] │  page header
 │ 12 requests · 5 awaiting your decision                             │
 ├────────────────────────────────────────────────────────────────────┤
 │ [All][Pending][Needs info][Approved][Rejected][Cancelled]          │  filter bar
@@ -42,6 +42,7 @@ The triage desk for incoming customer repair requests. An admin scans what's wai
 | 1 | Page title | `<h1>` | "Repair Requests" | Static. |
 | 2 | Result summary | Text, `body-small` | `totalElements` + count needing a decision | "47 requests · 5 awaiting your decision" where the second figure counts `PENDING_REVIEW` + `INFORMATION_REQUIRED`. Hidden while loading. |
 | 3 | Refresh | Icon button | — | Refetches the current view without resetting filters; spins while in flight. |
+| 3a | Create request | Primary button | — | Navigates to `/requests/new` ([AP-18](AP-18-create-request.md)). The queue's single create action; jobs are still not created from this list. |
 | 4 | Status filter | Segmented control | All · Pending · Needs info · Approved · Rejected · Cancelled | Maps to `status` query param (**All** omits it). Default on first visit is **Pending**, not All — the queue exists to surface undecided work. Selection persists in the URL. |
 | 5 | Search | Debounced text input (350ms) | Reference number, customer name, username, mobile | Clear (✕) button when non-empty. See §10 open question on server support. |
 | 6 | Category filter | Dropdown | `GET /device-categories` (active) | Optional; "All categories" default. |
@@ -66,6 +67,7 @@ The triage desk for incoming customer repair requests. An admin scans what's wai
 | **Reject** | Row menu → Reject | Error-styled confirm. **Reason code** (required select) and **Message to customer** (required, multi-line — the customer reads this) plus optional **Internal reason**. | `POST /requests/{id}/reject` with `{ reasonCode, internalReason?, customerMessage, version }` | Toast "RQ-1042 rejected". Row updates to `REJECTED`. |
 | **Request more info** | Row menu → Request info | **Message to customer** (required, multi-line) explaining what's needed. | `POST /requests/{id}/request-info` with `{ message, version }` | Toast "Information requested from A. Kumar". Row updates to `INFORMATION_REQUIRED`. |
 | **Open detail** | Row click or menu | — | — | Navigates to [AP-05](AP-05-request-detail.md). |
+| **Create request** | Header primary | — | — | Navigates to [AP-18](AP-18-create-request.md). |
 | **Filter / search / sort / page** | Filter bar, sort, footer | — | `GET /requests?…` | URL query string updates; table refetches; scroll position resets to the top of the table only. |
 
 All three decision dialogs are irreversible state transitions, so all three confirm explicitly, disable their confirm button while in flight, and surface `409 CONFLICT` as "This request was already actioned by someone else" with a **Reload** action.
@@ -76,7 +78,7 @@ All three decision dialogs are irreversible state transitions, so all three conf
 | --- | --- |
 | **Loading (first)** | Page header + filter bar render immediately; table shows 10 skeleton rows. |
 | **Loading (refetch)** | Existing rows stay visible, dimmed slightly, with a top progress bar. Controls stay usable except the row action menus. |
-| **Empty** (no filters) | Inbox icon, "No repair requests yet", "Customer submissions will appear here for review." No action button (an admin can't create a request). |
+| **Empty** (no filters) | Inbox icon, "No repair requests yet", "Customer submissions and walk-in intake will appear here." Primary action **Create request** → [AP-18](AP-18-create-request.md). |
 | **Filtered-empty** | "No requests match your filters", names the active status/search, **Clear filters**. |
 | **Error** | Error panel with mapped message, **Retry**, `correlationId`. |
 | **Forbidden** | Shown when a `STAFF`/`TECHNICIAN` user reaches the URL directly: "Repair request review is limited to administrators", with a link to `/dashboard`. |

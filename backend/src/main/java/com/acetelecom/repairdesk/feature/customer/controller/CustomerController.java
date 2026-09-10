@@ -6,8 +6,12 @@ import java.util.UUID;
 
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,10 +22,15 @@ import com.acetelecom.repairdesk.feature.job.dto.JobSummary;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.request.dto.RepairRequestSummary;
 import com.acetelecom.repairdesk.feature.request.repository.RepairRequestRepository;
+import com.acetelecom.repairdesk.feature.customer.dto.CreateCustomerRequest;
+import com.acetelecom.repairdesk.feature.customer.dto.CreateCustomerResponse;
+import com.acetelecom.repairdesk.feature.customer.service.CustomerService;
 import com.acetelecom.repairdesk.feature.user.domain.Role;
 import com.acetelecom.repairdesk.feature.user.domain.User;
 import com.acetelecom.repairdesk.feature.user.dto.UserProfile;
 import com.acetelecom.repairdesk.feature.user.repository.UserRepository;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/customers")
@@ -31,13 +40,21 @@ public class CustomerController {
     private final UserRepository userRepo;
     private final RepairRequestRepository requestRepo;
     private final JobRepository jobRepo;
+    private final CustomerService customerService;
 
     public CustomerController(UserRepository userRepo,
             RepairRequestRepository requestRepo,
-            JobRepository jobRepo) {
+            JobRepository jobRepo,
+            CustomerService customerService) {
         this.userRepo = userRepo;
         this.requestRepo = requestRepo;
         this.jobRepo = jobRepo;
+        this.customerService = customerService;
+    }
+
+    @PostMapping
+    public ResponseEntity<CreateCustomerResponse> create(@Valid @RequestBody CreateCustomerRequest body) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(customerService.createWalkIn(body));
     }
 
     /**

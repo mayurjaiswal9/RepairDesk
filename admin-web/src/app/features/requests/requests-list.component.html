@@ -12,14 +12,17 @@
         <p class="meta">{{ summary() }}</p>
       }
     </div>
-    <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="refetching()" aria-label="Refresh">
-      @if (refetching()) {
-        <mat-spinner diameter="18"></mat-spinner>
-      } @else {
-        <mat-icon aria-hidden="true">refresh</mat-icon>
-      }
-      Refresh
-    </button>
+    <div class="header-actions">
+      <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="refetching()" aria-label="Refresh">
+        @if (refetching()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon aria-hidden="true">refresh</mat-icon>
+        }
+        Refresh
+      </button>
+      <a class="primary-btn" routerLink="/requests/new">Create request</a>
+    </div>
   </div>
 
   <div class="filter-bar">

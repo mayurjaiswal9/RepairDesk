@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.acetelecom.repairdesk.feature.customer.service.CustomerService;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.request.repository.RepairRequestRepository;
 import com.acetelecom.repairdesk.feature.user.domain.Role;
@@ -29,10 +30,11 @@ class CustomerControllerTest {
     @Mock private UserRepository userRepo;
     @Mock private RepairRequestRepository requestRepo;
     @Mock private JobRepository jobRepo;
+    @Mock private CustomerService customerService;
 
     @Test
     void search_withMissingQuery_passesEmptyStringNotNull() {
-        CustomerController controller = new CustomerController(userRepo, requestRepo, jobRepo);
+        CustomerController controller = new CustomerController(userRepo, requestRepo, jobRepo, customerService);
         when(userRepo.searchCustomers(eq(Role.CUSTOMER), eq(""))).thenReturn(List.of());
 
         controller.search(null);
@@ -42,7 +44,7 @@ class CustomerControllerTest {
 
     @Test
     void search_withBlankQuery_passesThrough() {
-        CustomerController controller = new CustomerController(userRepo, requestRepo, jobRepo);
+        CustomerController controller = new CustomerController(userRepo, requestRepo, jobRepo, customerService);
         when(userRepo.searchCustomers(eq(Role.CUSTOMER), eq(""))).thenReturn(List.of());
 
         controller.search("");
@@ -52,7 +54,7 @@ class CustomerControllerTest {
 
     @Test
     void search_withQuery_passesThrough() {
-        CustomerController controller = new CustomerController(userRepo, requestRepo, jobRepo);
+        CustomerController controller = new CustomerController(userRepo, requestRepo, jobRepo, customerService);
         when(userRepo.searchCustomers(eq(Role.CUSTOMER), eq("asheesh"))).thenReturn(List.of());
 
         controller.search("asheesh");
