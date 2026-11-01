@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/roles.dart';
+import '../../../core/branding/branding_config.dart';
 import '../../../core/auth/session_controller.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../account/data/profile_repository.dart';
@@ -50,7 +51,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('RepairDesk'),
+        title: const Text(BrandingConfig.appLabel),
         actions: [
           _BellButton(),
           IconButton(

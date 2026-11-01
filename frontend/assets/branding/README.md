@@ -1,9 +1,11 @@
 # Login branding
 
-The logo is composited with `BlendMode.multiply`, so a logo supplied on a white
-plate blends into the gradient without needing a transparent PNG.
+The bundled logo is a transparent PNG of the Ace Telecom mark. It sits on the
+light login gradient, and the same artwork is the Android launcher icon.
 
-Default logo: `login-logo.png` (ACE Telecom).
+Default logo on the Ace Telecom branch: `login-logo.png`.
+The screen after launch is named Ace Smart Care - Customer Service APP.
+The icon label is Ace Smart Care.
 
 ## Change for another customer
 

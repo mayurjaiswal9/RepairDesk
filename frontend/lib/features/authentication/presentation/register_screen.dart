@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_controller.dart';
+import '../../../core/branding/branding_config.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../data/auth_repository.dart';
@@ -86,7 +87,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 const SizedBox(height: AppTheme.spaceM),
                 Text(
-                  'Join RepairDesk',
+                  BrandingConfig.productName,
                   style: textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),

@@ -21,9 +21,16 @@ class BrandingConfig {
     defaultValue: 'ACE Telecom',
   );
 
+  /// Short name under the Ace Telecom icon.
+  static const appLabel = String.fromEnvironment(
+    'APP_LABEL',
+    defaultValue: 'Ace Smart Care',
+  );
+
+  /// Name shown on the screen after the app launches. Ace Telecom only.
   static const productName = String.fromEnvironment(
     'PRODUCT_NAME',
-    defaultValue: 'Field Service Management',
+    defaultValue: 'Ace Smart Care - Customer Service APP',
   );
 
   /// Software partner credited at the foot of the auth screens. Set to an

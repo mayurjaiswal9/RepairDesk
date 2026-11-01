@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/auth/session_controller.dart';
+import 'core/branding/branding_config.dart';
 import 'router/app_router.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -31,7 +32,7 @@ class _RepairDeskAppState extends ConsumerState<RepairDeskApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: 'RepairDesk',
+      title: BrandingConfig.productName,
       theme: AppTheme.light(),
       routerConfig: router,
       debugShowCheckedModeBanner: false,

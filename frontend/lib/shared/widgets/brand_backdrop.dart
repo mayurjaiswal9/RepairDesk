@@ -83,20 +83,15 @@ class BrandHeader extends StatelessWidget {
       children: [
         const BrandLogo(),
         const SizedBox(height: 8),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            BrandingConfig.productName,
-            maxLines: 1,
-            softWrap: false,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-              height: 1.15,
-              color: AppTheme.brandNavy,
-            ),
+        Text(
+          BrandingConfig.productName,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+            height: 1.25,
+            color: AppTheme.brandNavy,
           ),
         ),
         const SizedBox(height: 6),
