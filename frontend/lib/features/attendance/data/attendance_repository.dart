@@ -6,12 +6,17 @@ import '../../../core/location/location_service.dart';
 import '../../../core/network/api_client.dart';
 
 class AttendanceConfig {
-  const AttendanceConfig({required this.attendanceEnabled});
+  const AttendanceConfig({
+    required this.attendanceEnabled,
+    this.autoEndDay = true,
+  });
 
   final bool attendanceEnabled;
+  final bool autoEndDay;
 
   factory AttendanceConfig.fromJson(Map<String, dynamic> json) => AttendanceConfig(
         attendanceEnabled: json['attendanceEnabled'] == true,
+        autoEndDay: json['autoEndDay'] != false,
       );
 }
 
@@ -116,11 +121,16 @@ class AttendanceRepository {
   Future<List<AttendanceRow>> list({
     required String from,
     required String to,
+    String? technicianId,
   }) async {
     try {
       final res = await _dio.get<List<dynamic>>(
         '/attendance',
-        queryParameters: {'from': from, 'to': to},
+        queryParameters: {
+          'from': from,
+          'to': to,
+          if (technicianId != null && technicianId.isNotEmpty) 'technicianId': technicianId,
+        },
       );
       return (res.data ?? const [])
           .whereType<Map<String, dynamic>>()

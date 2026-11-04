@@ -136,16 +136,26 @@ public class AttendanceService {
 
     @Transactional(readOnly = true)
     public List<AttendanceRowResponse> list(LocalDate from, LocalDate to) {
+        return list(from, to, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AttendanceRowResponse> list(LocalDate from, LocalDate to, UUID technicianId) {
         Range range = range(from, to);
-        return rows(range.from(), range.to());
+        return rows(range.from(), range.to(), technicianId);
     }
 
     @Transactional(readOnly = true)
     public byte[] csv(LocalDate from, LocalDate to) {
+        return csv(from, to, null);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] csv(LocalDate from, LocalDate to, UUID technicianId) {
         Range range = range(from, to);
         StringBuilder csv = new StringBuilder();
         csv.append("Name,Date,Status,Start flag,End time,End,Hours\r\n");
-        for (AttendanceRowResponse row : rows(range.from(), range.to())) {
+        for (AttendanceRowResponse row : rows(range.from(), range.to(), technicianId)) {
             csv.append(cell(row.technicianName())).append(',')
                     .append(row.workDate().format(DATE)).append(',')
                     .append(cell(statusText(row))).append(',')
@@ -173,11 +183,15 @@ public class AttendanceService {
     public AutoEndResult autoEndOpenDays() {
         LocationSettings settings = locationRepo.findById((short) 1).orElse(null);
         if (settings == null) {
-            return new AutoEndResult(LocalTime.of(19, 0), List.of());
+            return new AutoEndResult(LocalTime.of(20, 0), List.of());
         }
         LocalDate today = today();
         LocalTime now = LocalTime.now(clock.withZone(IST));
         LocalTime autoEnd = settings.getDayAutoEndTime();
+        BusinessSettings business = businessRepo.findById((short) 1).orElse(null);
+        if (business != null && !business.isAutoEndDay()) {
+            return new AutoEndResult(autoEnd, List.of());
+        }
         Instant instant = clock.instant();
         List<UUID> closed = new ArrayList<>();
         for (AttendanceDay day : days.findByEndAtIsNull()) {
@@ -201,10 +215,8 @@ public class AttendanceService {
         return new AutoEndResult(autoEnd, List.copyOf(closed));
     }
 
-    private List<AttendanceRowResponse> rows(LocalDate from, LocalDate to) {
-        List<User> technicians = users.findActiveByRole(Role.TECHNICIAN).stream()
-                .filter(User::isActive)
-                .toList();
+    private List<AttendanceRowResponse> rows(LocalDate from, LocalDate to, UUID technicianId) {
+        List<User> technicians = techniciansForList(technicianId);
         Map<String, AttendanceDay> byKey = new HashMap<>();
         for (AttendanceDay day : days.findByWorkDateBetween(from, to)) {
             byKey.put(day.getTechnicianId() + "|" + day.getWorkDate(), day);
@@ -217,6 +229,27 @@ public class AttendanceService {
             }
         }
         return rows;
+    }
+
+    private List<User> techniciansForList(UUID technicianId) {
+        List<User> technicians = users.findActiveByRole(Role.TECHNICIAN).stream()
+                .filter(User::isActive)
+                .toList();
+        if (technicianId == null) {
+            return technicians;
+        }
+        for (User technician : technicians) {
+            if (technician.getId().equals(technicianId)) {
+                return List.of(technician);
+            }
+        }
+        User one = users.findById(technicianId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Technician not found"));
+        CompanyContext.requireSame(one.getCompanyId(), "Technician not found");
+        if (one.getRole() != Role.TECHNICIAN) {
+            throw new ApiException(ErrorCode.NOT_FOUND, "Technician not found");
+        }
+        return List.of(one);
     }
 
     private Range range(LocalDate from, LocalDate to) {

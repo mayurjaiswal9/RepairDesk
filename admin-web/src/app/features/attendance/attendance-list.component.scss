@@ -40,13 +40,15 @@
   color: var(--color-text-secondary);
 }
 
-.filter-bar input {
+.filter-bar input,
+.filter-bar select {
   height: 40px;
   padding: 0 12px;
   border: 1px solid var(--color-divider);
   border-radius: 8px;
   font: inherit;
   background: #fff;
+  min-width: 180px;
 }
 
 .ghost-btn,

@@ -25,6 +25,8 @@
     </div>
   </div>
 
+  <app-open-jobs-banner [refreshToken]="carryoverToken()" />
+
   <div class="filter-bar">
     <div class="seg" role="group" aria-label="Status filter">
       @for (f of statusFilters; track f.key) {
@@ -63,6 +65,27 @@
       }
     </select>
 
+    <label class="range-field">
+      From
+      <input
+        type="date"
+        [value]="dateMode() === 'all' ? '' : activeFrom()"
+        (change)="onFromInput($event)"
+        aria-label="From date"
+      />
+    </label>
+    <label class="range-field">
+      To
+      <input
+        type="date"
+        [value]="dateMode() === 'all' ? '' : activeTo()"
+        (change)="onToInput($event)"
+        aria-label="To date"
+      />
+    </label>
+    <button type="button" class="ghost-btn sm" (click)="setToday()">Today</button>
+    <button type="button" class="ghost-btn sm" (click)="setAllDates()">All dates</button>
+
     <select class="select" [value]="activeSort()" (change)="onSortChange($event)" aria-label="Sort">
       <option value="submittedAt,desc">Submitted (newest)</option>
       <option value="submittedAt,asc">Submitted (oldest)</option>
@@ -71,7 +94,7 @@
     </select>
   </div>
 
-  @if (activeStatus() || activeQ() || activeCategory()) {
+  @if (activeStatus() || activeQ() || activeCategory() || !isDefaultToday()) {
     <div class="filter-chips">
       @if (activeStatus()) {
         <span class="chip">Status: {{ statusLabel(activeStatus()!) }}
@@ -86,6 +109,11 @@
       @if (activeCategory()) {
         <span class="chip">Category
           <button type="button" (click)="clearCategory()" aria-label="Remove category">×</button>
+        </span>
+      }
+      @if (!isDefaultToday()) {
+        <span class="chip">{{ dateSummary() }}
+          <button type="button" (click)="setToday()" aria-label="Reset to today">×</button>
         </span>
       }
       <button type="button" class="clear-all" (click)="clearFilters()">Clear all</button>
@@ -114,12 +142,12 @@
   } @else if (empty()) {
     <div class="state-panel">
       <div class="icon" aria-hidden="true">📥</div>
-      <h2>No repair requests yet</h2>
-      <p>Customer submissions will appear here for review.</p>
+      <h2>{{ isDefaultToday() ? 'No requests for today' : 'No repair requests yet' }}</h2>
+      <p>Customer submissions will appear here for review. Use the date range to look at other days.</p>
     </div>
   } @else if (filteredEmpty()) {
     <div class="state-panel">
-      <h2>No requests match your filters</h2>
+      <h2>{{ dateMode() === 'all' ? 'No requests match your filters' : 'No requests in ' + dateSummary() }}</h2>
       <p>
         @if (activeQ()) {
           Nothing matched “{{ activeQ() }}”.

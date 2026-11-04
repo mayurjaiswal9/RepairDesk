@@ -58,13 +58,14 @@ public class SettingsService {
         return new SchedulingConfigResponse(
                 settings.getSlotDurationMinutes(),
                 settings.getBookingHorizonDays(),
+                settings.isAutoEndDay(),
                 hours);
     }
 
     @Transactional
     public BusinessSettings updateSettings(String businessName, String businessAddress,
             String businessPhone, String businessEmail,
-            Integer slotDurationMinutes, Integer bookingHorizonDays) {
+            Integer slotDurationMinutes, Integer bookingHorizonDays, Boolean autoEndDay) {
         BusinessSettings s = getSettings();
         if (businessName != null) s.setBusinessName(businessName);
         if (businessAddress != null) s.setBusinessAddress(businessAddress);
@@ -83,6 +84,9 @@ public class SettingsService {
                         "Booking horizon must be between 1 and 365 days");
             }
             s.setBookingHorizonDays(bookingHorizonDays);
+        }
+        if (autoEndDay != null) {
+            s.setAutoEndDay(autoEndDay);
         }
         s.setUpdatedAt(Instant.now());
         return settingsRepo.save(s);

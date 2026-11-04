@@ -6,6 +6,7 @@ import java.util.List;
 public record SchedulingConfigResponse(
         int slotDurationMinutes,
         int bookingHorizonDays,
+        boolean autoEndDay,
         List<WorkingHoursDto> workingHours) {
 
     public record WorkingHoursDto(

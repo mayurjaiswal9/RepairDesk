@@ -15,11 +15,18 @@ final locationBoardProvider = FutureProvider.autoDispose<LocationBoard>(
 );
 
 /// Staff and Admin view of the office, technician positions, and job travel times.
-class LocationBoardScreen extends ConsumerWidget {
+class LocationBoardScreen extends ConsumerStatefulWidget {
   const LocationBoardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LocationBoardScreen> createState() => _LocationBoardScreenState();
+}
+
+class _LocationBoardScreenState extends ConsumerState<LocationBoardScreen> {
+  String? _technicianId;
+
+  @override
+  Widget build(BuildContext context) {
     final boardAsync = ref.watch(locationBoardProvider);
     return Scaffold(
       appBar: AppBar(
@@ -38,42 +45,77 @@ class LocationBoardScreen extends ConsumerWidget {
           text: error is AppException ? error.userMessage : error.toString(),
           onRetry: () => ref.invalidate(locationBoardProvider),
         ),
-        data: (board) => RefreshIndicator(
-          onRefresh: () => ref.refresh(locationBoardProvider.future),
-          child: ListView(
-            padding: const EdgeInsets.all(AppTheme.spaceM),
-            children: [
-              const Text(
-                'Office, open jobs, and the latest position each technician has shared. '
-                'Travel time uses the technician when a position is available, otherwise the office.',
-                style: TextStyle(color: AppTheme.textSecondary),
-              ),
-              const SizedBox(height: AppTheme.spaceM),
-              _BoardMap(board: board),
-              const SizedBox(height: AppTheme.spaceS),
-              const Text(
-                'O office · T technician · red pins are jobs',
-                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-              ),
-              const SizedBox(height: AppTheme.spaceL),
-              Text('Technicians', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: AppTheme.spaceS),
-              if (board.technicians.isEmpty)
-                const Text('No technicians yet.',
-                    style: TextStyle(color: AppTheme.textSecondary))
-              else
-                ...board.technicians.map(_techTile),
-              const SizedBox(height: AppTheme.spaceL),
-              Text('Jobs and ETA', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: AppTheme.spaceS),
-              if (board.jobs.isEmpty)
-                const Text('No open job has a service pin yet.',
-                    style: TextStyle(color: AppTheme.textSecondary))
-              else
-                ...board.jobs.map(_jobTile),
-            ],
-          ),
-        ),
+        data: (board) {
+          final technicians = _technicianId == null
+              ? board.technicians
+              : board.technicians.where((tech) => tech.id == _technicianId).toList();
+          final jobs = _technicianId == null
+              ? board.jobs
+              : board.jobs.where((job) => job.technicianId == _technicianId).toList();
+          final selectedId = (_technicianId != null &&
+                  board.technicians.any((tech) => tech.id == _technicianId))
+              ? _technicianId
+              : '';
+          return RefreshIndicator(
+            onRefresh: () => ref.refresh(locationBoardProvider.future),
+            child: ListView(
+              padding: const EdgeInsets.all(AppTheme.spaceM),
+              children: [
+                const Text(
+                  'Office, open jobs, and the latest position each technician has shared. '
+                  'Travel time uses the technician when a position is available, otherwise the office.',
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: AppTheme.spaceM),
+                InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Technician',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedId,
+                      items: [
+                        const DropdownMenuItem(value: '', child: Text('All technicians')),
+                        ...board.technicians.map(
+                          (tech) => DropdownMenuItem(value: tech.id, child: Text(tech.name)),
+                        ),
+                      ],
+                      onChanged: (value) => setState(
+                        () => _technicianId = (value == null || value.isEmpty) ? null : value,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spaceM),
+                _BoardMap(board: board, technicians: technicians, jobs: jobs),
+                const SizedBox(height: AppTheme.spaceS),
+                const Text(
+                  'O office · T technician · red pins are jobs',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: AppTheme.spaceL),
+                Text('Technicians', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: AppTheme.spaceS),
+                if (technicians.isEmpty)
+                  const Text('No technicians yet.',
+                      style: TextStyle(color: AppTheme.textSecondary))
+                else
+                  ...technicians.map(_techTile),
+                const SizedBox(height: AppTheme.spaceL),
+                Text('Jobs and ETA', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: AppTheme.spaceS),
+                if (jobs.isEmpty)
+                  const Text('No open job has a service pin yet.',
+                      style: TextStyle(color: AppTheme.textSecondary))
+                else
+                  ...jobs.map(_jobTile),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -82,14 +124,21 @@ class LocationBoardScreen extends ConsumerWidget {
     final when = tech.recordedAt == null
         ? null
         : DateFormat('d MMM yyyy, h:mm a').format(tech.recordedAt!.toLocal());
+    final state = switch (tech.state) {
+      'TRAVELLING' => 'Travelling',
+      'ON_SITE' => 'On site',
+      _ => null,
+    };
+    final lines = [
+      if (!tech.hasPosition) 'No position shared yet',
+      if (tech.hasPosition && state != null) state,
+      if (tech.hasPosition && when != null) when,
+    ];
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(tech.name),
       subtitle: Text(
-        tech.hasPosition
-            ? '${tech.latitude!.toStringAsFixed(4)}, ${tech.longitude!.toStringAsFixed(4)}'
-                '${when == null ? '' : '\n$when'}'
-            : 'No position shared yet',
+        lines.isEmpty ? 'Position shared' : lines.join('\n'),
       ),
     );
   }
@@ -141,8 +190,14 @@ class LocationBoardScreen extends ConsumerWidget {
 }
 
 class _BoardMap extends StatelessWidget {
-  const _BoardMap({required this.board});
+  const _BoardMap({
+    required this.board,
+    required this.technicians,
+    required this.jobs,
+  });
   final LocationBoard board;
+  final List<TechnicianMarker> technicians;
+  final List<JobMarker> jobs;
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +210,7 @@ class _BoardMap extends StatelessWidget {
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       ));
     }
-    for (final tech in board.technicians) {
+    for (final tech in technicians) {
       if (!tech.hasPosition) continue;
       markers.add(Marker(
         markerId: MarkerId('t-${tech.id}'),
@@ -164,7 +219,7 @@ class _BoardMap extends StatelessWidget {
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
       ));
     }
-    for (final job in board.jobs) {
+    for (final job in jobs) {
       if (!job.hasPin) continue;
       markers.add(Marker(
         markerId: MarkerId('j-${job.id}'),

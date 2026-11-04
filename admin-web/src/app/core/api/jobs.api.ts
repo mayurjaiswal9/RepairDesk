@@ -14,9 +14,15 @@ export interface JobListQuery {
   technicianId?: string;
   unassigned?: boolean;
   q?: string;
+  from?: string;
+  to?: string;
   page?: number;
   size?: number;
   sort?: string;
+}
+
+export interface OpenJobCarryover {
+  days: { date: string; count: number }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -35,8 +41,14 @@ export class JobsApi {
     if (query.technicianId) params = params.set('technicianId', query.technicianId);
     if (query.unassigned === true) params = params.set('unassigned', 'true');
     if (query.q) params = params.set('q', query.q);
+    if (query.from) params = params.set('from', query.from);
+    if (query.to) params = params.set('to', query.to);
     if (query.sort) params = params.set('sort', query.sort);
     return this.http.get<PageResponse<JobSummary>>(`${this.base}/jobs`, { params });
+  }
+
+  carryover(): Observable<OpenJobCarryover> {
+    return this.http.get<OpenJobCarryover>(`${this.base}/jobs/carryover`);
   }
 
   get(id: string): Observable<JobDetail> {

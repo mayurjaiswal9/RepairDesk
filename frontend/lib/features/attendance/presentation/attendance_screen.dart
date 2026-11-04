@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/app_exception.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../jobs/data/jobs_repository.dart';
 import '../attendance_format.dart';
 import '../data/attendance_repository.dart';
 
@@ -18,6 +19,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   late DateTime _from;
   late DateTime _to;
   List<AttendanceRow> _rows = const [];
+  List<({String id, String name})> _technicians = const [];
+  String? _technicianId;
   bool _loading = true;
   bool _attendanceOn = true;
   String? _error;
@@ -69,10 +72,27 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     try {
       final repo = ref.read(attendanceRepositoryProvider);
       final config = await repo.config();
-      final rows = await repo.list(from: _iso(_from), to: _iso(_to));
+      var technicians = <({String id, String name})>[];
+      try {
+        technicians = (await ref.read(jobsRepositoryProvider).technicians())
+            .map((tech) => (
+                  id: tech['id']?.toString() ?? '',
+                  name: (tech['name'] as String?)?.trim().isNotEmpty == true
+                      ? tech['name'] as String
+                      : (tech['username'] as String? ?? 'Technician'),
+                ))
+            .where((tech) => tech.id.isNotEmpty)
+            .toList();
+      } catch (_) {}
+      final rows = await repo.list(
+        from: _iso(_from),
+        to: _iso(_to),
+        technicianId: _technicianId,
+      );
       if (!mounted) return;
       setState(() {
         _attendanceOn = config.attendanceEnabled;
+        _technicians = technicians;
         _rows = rows;
         _loading = false;
       });
@@ -130,6 +150,33 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                 const SizedBox(width: AppTheme.spaceS),
                 Expanded(child: _DateButton(label: 'To ${_label(_to)}', onTap: () => _pick(false))),
               ],
+            ),
+            const SizedBox(height: AppTheme.spaceS),
+            InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'Technician',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: (_technicianId != null &&
+                          _technicians.any((tech) => tech.id == _technicianId))
+                      ? _technicianId
+                      : '',
+                  items: [
+                    const DropdownMenuItem(value: '', child: Text('All technicians')),
+                    ..._technicians.map(
+                      (tech) => DropdownMenuItem(value: tech.id, child: Text(tech.name)),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() => _technicianId = (value == null || value.isEmpty) ? null : value);
+                    _load();
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: AppTheme.spaceM),
             if (_loading)

@@ -138,6 +138,18 @@
             Some days had no saved hours and are shown as closed. Saving will store all seven days.
           </p>
         }
+        <label class="auto-end">
+          <input
+            type="checkbox"
+            [checked]="autoEndDay()"
+            [disabled]="saving()"
+            (change)="setAutoEndDay($any($event.target).checked)"
+          />
+          <span>End the technician’s day automatically at 8:00 PM</span>
+        </label>
+        <p class="helper">
+          Checked by default. The phone hides End day while this is on. Uncheck it to let the technician end the day in the app.
+        </p>
         <div class="hours-list">
           @for (d of days(); track d.dayOfWeek) {
             <div class="hours-row" [class.closed]="!d.open">

@@ -52,13 +52,13 @@ public class LocationSettings implements CompanyScoped {
     private boolean etaEnabled = false;
 
     @Column(name = "ping_interval_minutes", nullable = false)
-    private int pingIntervalMinutes = 5;
+    private int pingIntervalMinutes = 30;
 
     @Column(name = "ping_distance_m", nullable = false)
     private int pingDistanceM = 200;
 
     @Column(name = "day_auto_end_time", nullable = false)
-    private LocalTime dayAutoEndTime = LocalTime.of(19, 0);
+    private LocalTime dayAutoEndTime = LocalTime.of(20, 0);
 
     @Column(name = "allow_start_outside_geofence", nullable = false)
     private boolean allowStartOutsideGeofence = false;
@@ -88,7 +88,7 @@ public class LocationSettings implements CompanyScoped {
     private int travelPingSeconds = 120;
 
     @Column(name = "on_site_ping_minutes", nullable = false)
-    private int onSitePingMinutes = 60;
+    private int onSitePingMinutes = 30;
 
     @Column(name = "updated_at")
     private Instant updatedAt;

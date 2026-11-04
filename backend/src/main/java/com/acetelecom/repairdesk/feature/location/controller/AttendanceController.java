@@ -3,6 +3,7 @@ package com.acetelecom.repairdesk.feature.location.controller;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -59,19 +60,21 @@ public class AttendanceController {
     @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
     public List<AttendanceRowResponse> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return service.list(from, to);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) UUID technicianId) {
+        return service.list(from, to, technicianId);
     }
 
     @GetMapping(value = "/export", produces = "text/csv")
     @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) UUID technicianId) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"attendance.csv\"")
                 .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
-                .body(service.csv(from, to));
+                .body(service.csv(from, to, technicianId));
     }
 
     private static Fix toFix(AttendanceFixRequest body) {

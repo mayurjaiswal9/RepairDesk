@@ -157,7 +157,7 @@ class _OfficeLocationScreenState extends ConsumerState<OfficeLocationScreen> {
         four == null ||
         retention == null ||
         !RegExp(r'^\d{2}:\d{2}$').hasMatch(clock)) {
-      _snack('Check the numbers. Auto end of day uses 19:00.');
+      _snack('Check the numbers. Auto end of day uses 20:00.');
       return;
     }
     setState(() => _saving = true);
@@ -183,7 +183,7 @@ class _OfficeLocationScreenState extends ConsumerState<OfficeLocationScreen> {
             strictTripMode: _strictTrip,
             tripOpenMaps: _openMaps,
             travelPingSeconds: _int(_travelPing) ?? 120,
-            onSitePingMinutes: _int(_onSitePing) ?? 60,
+            onSitePingMinutes: _int(_onSitePing) ?? 30,
           ));
       if (!mounted) return;
       _snack('Office location saved');
@@ -225,7 +225,7 @@ class _OfficeLocationScreenState extends ConsumerState<OfficeLocationScreen> {
                     const Text(
                       'The shop pin is where travel time starts until a technician shares a position. '
                       'Leave the switches off unless you intend to turn that behaviour on. '
-                      'The phone does not show Start day or End day in this version.',
+                      'Technicians start the day in the app. The day ends automatically at 8:00 PM.',
                       style: TextStyle(color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: AppTheme.spaceM),
@@ -273,7 +273,7 @@ class _OfficeLocationScreenState extends ConsumerState<OfficeLocationScreen> {
                     _field('Update while on site (minutes)', _onSitePing),
                     _field('Ping every (minutes)', _pingMinutes),
                     _field('Or after moving (m)', _pingDistance),
-                    _field('Auto end of day', _autoEnd, hint: '19:00'),
+                    _field('Auto end of day', _autoEnd, hint: '20:00'),
                     _field('Far from address (m)', _far),
                     _field('Two-wheeler rate (₹ / km)', _rateTwo, decimal: true),
                     _field('Four-wheeler rate (₹ / km)', _rateFour, decimal: true),

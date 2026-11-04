@@ -55,7 +55,8 @@ public class LocationSettingsService {
                 location.isStrictTripMode(),
                 location.isTripOpenMaps(),
                 location.getTravelPingSeconds(),
-                location.getOnSitePingMinutes());
+                location.getOnSitePingMinutes(),
+                business.isAutoEndDay());
     }
 
     @Transactional

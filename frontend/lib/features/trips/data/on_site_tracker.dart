@@ -17,7 +17,7 @@ final onSiteTrackerProvider =
     NotifierProvider<OnSiteTracker, OnSiteState>(OnSiteTracker.new);
 
 class OnSiteState {
-  const OnSiteState({this.jobId, this.jobReference, this.intervalMinutes = 60});
+  const OnSiteState({this.jobId, this.jobReference, this.intervalMinutes = 30});
 
   final String? jobId;
   final String? jobReference;
@@ -29,7 +29,7 @@ class OnSiteState {
 /// Time left until [clock] ("HH:mm", India time) today, or null once it has passed.
 Duration? timeUntilIndiaClock(String clock, DateTime now) {
   final parts = clock.split(':');
-  final hour = int.tryParse(parts.first) ?? 19;
+  final hour = int.tryParse(parts.first) ?? 20;
   final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
   final india = now.toUtc().add(const Duration(hours: 5, minutes: 30));
   final target = DateTime.utc(india.year, india.month, india.day, hour, minute);
@@ -103,7 +103,8 @@ class OnSiteTracker extends Notifier<OnSiteState> {
       return;
     }
     if (!config.trackingEnabled ||
-        timeUntilIndiaClock(config.dayAutoEndTime, DateTime.now()) == null) {
+        (config.autoEndDay &&
+            timeUntilIndiaClock(config.dayAutoEndTime, DateTime.now()) == null)) {
       await stop();
       return;
     }
@@ -132,7 +133,7 @@ class OnSiteTracker extends Notifier<OnSiteState> {
   Future<void> _start(JobSummary job, LocationConfig config) async {
     final minutes = config.onSitePingMinutes;
     if (_sub != null && state.jobId == job.id && state.intervalMinutes == minutes) {
-      _scheduleAutoEnd(config.dayAutoEndTime);
+      _scheduleAutoEnd(config);
       return;
     }
     await _closeStream();
@@ -158,7 +159,7 @@ class OnSiteTracker extends Notifier<OnSiteState> {
         state = const OnSiteState();
       },
     );
-    _scheduleAutoEnd(config.dayAutoEndTime);
+    _scheduleAutoEnd(config);
   }
 
   LocationSettings _settings(String jobReference, int minutes) {
@@ -208,9 +209,10 @@ class OnSiteTracker extends Notifier<OnSiteState> {
     }
   }
 
-  void _scheduleAutoEnd(String clock) {
+  void _scheduleAutoEnd(LocationConfig config) {
     _autoEnd?.cancel();
-    final left = timeUntilIndiaClock(clock, DateTime.now());
+    if (!config.autoEndDay) return;
+    final left = timeUntilIndiaClock(config.dayAutoEndTime, DateTime.now());
     if (left == null) {
       unawaited(stop());
       return;

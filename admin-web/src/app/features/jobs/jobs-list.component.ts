@@ -23,6 +23,8 @@ import {
   statusChipClass,
   statusLabel,
 } from '../../core/models/request.models';
+import { formatIndiaDate, indiaToday } from '../../core/india-date';
+import { OpenJobsBannerComponent } from './open-jobs-banner.component';
 
 type PageState = 'loading' | 'ready' | 'error' | 'forbidden';
 
@@ -38,6 +40,7 @@ type PageState = 'loading' | 'ready' | 'error' | 'forbidden';
     MatProgressBarModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    OpenJobsBannerComponent,
   ],
   templateUrl: './jobs-list.component.html',
   styleUrl: './jobs-list.component.scss',
@@ -77,6 +80,10 @@ export class JobsListComponent implements OnInit {
   readonly activeSort = signal('updatedAt,desc');
   readonly activeActive = signal(false);
   readonly activeUnscheduled = signal(false);
+  readonly dateMode = signal<'range' | 'all'>('range');
+  readonly activeFrom = signal(indiaToday());
+  readonly activeTo = signal(indiaToday());
+  readonly carryoverToken = signal(0);
 
   readonly pageTitle = computed(() => (this.isTechnician() ? 'My jobs' : 'Jobs'));
 
@@ -91,13 +98,28 @@ export class JobsListComponent implements OnInit {
     return base;
   });
 
+  readonly isDefaultToday = computed(
+    () =>
+      this.dateMode() === 'range' &&
+      this.activeFrom() === indiaToday() &&
+      this.activeTo() === indiaToday(),
+  );
+
+  readonly dateSummary = computed(() => {
+    if (this.dateMode() === 'all') return 'All dates';
+    const from = formatIndiaDate(this.activeFrom());
+    const to = formatIndiaDate(this.activeTo());
+    return from === to ? from : `${from} – ${to}`;
+  });
+
   readonly hasFilters = computed(
     () =>
       !!this.activeStatus() ||
       !!this.activeQ() ||
       !!this.activeTechnician() ||
       this.activeActive() ||
-      this.activeUnscheduled(),
+      this.activeUnscheduled() ||
+      !this.isDefaultToday(),
   );
 
   readonly filteredEmpty = computed(
@@ -123,14 +145,25 @@ export class JobsListComponent implements OnInit {
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       if (!params.keys.length) {
+        const today = indiaToday();
         void this.router.navigate([], {
           relativeTo: this.route,
-          queryParams: { sort: 'updatedAt,desc', page: 0, size: 20 },
+          queryParams: { from: today, to: today, sort: 'updatedAt,desc', page: 0, size: 20 },
           replaceUrl: true,
         });
         return;
       }
 
+      const mode = params.get('dates') === 'all' ? 'all' : 'range';
+      if (mode === 'range' && !params.get('from')) {
+        const today = indiaToday();
+        this.patchQuery({ from: today, to: params.get('to') || today });
+        return;
+      }
+
+      this.dateMode.set(mode);
+      this.activeFrom.set(params.get('from') ?? indiaToday());
+      this.activeTo.set(params.get('to') ?? params.get('from') ?? indiaToday());
       this.activeStatus.set(params.get('status') ?? undefined);
       this.activeQ.set(params.get('q') ?? '');
       this.activeTechnician.set(params.get('technicianId') ?? (params.get('unassigned') === 'true' ? 'unassigned' : ''));
@@ -186,6 +219,33 @@ export class JobsListComponent implements OnInit {
     this.patchQuery({ sort: (event.target as HTMLSelectElement).value, page: 0 });
   }
 
+  onFromInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    if (!value) return;
+    const to = this.activeTo() && this.activeTo() >= value ? this.activeTo() : value;
+    this.patchQuery({ from: value, to, dates: null, page: 0 });
+  }
+
+  onToInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    if (!value) return;
+    const from = this.activeFrom() && this.activeFrom() <= value ? this.activeFrom() : value;
+    this.patchQuery({ from, to: value, dates: null, page: 0 });
+  }
+
+  setToday(): void {
+    const today = indiaToday();
+    this.patchQuery({ from: today, to: today, dates: null, page: 0 });
+  }
+
+  setAllDates(): void {
+    this.patchQuery({ dates: 'all', from: null, to: null, page: 0 });
+  }
+
+  statusText(status: string): string {
+    return status.includes(',') ? 'Open' : statusLabel(status);
+  }
+
   clearSearch(): void {
     this.searchCtrl.setValue('');
     this.patchQuery({ q: null, page: 0 });
@@ -201,13 +261,15 @@ export class JobsListComponent implements OnInit {
 
   clearFilters(): void {
     this.searchCtrl.setValue('', { emitEvent: false });
+    const today = indiaToday();
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { sort: 'updatedAt,desc', page: 0, size: this.size() },
+      queryParams: { from: today, to: today, sort: 'updatedAt,desc', page: 0, size: this.size() },
     });
   }
 
   refresh(): void {
+    this.carryoverToken.update((n) => n + 1);
     this.fetch(true);
     this.refreshUnassigned();
   }
@@ -265,6 +327,8 @@ export class JobsListComponent implements OnInit {
         technicianId: tech && tech !== 'unassigned' ? tech : undefined,
         unassigned: tech === 'unassigned' ? true : undefined,
         q: this.activeQ() || undefined,
+        from: this.dateMode() === 'all' ? undefined : this.activeFrom(),
+        to: this.dateMode() === 'all' ? undefined : this.activeTo(),
         page: this.page(),
         size: this.size(),
         sort: this.activeSort(),

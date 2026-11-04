@@ -24,6 +24,8 @@ import {
   statusChipClass,
   statusLabel,
 } from '../../core/models/request.models';
+import { formatIndiaDate, indiaToday } from '../../core/india-date';
+import { OpenJobsBannerComponent } from '../jobs/open-jobs-banner.component';
 import { ApproveDialogComponent } from './dialogs/approve-dialog.component';
 import { RejectDialogComponent } from './dialogs/reject-dialog.component';
 import { RequestInfoDialogComponent } from './dialogs/request-info-dialog.component';
@@ -44,6 +46,7 @@ type PageState = 'loading' | 'ready' | 'error' | 'forbidden';
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatTooltipModule,
+    OpenJobsBannerComponent,
   ],
   templateUrl: './requests-list.component.html',
   styleUrl: './requests-list.component.scss',
@@ -82,6 +85,24 @@ export class RequestsListComponent implements OnInit {
   readonly activeQ = signal<string>('');
   readonly activeCategory = signal<string>('');
   readonly activeSort = signal('submittedAt,desc');
+  readonly dateMode = signal<'range' | 'all'>('range');
+  readonly activeFrom = signal(indiaToday());
+  readonly activeTo = signal(indiaToday());
+  readonly carryoverToken = signal(0);
+
+  readonly isDefaultToday = computed(
+    () =>
+      this.dateMode() === 'range' &&
+      this.activeFrom() === indiaToday() &&
+      this.activeTo() === indiaToday(),
+  );
+
+  readonly dateSummary = computed(() => {
+    if (this.dateMode() === 'all') return 'All dates';
+    const from = formatIndiaDate(this.activeFrom());
+    const to = formatIndiaDate(this.activeTo());
+    return from === to ? from : `${from} – ${to}`;
+  });
 
   readonly summary = computed(() => {
     if (this.state() === 'loading') return '';
@@ -96,7 +117,7 @@ export class RequestsListComponent implements OnInit {
     () =>
       this.state() === 'ready' &&
       this.rows().length === 0 &&
-      (!!this.activeStatus() || !!this.activeQ() || !!this.activeCategory()),
+      (!!this.activeStatus() || !!this.activeQ() || !!this.activeCategory() || !this.isDefaultToday()),
   );
 
   readonly empty = computed(
@@ -134,6 +155,8 @@ export class RequestsListComponent implements OnInit {
           relativeTo: this.route,
           queryParams: {
             status: 'PENDING_REVIEW',
+            from: indiaToday(),
+            to: indiaToday(),
             sort: 'submittedAt,desc',
             page: 0,
             size: 20,
@@ -143,6 +166,15 @@ export class RequestsListComponent implements OnInit {
         return;
       }
 
+      const mode = params.get('dates') === 'all' ? 'all' : 'range';
+      if (mode === 'range' && !params.get('from')) {
+        const today = indiaToday();
+        this.patchQuery({ from: today, to: params.get('to') || today });
+        return;
+      }
+      this.dateMode.set(mode);
+      this.activeFrom.set(params.get('from') ?? indiaToday());
+      this.activeTo.set(params.get('to') ?? params.get('from') ?? indiaToday());
       this.activeStatus.set(params.get('status') ?? undefined);
       this.activeQ.set(params.get('q') ?? '');
       this.activeCategory.set(params.get('deviceCategoryId') ?? '');
@@ -185,6 +217,29 @@ export class RequestsListComponent implements OnInit {
     this.patchQuery({ sort: value, page: 0 });
   }
 
+  onFromInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    if (!value) return;
+    const to = this.activeTo() && this.activeTo() >= value ? this.activeTo() : value;
+    this.patchQuery({ from: value, to, dates: null, page: 0 });
+  }
+
+  onToInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    if (!value) return;
+    const from = this.activeFrom() && this.activeFrom() <= value ? this.activeFrom() : value;
+    this.patchQuery({ from, to: value, dates: null, page: 0 });
+  }
+
+  setToday(): void {
+    const today = indiaToday();
+    this.patchQuery({ from: today, to: today, dates: null, page: 0 });
+  }
+
+  setAllDates(): void {
+    this.patchQuery({ dates: 'all', from: null, to: null, page: 0 });
+  }
+
   clearSearch(): void {
     this.searchCtrl.setValue('');
   }
@@ -193,7 +248,14 @@ export class RequestsListComponent implements OnInit {
     this.searchCtrl.setValue('', { emitEvent: false });
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { status: 'PENDING_REVIEW', sort: 'submittedAt,desc', page: 0, size: this.size() },
+      queryParams: {
+        status: 'PENDING_REVIEW',
+        from: indiaToday(),
+        to: indiaToday(),
+        sort: 'submittedAt,desc',
+        page: 0,
+        size: this.size(),
+      },
     });
   }
 
@@ -202,6 +264,7 @@ export class RequestsListComponent implements OnInit {
   }
 
   refresh(): void {
+    this.carryoverToken.update((n) => n + 1);
     this.fetch(true);
     this.refreshAwaiting();
   }
@@ -308,6 +371,8 @@ export class RequestsListComponent implements OnInit {
         status: this.activeStatus(),
         q: this.activeQ() || undefined,
         deviceCategoryId: this.activeCategory() || undefined,
+        from: this.dateMode() === 'all' ? undefined : this.activeFrom(),
+        to: this.dateMode() === 'all' ? undefined : this.activeTo(),
         page: this.page(),
         size: this.size(),
         sort: this.activeSort(),

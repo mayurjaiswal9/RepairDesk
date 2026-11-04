@@ -1,6 +1,7 @@
 package com.acetelecom.repairdesk.feature.request.service;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.common.time.IndiaDay;
 import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.common.web.PageResponse;
 import com.acetelecom.repairdesk.feature.audit.service.AuditService;
@@ -190,11 +192,15 @@ public class RepairRequestService {
 
     @Transactional(readOnly = true)
     public PageResponse<RepairRequestSummary> getQueue(String status, UUID categoryId, String q,
-            Pageable pageable) {
+            LocalDate from, LocalDate to, Pageable pageable) {
         RequestStatus statusEnum = (status == null || status.isBlank())
                 ? null : RequestStatus.valueOf(status.toUpperCase());
         String query = (q == null || q.isBlank()) ? null : q.trim();
-        Page<RepairRequest> page = requestRepo.findQueueFiltered(statusEnum, categoryId, query, pageable);
+        IndiaDay.Range dates = IndiaDay.range(from, to);
+        Page<RepairRequest> page = requestRepo.findQueueFiltered(
+                statusEnum, categoryId, query,
+                dates.hasFrom(), dates.fromInclusive(), dates.hasTo(), dates.toExclusive(),
+                pageable);
         return PageResponse.from(page.map(r -> RepairRequestSummary.from(r, findJobOrNull(r.getId()))));
     }
 

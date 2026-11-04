@@ -43,6 +43,8 @@ export interface RequestListQuery {
   status?: string;
   q?: string;
   deviceCategoryId?: string;
+  from?: string;
+  to?: string;
   page?: number;
   size?: number;
   sort?: string;
@@ -60,6 +62,8 @@ export class RequestsApi {
     if (query.status) params = params.set('status', query.status);
     if (query.q) params = params.set('q', query.q);
     if (query.deviceCategoryId) params = params.set('deviceCategoryId', query.deviceCategoryId);
+    if (query.from) params = params.set('from', query.from);
+    if (query.to) params = params.set('to', query.to);
     if (query.sort) params = params.set('sort', query.sort);
     return this.http.get<PageResponse<RepairRequestSummary>>(`${this.base}/requests`, { params });
   }

@@ -143,9 +143,12 @@ export class MileageApi {
     return this.http.get<MileageDaysResponse>(`${this.base}/mileage/days`, { params });
   }
 
-  day(technicianId: string, date: string): Observable<MileageDayDetail> {
+  day(technicianId: string, date: string, to?: string | null): Observable<MileageDayDetail> {
+    let params = new HttpParams();
+    if (to && to !== date) params = params.set('to', to);
     return this.http.get<MileageDayDetail>(
       `${this.base}/mileage/days/${encodeURIComponent(technicianId)}/${encodeURIComponent(date)}`,
+      { params },
     );
   }
 

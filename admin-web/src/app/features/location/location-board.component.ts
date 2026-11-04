@@ -1,7 +1,8 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LocationApi, LocationBoard } from '../../core/api/location.api';
+import { SessionService } from '../../core/auth/session.service';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
 import { googleMapsDirectionsUrl } from '../../core/maps/directions';
 import { MapPin, PinMapComponent } from '../../core/maps/pin-map.component';
@@ -20,18 +21,34 @@ export interface PresenceLabel {
 @Component({
   selector: 'app-location-board',
   standalone: true,
-  imports: [RouterLink, PinMapComponent, DatePipe, DecimalPipe],
+  imports: [RouterLink, PinMapComponent, DatePipe],
   templateUrl: './location-board.component.html',
   styleUrl: './location-board.component.scss',
 })
 export class LocationBoardComponent implements OnInit {
   private readonly api = inject(LocationApi);
+  private readonly session = inject(SessionService);
 
   readonly state = signal<PageState>('loading');
   readonly error = signal<MappedApiError | null>(null);
   readonly board = signal<LocationBoard | null>(null);
   readonly travelPingSeconds = signal(120);
   readonly onSitePingMinutes = signal(60);
+  readonly technicianId = signal('');
+  readonly isAdmin = computed(() => this.session.role() === 'ADMIN');
+
+  readonly technicians = computed(() => this.board()?.technicians ?? []);
+  readonly visibleTechnicians = computed(() => {
+    const id = this.technicianId();
+    const list = this.technicians();
+    return id ? list.filter((tech) => tech.id === id) : list;
+  });
+  readonly visibleJobs = computed(() => {
+    const board = this.board();
+    if (!board) return [];
+    const id = this.technicianId();
+    return id ? board.jobs.filter((job) => job.technicianId === id) : board.jobs;
+  });
 
   readonly pins = computed<MapPin[]>(() => {
     const board = this.board();
@@ -46,7 +63,7 @@ export class LocationBoardComponent implements OnInit {
         kind: 'office',
       });
     }
-    for (const tech of board.technicians) {
+    for (const tech of this.visibleTechnicians()) {
       if (tech.latitude == null || tech.longitude == null) continue;
       pins.push({
         id: tech.id,
@@ -56,7 +73,7 @@ export class LocationBoardComponent implements OnInit {
         kind: 'technician',
       });
     }
-    for (const job of board.jobs) {
+    for (const job of this.visibleJobs()) {
       if (job.latitude == null || job.longitude == null) continue;
       pins.push({
         id: job.id,
@@ -70,8 +87,21 @@ export class LocationBoardComponent implements OnInit {
   });
 
   readonly locatedTechnicians = computed(
-    () => this.board()?.technicians.filter((tech) => tech.latitude != null) ?? [],
+    () => this.visibleTechnicians().filter((tech) => tech.latitude != null),
   );
+
+  onTechnicianInput(event: Event): void {
+    this.technicianId.set((event.target as HTMLSelectElement).value);
+  }
+
+  canLiveTrack(tech: Technician): boolean {
+    return this.isAdmin() && tech.state === 'TRAVELLING' && !!tech.jobId;
+  }
+
+  jobReference(jobId?: string | null): string | null {
+    if (!jobId) return null;
+    return this.board()?.jobs.find((job) => job.id === jobId)?.referenceNumber ?? null;
+  }
 
   ngOnInit(): void {
     this.api.config().subscribe({
@@ -120,11 +150,6 @@ export class LocationBoardComponent implements OnInit {
       return { text: `On site${job ? ` at ${job}` : ''} · ${agoLabel(age)}`, tone: 'onsite' };
     }
     return { text: `Stale · last seen ${lastSeenLabel(tech.recordedAt)}`, tone: 'stale' };
-  }
-
-  private jobReference(jobId?: string | null): string | null {
-    if (!jobId) return null;
-    return this.board()?.jobs.find((job) => job.id === jobId)?.referenceNumber ?? null;
   }
 
   etaLabel(job: LocationBoard['jobs'][number]): string {

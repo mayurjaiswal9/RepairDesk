@@ -1,6 +1,7 @@
 package com.acetelecom.repairdesk.feature.job.service;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.common.time.IndiaDay;
 import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.common.web.PageResponse;
 import com.acetelecom.repairdesk.feature.audit.service.AuditService;
@@ -19,6 +21,7 @@ import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
 import com.acetelecom.repairdesk.feature.job.dto.JobResponse;
 import com.acetelecom.repairdesk.feature.job.dto.JobSummary;
+import com.acetelecom.repairdesk.feature.job.dto.OpenJobCarryoverResponse;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.location.domain.ServiceLocation;
 import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
@@ -194,7 +197,8 @@ public class JobService {
      */
     @Transactional(readOnly = true)
     public PageResponse<JobSummary> listAll(String status, Boolean active, Boolean scheduled,
-            UUID technicianId, Boolean unassigned, String q, Pageable pageable) {
+            UUID technicianId, Boolean unassigned, String q, LocalDate from, LocalDate to,
+            Pageable pageable) {
         List<JobStatus> statuses = resolveStatuses(status, active, scheduled);
         boolean hasStatuses = !statuses.isEmpty();
         // IN (:statuses) needs a non-empty collection even when unused.
@@ -202,23 +206,47 @@ public class JobService {
         boolean onlyUnassigned = Boolean.TRUE.equals(unassigned);
         UUID techFilter = onlyUnassigned ? null : technicianId;
         String query = (q == null || q.isBlank()) ? null : q.trim();
+        IndiaDay.Range dates = IndiaDay.range(from, to);
         Page<Job> page = jobRepo.findFiltered(
-                hasStatuses, statusParam, techFilter, onlyUnassigned, query, pageable);
+                hasStatuses, statusParam, techFilter, onlyUnassigned, query,
+                dates.hasFrom(), dates.fromInclusive(), dates.hasTo(), dates.toExclusive(),
+                pageable);
         return PageResponse.from(page.map(JobSummary::from));
     }
 
     /** Technician board — always scoped to the caller; optional status + search within that set. */
     @Transactional(readOnly = true)
     public PageResponse<JobSummary> listForTechnician(UUID techId, String status, String q,
-            Pageable pageable) {
+            LocalDate from, LocalDate to, Pageable pageable) {
         List<JobStatus> statuses = resolveStatuses(status, null, null);
         boolean hasStatuses = !statuses.isEmpty();
         // Dummy non-empty list required by JPQL IN clause when hasStatuses is false.
         List<JobStatus> statusParam = hasStatuses ? statuses : List.of(JobStatus.CREATED);
         String query = (q == null || q.isBlank()) ? null : q.trim();
+        IndiaDay.Range dates = IndiaDay.range(from, to);
         Page<Job> page = jobRepo.findForTechnician(
-                techId, hasStatuses, statusParam, query, pageable);
+                techId, hasStatuses, statusParam, query,
+                dates.hasFrom(), dates.fromInclusive(), dates.hasTo(), dates.toExclusive(),
+                pageable);
         return PageResponse.from(page.map(JobSummary::from));
+    }
+
+    /**
+     * Jobs still open that were created before today (India), one row per creation day.
+     * Technicians only see jobs assigned to them. A single leftover job is included.
+     */
+    @Transactional(readOnly = true)
+    public OpenJobCarryoverResponse openFromPreviousDays(AuthenticatedUser caller) {
+        UUID technicianId = "TECHNICIAN".equals(caller.role()) ? caller.id() : null;
+        java.util.Map<LocalDate, Long> byDay = new java.util.TreeMap<>();
+        for (Instant created : jobRepo.findOpenCreatedBefore(IndiaDay.startOfToday(), technicianId)) {
+            LocalDate day = created.atZone(IndiaDay.ZONE).toLocalDate();
+            byDay.merge(day, 1L, Long::sum);
+        }
+        List<OpenJobCarryoverResponse.Day> days = byDay.entrySet().stream()
+                .map(entry -> new OpenJobCarryoverResponse.Day(entry.getKey(), entry.getValue()))
+                .toList();
+        return new OpenJobCarryoverResponse(days);
     }
 
     private List<JobStatus> resolveStatuses(String status, Boolean active, Boolean scheduled) {

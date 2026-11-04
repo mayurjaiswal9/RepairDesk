@@ -37,6 +37,18 @@
   }
 }
 
+.auto-end {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-weight: 650;
+}
+
+.auto-end input {
+  margin-top: 3px;
+}
+
 .section-head {
   display: flex;
   flex-wrap: wrap;

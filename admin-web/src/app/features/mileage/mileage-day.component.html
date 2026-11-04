@@ -35,14 +35,15 @@
       <p class="meta">{{ dateText() }} · {{ vehicle(d.vehicleType) }}</p>
     </div>
     <div class="header-actions">
-      <button type="button" class="ghost-btn" (click)="goToDay(previousDay())">
-        <mat-icon aria-hidden="true">chevron_left</mat-icon>
-        Previous day
-      </button>
-      <button type="button" class="ghost-btn" [disabled]="!hasNextDay()" (click)="goToDay(nextDay())">
-        Next day
-        <mat-icon aria-hidden="true">chevron_right</mat-icon>
-      </button>
+      <label class="range-field">
+        From
+        <input type="date" [value]="fromDate()" (input)="onFromInput($event)" />
+      </label>
+      <label class="range-field">
+        To
+        <input type="date" [value]="toDate()" (input)="onToInput($event)" />
+      </label>
+      <button type="button" class="ghost-btn" (click)="applyRange()">Show</button>
       <button type="button" class="ghost-btn icon-only" aria-label="Refresh" [disabled]="refetching()" (click)="refresh()">
         @if (refetching()) {
           <mat-spinner diameter="18"></mat-spinner>
@@ -57,13 +58,13 @@
 
   <div class="day-layout">
     <section class="card map-card" aria-label="Routes map">
-      @if (d.trips.length || d.shop) {
+      @if (selectedTrip()) {
         <app-route-map [routes]="routes()" [pins]="pins()" [height]="440" />
         <p class="legend">
-          Numbers mark where each trip started · O is the shop · red pins are jobs · dashed lines are cancelled trips
+          This map shows the selected trip only. Select another trip, or clear the selection, from the list.
         </p>
       } @else {
-        <p class="muted">Nothing to show on the map.</p>
+        <p class="muted">Select one trip to show its route. The map stays hidden until a single trip is selected.</p>
       }
     </section>
 
@@ -73,10 +74,19 @@
           Trips <span class="count">· {{ d.trips.length }}</span>
         </h2>
         @if (!d.trips.length) {
-          <p class="muted">No trips recorded on this day.</p>
+          <p class="muted">No trips recorded in this date range.</p>
         } @else {
+          <p class="muted">Select one trip to show its route on the map.</p>
           @for (trip of d.trips; track trip.id; let i = $index) {
-            <app-trip-card [trip]="trip" [index]="i" [canAdjust]="true" (adjust)="openAdjust($event)" />
+            <app-trip-card
+              [trip]="trip"
+              [index]="i"
+              [canAdjust]="true"
+              [selectable]="true"
+              [selected]="selectedTripId() === trip.id"
+              (select)="toggleTrip($event)"
+              (adjust)="openAdjust($event)"
+            />
           }
         }
       </section>

@@ -60,6 +60,18 @@ class JobSummary {
       );
 }
 
+class OpenJobDay {
+  final String date;
+  final int count;
+
+  const OpenJobDay({required this.date, required this.count});
+
+  factory OpenJobDay.fromJson(Map<String, dynamic> json) => OpenJobDay(
+        date: json['date'] as String,
+        count: (json['count'] as num).toInt(),
+      );
+}
+
 class JobDetail {
   final String id;
   final String referenceNumber;
@@ -151,12 +163,16 @@ class JobsRepository {
   Future<List<JobSummary>> list({
     String? status,
     String? technicianId,
+    String? from,
+    String? to,
     int page = 0,
   }) async {
     try {
       final params = <String, dynamic>{'page': page, 'size': 20};
       if (status != null) params['status'] = status;
       if (technicianId != null) params['technicianId'] = technicianId;
+      if (from != null) params['from'] = from;
+      if (to != null) params['to'] = to;
       final res = await _dio.get<Map<String, dynamic>>('/jobs',
           queryParameters: params);
       final content = res.data!['content'] as List<dynamic>;
@@ -164,6 +180,18 @@ class JobsRepository {
           .cast<Map<String, dynamic>>()
           .map(JobSummary.fromJson)
           .toList();
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<List<OpenJobDay>> openCarryover() async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/jobs/carryover');
+      final days = res.data?['days'] as List<dynamic>? ?? const [];
+      return days.cast<Map<String, dynamic>>().map(OpenJobDay.fromJson).toList();
     } on DioException catch (e) {
       throw e.error is AppException
           ? e.error as AppException

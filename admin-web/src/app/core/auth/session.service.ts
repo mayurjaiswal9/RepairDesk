@@ -98,6 +98,9 @@ export class SessionService {
     if (path.startsWith('/mileage') || path.startsWith('/milage')) {
       return role === 'ADMIN';
     }
+    if (path.startsWith('/location/live')) {
+      return role === 'ADMIN';
+    }
     return true;
   }
 

@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AttendanceApi, AttendanceRow } from '../../core/api/attendance.api';
+import { UsersApi } from '../../core/api/users.api';
+import { UserProfile } from '../../core/models/dashboard.models';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
 
 type PageState = 'loading' | 'ready' | 'error' | 'forbidden';
@@ -24,19 +26,26 @@ const FLAG_LABELS: Record<string, string> = {
 })
 export class AttendanceListComponent implements OnInit {
   private readonly api = inject(AttendanceApi);
+  private readonly users = inject(UsersApi);
 
   readonly state = signal<PageState>('loading');
   readonly error = signal<MappedApiError | null>(null);
   readonly rows = signal<AttendanceRow[]>([]);
+  readonly technicians = signal<UserProfile[]>([]);
   readonly attendanceEnabled = signal(true);
   readonly from = signal(indiaToday());
   readonly to = signal(indiaToday());
+  readonly technicianId = signal('');
   readonly rangeError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.api.config().subscribe({
       next: (config) => this.attendanceEnabled.set(config.attendanceEnabled),
       error: () => this.attendanceEnabled.set(true),
+    });
+    this.users.listByRole('TECHNICIAN').subscribe({
+      next: (technicians) => this.technicians.set(technicians),
+      error: () => this.technicians.set([]),
     });
     this.load();
   }
@@ -50,7 +59,7 @@ export class AttendanceListComponent implements OnInit {
       return;
     }
     this.state.set('loading');
-    this.api.list(this.from(), this.to()).subscribe({
+    this.api.list(this.from(), this.to(), this.technicianId() || null).subscribe({
       next: (rows) => {
         this.rows.set(rows);
         this.state.set('ready');
@@ -71,11 +80,19 @@ export class AttendanceListComponent implements OnInit {
     this.to.set((event.target as HTMLInputElement).value);
   }
 
+  onTechnicianInput(event: Event): void {
+    this.technicianId.set((event.target as HTMLSelectElement).value);
+  }
+
+  technicianLabel(tech: UserProfile): string {
+    return tech.name?.trim() || tech.username;
+  }
+
   download(): void {
     const problem = rangeProblem(this.from(), this.to());
     this.rangeError.set(problem);
     if (problem) return;
-    this.api.export(this.from(), this.to()).subscribe({
+    this.api.export(this.from(), this.to(), this.technicianId() || null).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');

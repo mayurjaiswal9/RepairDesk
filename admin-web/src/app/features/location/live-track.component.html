@@ -1,0 +1,52 @@
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a routerLink="/location">Locations</a>
+  <span class="sep" aria-hidden="true">›</span>
+  <span class="current">Live Track</span>
+</nav>
+
+@if (state() === 'forbidden') {
+  <div class="state-panel" role="alert">
+    <h1 class="display">Restricted</h1>
+    <p>Live Track is for administrators.</p>
+    <a routerLink="/location" class="primary-btn">Back to locations</a>
+  </div>
+} @else {
+  <div class="head">
+    <div>
+      <h1 class="display">Live Track</h1>
+      <p class="lede">
+        @if (technicianName()) {
+          {{ technicianName() }}
+          @if (jobId()) {
+            —
+            <a [routerLink]="['/jobs', jobId()]">{{ jobReference() || 'Job' }}</a>
+          }
+        } @else {
+          The travelling technician’s current trip. Hit Refresh to update the map.
+        }
+      </p>
+    </div>
+    <button type="button" class="ghost-btn" (click)="reload()" [disabled]="state() === 'loading'">
+      Refresh
+    </button>
+  </div>
+
+  @if (state() === 'error') {
+    <div class="state-panel" role="alert">
+      <p>{{ error()?.message }}</p>
+      <button type="button" class="primary-btn" (click)="reload()">Retry</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <p class="muted">Loading the live trip…</p>
+  } @else if (!trip()) {
+    <p class="muted">
+      Live Track is only available while this technician is travelling on Start travel.
+      Hit Refresh after they start, or go back to Locations.
+    </p>
+  } @else if (!hasTrack()) {
+    <p class="muted">No track points yet. Hit Refresh after the technician has moved.</p>
+  } @else {
+    <app-route-map [routes]="routes()" [pins]="pins()" [height]="480" />
+    <p class="legend">The line is this trip only. It updates when you hit Refresh.</p>
+  }
+}

@@ -4,10 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +29,7 @@ import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
 import com.acetelecom.repairdesk.feature.job.dto.JobResponse;
+import com.acetelecom.repairdesk.feature.job.dto.OpenJobCarryoverResponse;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.location.domain.PinSource;
 import com.acetelecom.repairdesk.feature.location.domain.ServiceLocation;
@@ -33,6 +37,7 @@ import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
 import com.acetelecom.repairdesk.feature.location.service.MapsService;
 import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
 import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.trip.service.TripService;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
@@ -60,6 +65,8 @@ class JobServiceTest {
     private AuditService auditService;
     @Mock
     private MapsService mapsService;
+    @Mock
+    private TripService tripService;
 
     private JobService jobService;
     private ServiceLocationApplier locationApplier;
@@ -71,7 +78,7 @@ class JobServiceTest {
     void setUp() {
         locationApplier = new ServiceLocationApplier(mapsService);
         jobService = new JobService(jobRepo, requestRepo, userRepo,
-                notifService, auditService, locationApplier);
+                notifService, auditService, locationApplier, tripService);
 
         UUID staffId = UUID.randomUUID();
         staffActor = new AuthenticatedUser(staffId, "staff1", "STAFF");
@@ -311,6 +318,31 @@ class JobServiceTest {
     }
 
     // ── Builders ──────────────────────────────────────────────────────────────
+
+    @Test
+    void oneOpenJobFromAPreviousDayIsListedOnThatIndiaDate() {
+        when(jobRepo.findOpenCreatedBefore(any(), isNull())).thenReturn(List.of(
+                Instant.parse("2026-11-03T19:00:00Z")));
+
+        OpenJobCarryoverResponse result = jobService.openFromPreviousDays(staffActor);
+
+        assertThat(result.days()).containsExactly(
+                new OpenJobCarryoverResponse.Day(LocalDate.of(2026, 11, 4), 1));
+    }
+
+    @Test
+    void openJobsAreGroupedByIndiaDateAndTechniciansSeeOnlyTheirOwn() {
+        when(jobRepo.findOpenCreatedBefore(any(), eq(techActor.id()))).thenReturn(List.of(
+                Instant.parse("2026-11-01T20:00:00Z"),
+                Instant.parse("2026-11-03T18:30:00Z"),
+                Instant.parse("2026-11-04T18:29:00Z")));
+
+        OpenJobCarryoverResponse result = jobService.openFromPreviousDays(techActor);
+
+        assertThat(result.days()).containsExactly(
+                new OpenJobCarryoverResponse.Day(LocalDate.of(2026, 11, 2), 1),
+                new OpenJobCarryoverResponse.Day(LocalDate.of(2026, 11, 4), 2));
+    }
 
     private RepairRequest buildRequest(UUID id, RequestStatus status) {
         RepairRequest req = new RepairRequest();

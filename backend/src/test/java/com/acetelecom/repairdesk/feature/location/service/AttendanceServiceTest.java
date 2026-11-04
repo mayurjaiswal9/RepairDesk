@@ -188,6 +188,18 @@ class AttendanceServiceTest {
     }
 
     @Test
+    void listCanFilterToOneTechnician() {
+        User asha = technician("Asha");
+        User bina = technician("Bina");
+        when(users.findActiveByRole(Role.TECHNICIAN)).thenReturn(List.of(asha, bina));
+        when(days.findByWorkDateBetween(INDIA_DAY, INDIA_DAY)).thenReturn(List.of());
+
+        List<AttendanceRowResponse> rows = service.list(INDIA_DAY, INDIA_DAY, asha.getId());
+
+        assertThat(rows).extracting(AttendanceRowResponse::technicianName).containsExactly("Asha");
+    }
+
+    @Test
     void rangeLongerThanThirtyOneDaysIsRefused() {
         assertThatThrownBy(() -> service.list(INDIA_DAY.minusDays(31), INDIA_DAY))
                 .isInstanceOf(ApiException.class)
@@ -212,6 +224,20 @@ class AttendanceServiceTest {
         assertThat(today.getEndLat()).isNull();
         assertThat(yesterday.getEndReason()).isEqualTo(EndReason.AUTO);
         assertThat(tomorrow.getEndAt()).isNull();
+    }
+
+    @Test
+    void autoEndDoesNothingWhenTheAdminTurnsItOff() {
+        service = serviceAt(Instant.parse("2026-10-18T13:30:00Z"));
+        when(locationRepo.findById((short) 1)).thenReturn(Optional.of(settings));
+        BusinessSettings off = new BusinessSettings();
+        off.setAutoEndDay(false);
+        when(businessRepo.findById((short) 1)).thenReturn(Optional.of(off));
+
+        var result = service.autoEndOpenDays();
+
+        assertThat(result.technicianIds()).isEmpty();
+        verify(days, never()).findByEndAtIsNull();
     }
 
     @Test

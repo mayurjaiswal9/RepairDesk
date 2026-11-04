@@ -1,0 +1,10 @@
+@if (days().length) {
+  <div class="carryover" role="status">
+    @for (day of days(); track day.date) {
+      <p>
+        <span>{{ line(day) }}</span>
+        <a [routerLink]="['/jobs']" [queryParams]="showQuery(day.date)">Show</a>
+      </p>
+    }
+  </div>
+}

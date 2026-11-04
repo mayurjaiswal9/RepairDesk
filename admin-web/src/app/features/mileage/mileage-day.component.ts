@@ -5,7 +5,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Observable, catchError, finalize, map, of, switchMap, tap } from 'rxjs';
+import { Observable, catchError, combineLatest, finalize, map, of, switchMap, tap } from 'rxjs';
 import { MileageApi, MileageDayDetail, TripResponse } from '../../core/api/mileage.api';
 import { SessionService } from '../../core/auth/session.service';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
@@ -14,14 +14,7 @@ import { AdjustDistanceDialogComponent } from './adjust-distance-dialog.componen
 import { MileageSummaryComponent } from './mileage-summary.component';
 import { TripCardComponent } from './trip-card.component';
 import { tripPins, tripRoutes } from './trip-map';
-import {
-  addDays,
-  dateLabel,
-  indiaClock,
-  indiaToday,
-  noTripReasonLabel,
-  vehicleLabel,
-} from './mileage-format';
+import { dateLabel, indiaClock, noTripReasonLabel, vehicleLabel } from './mileage-format';
 
 type PageState = 'loading' | 'ready' | 'error' | 'forbidden' | 'notfound';
 
@@ -60,14 +53,31 @@ export class MileageDayComponent implements OnInit {
   readonly detail = signal<MileageDayDetail | null>(null);
   readonly technicianId = signal('');
   readonly date = signal('');
+  readonly fromDate = signal('');
+  readonly toDate = signal('');
+  readonly selectedTripId = signal<string | null>(null);
   readonly returnQuery = signal<Record<string, string>>({});
 
-  readonly dateText = computed(() => dateLabel(this.date(), true));
-  readonly previousDay = computed(() => (this.date() ? addDays(this.date(), -1) : ''));
-  readonly nextDay = computed(() => (this.date() ? addDays(this.date(), 1) : ''));
-  readonly hasNextDay = computed(() => !!this.date() && this.nextDay() <= indiaToday());
-  readonly routes = computed(() => tripRoutes(this.detail()?.trips ?? []));
-  readonly pins = computed(() => tripPins(this.detail()?.trips ?? [], this.detail()?.shop));
+  readonly dateText = computed(() => {
+    const from = this.fromDate() || this.date();
+    const to = this.toDate() || from;
+    if (!from) return '';
+    if (from === to) return dateLabel(from, true);
+    return `${dateLabel(from, true)} – ${dateLabel(to, true)}`;
+  });
+  readonly selectedTrip = computed(() => {
+    const id = this.selectedTripId();
+    if (!id) return null;
+    return this.detail()?.trips.find((trip) => trip.id === id) ?? null;
+  });
+  readonly routes = computed(() => {
+    const trip = this.selectedTrip();
+    return trip ? tripRoutes([trip]) : [];
+  });
+  readonly pins = computed(() => {
+    const trip = this.selectedTrip();
+    return trip ? tripPins([trip], this.detail()?.shop) : [];
+  });
 
   ngOnInit(): void {
     if (this.session.role() !== 'ADMIN') {
@@ -77,11 +87,14 @@ export class MileageDayComponent implements OnInit {
     const state = history.state as { returnQuery?: Record<string, string> } | undefined;
     if (state?.returnQuery) this.returnQuery.set(state.returnQuery);
 
-    this.route.paramMap
+    combineLatest([this.route.paramMap, this.route.queryParamMap])
       .pipe(
-        tap((params) => {
+        tap(([params, query]) => {
+          const date = params.get('date') ?? '';
           this.technicianId.set(params.get('technicianId') ?? '');
-          this.date.set(params.get('date') ?? '');
+          this.date.set(date);
+          this.fromDate.set(date);
+          this.toDate.set(query.get('to') || date);
         }),
         switchMap(() => this.fetch$(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -93,10 +106,26 @@ export class MileageDayComponent implements OnInit {
     this.fetch$(true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 
-  goToDay(date: string): void {
-    void this.router.navigate(['/mileage', this.technicianId(), date], {
+  onFromInput(event: Event): void {
+    this.fromDate.set((event.target as HTMLInputElement).value);
+  }
+
+  onToInput(event: Event): void {
+    this.toDate.set((event.target as HTMLInputElement).value);
+  }
+
+  applyRange(): void {
+    const from = this.fromDate();
+    const to = this.toDate() || from;
+    if (!from) return;
+    void this.router.navigate(['/mileage', this.technicianId(), from], {
+      queryParams: to && to !== from ? { to } : {},
       state: { returnQuery: this.returnQuery() },
     });
+  }
+
+  toggleTrip(trip: TripResponse): void {
+    this.selectedTripId.set(this.selectedTripId() === trip.id ? null : trip.id);
   }
 
   openAdjust(trip: TripResponse): void {
@@ -120,10 +149,14 @@ export class MileageDayComponent implements OnInit {
     } else {
       this.state.set('loading');
     }
-    return this.api.day(this.technicianId(), this.date()).pipe(
+    return this.api.day(this.technicianId(), this.date(), this.toDate() || this.date()).pipe(
       tap({
         next: (detail) => {
           this.detail.set(detail);
+          const selected = this.selectedTripId();
+          if (selected && !detail.trips.some((trip) => trip.id === selected)) {
+            this.selectedTripId.set(null);
+          }
           this.error.set(null);
           this.state.set('ready');
         },

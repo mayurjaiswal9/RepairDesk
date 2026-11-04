@@ -96,6 +96,7 @@ export class BusinessSettingsComponent implements OnInit {
   });
 
   readonly days = signal<DayControls[]>([]);
+  readonly autoEndDay = signal(true);
   readonly dayErrors = signal<Record<number, string>>({});
 
   readonly isAdmin = computed(() => this.session.role() === 'ADMIN');
@@ -130,9 +131,11 @@ export class BusinessSettingsComponent implements OnInit {
         !!snap &&
         (Number(s.slotDurationMinutes) !== snap.slotDurationMinutes ||
           Number(s.bookingHorizonDays) !== snap.bookingHorizonDays);
+      const endChanged = !!snap && this.autoEndDay() !== (snap.autoEndDay !== false);
       if (bizChanged) parts.push('Business information');
       if (schedChanged) parts.push('Scheduling');
-      if (!bizChanged && !schedChanged) parts.push('Business information');
+      if (endChanged) parts.push('Working hours');
+      if (!bizChanged && !schedChanged && !endChanged) parts.push('Business information');
     }
     if (this.hoursDirty()) parts.push('Working hours');
     if (!parts.length) return '';
@@ -206,6 +209,11 @@ export class BusinessSettingsComponent implements OnInit {
       }),
     );
     this.clearDayError(dayOfWeek);
+    this.revision.update((n) => n + 1);
+  }
+
+  setAutoEndDay(checked: boolean): void {
+    this.autoEndDay.set(checked);
     this.revision.update((n) => n + 1);
   }
 
@@ -365,6 +373,7 @@ export class BusinessSettingsComponent implements OnInit {
   private applyLoaded(settings: BusinessSettings, hours: WorkingHoursDay[]): void {
     this.snapshotSettings = settings;
     this.updatedAt.set(settings.updatedAt ?? null);
+    this.autoEndDay.set(settings.autoEndDay !== false);
     this.applySettingsForm(settings);
 
     const rawCount = hours?.length ?? 0;
@@ -412,6 +421,7 @@ export class BusinessSettingsComponent implements OnInit {
       businessEmail: v.businessEmail.trim() || null,
       slotDurationMinutes: Number(v.slotDurationMinutes),
       bookingHorizonDays: Number(v.bookingHorizonDays),
+      autoEndDay: this.autoEndDay(),
     };
   }
 

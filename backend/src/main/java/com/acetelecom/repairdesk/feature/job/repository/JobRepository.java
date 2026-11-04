@@ -54,6 +54,8 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
                 OR LOWER(COALESCE(j.deviceBrand, '')) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR LOWER(COALESCE(j.deviceModel, '')) LIKE LOWER(CONCAT('%', :q, '%'))
               )
+              AND (:hasFrom = false OR j.createdAt >= :fromInclusive)
+              AND (:hasTo = false OR j.createdAt < :toExclusive)
             """)
     Page<Job> findFiltered(
             @Param("hasStatuses") boolean hasStatuses,
@@ -61,6 +63,10 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
             @Param("technicianId") UUID technicianId,
             @Param("unassigned") boolean unassigned,
             @Param("q") String q,
+            @Param("hasFrom") boolean hasFrom,
+            @Param("fromInclusive") Instant fromInclusive,
+            @Param("hasTo") boolean hasTo,
+            @Param("toExclusive") Instant toExclusive,
             Pageable pageable);
 
     /** Technician: only assigned jobs. */
@@ -83,13 +89,32 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
                 OR LOWER(COALESCE(j.deviceBrand, '')) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR LOWER(COALESCE(j.deviceModel, '')) LIKE LOWER(CONCAT('%', :q, '%'))
               )
+              AND (:hasFrom = false OR j.createdAt >= :fromInclusive)
+              AND (:hasTo = false OR j.createdAt < :toExclusive)
             """)
     Page<Job> findForTechnician(
             @Param("technicianId") UUID technicianId,
             @Param("hasStatuses") boolean hasStatuses,
             @Param("statuses") Collection<JobStatus> statuses,
             @Param("q") String q,
+            @Param("hasFrom") boolean hasFrom,
+            @Param("fromInclusive") Instant fromInclusive,
+            @Param("hasTo") boolean hasTo,
+            @Param("toExclusive") Instant toExclusive,
             Pageable pageable);
+
+    /** Still open, created before the start of today. Technician id null means the whole board. */
+    @Query("""
+            SELECT j.createdAt FROM Job j
+            WHERE j.status NOT IN (
+                com.acetelecom.repairdesk.feature.job.domain.JobStatus.COMPLETED,
+                com.acetelecom.repairdesk.feature.job.domain.JobStatus.CANCELLED)
+              AND j.createdAt < :startOfToday
+              AND (:technicianId IS NULL OR j.assignedTechnician.id = :technicianId)
+            """)
+    List<Instant> findOpenCreatedBefore(
+            @Param("startOfToday") Instant startOfToday,
+            @Param("technicianId") UUID technicianId);
 
     /** Customer: jobs linked to their requests. */
     List<Job> findByCustomerId(UUID customerId);

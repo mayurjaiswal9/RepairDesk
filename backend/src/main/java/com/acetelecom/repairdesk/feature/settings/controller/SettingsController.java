@@ -45,7 +45,8 @@ public class SettingsController {
         return service.updateSettings(
                 body.businessName(), body.businessAddress(),
                 body.businessPhone(), body.businessEmail(),
-                body.slotDurationMinutes(), body.bookingHorizonDays());
+                body.slotDurationMinutes(), body.bookingHorizonDays(),
+                body.autoEndDay());
     }
 
     /** Admin: update working hours. */
@@ -67,7 +68,8 @@ public class SettingsController {
             String businessPhone,
             String businessEmail,
             Integer slotDurationMinutes,
-            Integer bookingHorizonDays) {
+            Integer bookingHorizonDays,
+            Boolean autoEndDay) {
     }
 
     record WorkingHoursEntry(int dayOfWeek, boolean isClosed,

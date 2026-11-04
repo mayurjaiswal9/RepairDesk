@@ -7,7 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../attendance_format.dart';
 import '../data/attendance_repository.dart';
 
-/// Start day / End day for a technician. Hidden while attendance is off.
+/// Start day for a technician. The day ends automatically at 8:00 PM. Hidden while attendance is off.
 /// Jobs stay on the home screen either way.
 class DutyCard extends ConsumerStatefulWidget {
   const DutyCard({super.key});
@@ -22,6 +22,7 @@ class _DutyCardState extends ConsumerState<DutyCard> {
 
   MyAttendance? _day;
   bool _enabled = false;
+  bool _autoEndDay = true;
   bool _ready = false;
   bool _dismissed = false;
   bool _busy = false;
@@ -38,6 +39,7 @@ class _DutyCardState extends ConsumerState<DutyCard> {
     try {
       final config = await repo.config();
       if (!mounted) return;
+      _autoEndDay = config.autoEndDay;
       if (!config.attendanceEnabled) {
         setState(() {
           _enabled = false;
@@ -58,6 +60,7 @@ class _DutyCardState extends ConsumerState<DutyCard> {
       if (!mounted) return;
       setState(() {
         _enabled = true;
+        _autoEndDay = _autoEndDay;
         _day = day;
         _ready = true;
         _message = null;
@@ -173,14 +176,17 @@ class _DutyCardState extends ConsumerState<DutyCard> {
                   : 'On duty since ${indiaClock(day.startAt!)}'),
               if (attendanceFlag(day.startFlag).isNotEmpty)
                 Text('Start flag: ${attendanceFlag(day.startFlag)}'),
-              const SizedBox(height: AppTheme.spaceM),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _busy ? null : _end,
-                  child: Text(_busy ? 'Checking location…' : 'End day'),
+              const SizedBox(height: AppTheme.spaceS),
+              if (_autoEndDay)
+                const Text('The day ends automatically at 8:00 PM.')
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _busy ? null : _end,
+                    child: Text(_busy ? 'Checking location…' : 'End day'),
+                  ),
                 ),
-              ),
             ] else ...[
               Text(day.endReason == 'AUTO' ? 'Auto-ended' : 'Ended'),
               if (day.startAt != null) Text('Started ${indiaClock(day.startAt!)}'),

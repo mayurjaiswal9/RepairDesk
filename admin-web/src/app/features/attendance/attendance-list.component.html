@@ -39,6 +39,15 @@
       To
       <input type="date" [value]="to()" (input)="onToInput($event)" />
     </label>
+    <label>
+      Technician
+      <select [value]="technicianId()" (change)="onTechnicianInput($event)">
+        <option value="">All technicians</option>
+        @for (tech of technicians(); track tech.id) {
+          <option [value]="tech.id">{{ technicianLabel(tech) }}</option>
+        }
+      </select>
+    </label>
     <button type="submit" class="ghost-btn">Show</button>
   </form>
 

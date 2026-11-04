@@ -1,5 +1,6 @@
 package com.acetelecom.repairdesk.feature.job.controller;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.acetelecom.repairdesk.common.web.PageResponse;
 import com.acetelecom.repairdesk.feature.job.dto.JobResponse;
 import com.acetelecom.repairdesk.feature.job.dto.JobSummary;
+import com.acetelecom.repairdesk.feature.job.dto.OpenJobCarryoverResponse;
 import com.acetelecom.repairdesk.feature.job.service.JobService;
 import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
 import com.acetelecom.repairdesk.feature.trip.domain.NoTripReason;
@@ -47,13 +49,22 @@ public class JobController {
             @RequestParam(required = false) UUID technicianId,
             @RequestParam(required = false) Boolean unassigned,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to,
             Pageable pageable) {
         AuthenticatedUser caller = currentUser.get();
         if ("TECHNICIAN".equals(caller.role())) {
             // Server-scoped to the caller; client cannot widen via technicianId/unassigned.
-            return service.listForTechnician(caller.id(), status, q, pageable);
+            return service.listForTechnician(caller.id(), status, q, from, to, pageable);
         }
-        return service.listAll(status, active, scheduled, technicianId, unassigned, q, pageable);
+        return service.listAll(status, active, scheduled, technicianId, unassigned, q, from, to, pageable);
+    }
+
+    /** Open jobs created before today (India), grouped by creation day. */
+    @GetMapping("/carryover")
+    @Secured({ "ROLE_STAFF", "ROLE_ADMIN", "ROLE_TECHNICIAN" })
+    public OpenJobCarryoverResponse carryover() {
+        return service.openFromPreviousDays(currentUser.get());
     }
 
     @GetMapping("/{id}")

@@ -62,9 +62,27 @@
 
 .header-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.range-field input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
 }
 
 .ghost-btn,

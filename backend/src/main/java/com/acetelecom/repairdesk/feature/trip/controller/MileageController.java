@@ -47,8 +47,9 @@ public class MileageController {
     @GetMapping("/days/{technicianId}/{date}")
     @Secured({ "ROLE_ADMIN", "ROLE_TECHNICIAN" })
     public MileageDayResponse day(@PathVariable UUID technicianId,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return service.day(technicianId, date, currentUser.get());
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return service.day(technicianId, date, to, currentUser.get());
     }
 
     @GetMapping(value = "/export.csv", produces = "text/csv")

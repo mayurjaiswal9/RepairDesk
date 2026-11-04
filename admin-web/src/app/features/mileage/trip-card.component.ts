@@ -19,7 +19,13 @@ import {
   imports: [RouterLink],
   template: `
     @let t = trip();
-    <article class="trip" [class.cancelled]="t.status === 'CANCELLED'">
+    <article
+      class="trip"
+      [class.cancelled]="t.status === 'CANCELLED'"
+      [class.selected]="selected()"
+      [class.selectable]="selectable()"
+      (click)="onSelect()"
+    >
       <span class="num" [style.background]="color()" aria-hidden="true">{{ index() + 1 }}</span>
       <div class="body">
         <div class="line head">
@@ -31,7 +37,7 @@ import {
             <span class="chip chip-neutral">Cancelled</span>
           }
           @if (canAdjust() && t.status === 'ENDED') {
-            <button type="button" class="ghost-btn small adjust" (click)="adjust.emit(t)">Adjust km</button>
+            <button type="button" class="ghost-btn small adjust" (click)="onAdjust($event, t)">Adjust km</button>
           }
         </div>
         <div class="line">
@@ -73,6 +79,9 @@ import {
   `,
   styles: `
     .trip { display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--color-divider); }
+    .trip.selectable { cursor: pointer; border-radius: 12px; padding: 12px; margin: 0 -12px; }
+    .trip.selectable:hover { background: #f6faff; }
+    .trip.selected { background: #e8f1fd; box-shadow: inset 0 0 0 2px #1552cc; }
     :host:first-of-type .trip { border-top: none; padding-top: 0; }
     .trip.cancelled .body { opacity: 0.7; }
     .num {
@@ -111,13 +120,25 @@ export class TripCardComponent {
   readonly showJob = input(true);
   readonly showTechnician = input(false);
   readonly canAdjust = input(false);
+  readonly selectable = input(false);
+  readonly selected = input(false);
   readonly adjust = output<TripResponse>();
+  readonly select = output<TripResponse>();
 
   readonly km = formatKm;
   readonly money = formatRupees;
   readonly rate = formatRate;
   readonly duration = durationLabel;
   readonly flag = flagLabel;
+
+  onSelect(): void {
+    if (this.selectable()) this.select.emit(this.trip());
+  }
+
+  onAdjust(event: Event, trip: TripResponse): void {
+    event.stopPropagation();
+    this.adjust.emit(trip);
+  }
 
   readonly color = computed(() => tripColor(this.index(), this.trip().status));
   readonly startLabel = computed(() => startKindLabel(this.trip()));

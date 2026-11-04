@@ -89,7 +89,7 @@
       <label class="field">
         <span>Update while on site (minutes)</span>
         <input type="number" formControlName="onSitePingMinutes" min="15" max="240" />
-        <span class="hint">15 to 240</span>
+        <span class="hint">15 to 240. Use 30 while a job is in progress.</span>
       </label>
     </div>
 
@@ -97,6 +97,7 @@
       <label class="field">
         <span>Ping every (minutes)</span>
         <input type="number" formControlName="pingIntervalMinutes" />
+        <span class="hint">When idle. 1 to 30. Travel uses the seconds field above.</span>
       </label>
       <label class="field">
         <span>Or after moving (m)</span>
@@ -105,6 +106,7 @@
       <label class="field">
         <span>Auto end of day</span>
         <input type="time" formControlName="dayAutoEndTime" />
+        <span class="hint">India time. The work day closes at this clock. Default 20:00.</span>
       </label>
       <label class="field">
         <span>Far from address (m)</span>

@@ -136,10 +136,17 @@ class RequestsRepository {
   RequestsRepository(this._dio);
   final Dio _dio;
 
-  Future<List<RequestSummary>> queue({String? status, int page = 0}) async {
+  Future<List<RequestSummary>> queue({
+    String? status,
+    String? from,
+    String? to,
+    int page = 0,
+  }) async {
     try {
       final params = <String, dynamic>{'page': page, 'size': 20};
       if (status != null) params['status'] = status;
+      if (from != null) params['from'] = from;
+      if (to != null) params['to'] = to;
       final res = await _dio.get<Map<String, dynamic>>(
         '/requests',
         queryParameters: params,

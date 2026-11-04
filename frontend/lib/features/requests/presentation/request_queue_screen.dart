@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/time/india_date.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/date_range_bar.dart';
 import '../../attachments/presentation/attachments_widget.dart';
+import '../../jobs/presentation/jobs_list_screen.dart';
+import '../../jobs/presentation/open_jobs_banner.dart';
 import '../data/requests_repository.dart';
 import 'job_status.dart';
 import 'request_detail_screen.dart';
 
+typedef _QueueQuery = ({String? status, String? from, String? to});
+
 final _queueFamily = FutureProvider.autoDispose
-    .family<List<RequestSummary>, String?>((ref, status) =>
-        ref.watch(requestsRepositoryProvider).queue(status: status));
+    .family<List<RequestSummary>, _QueueQuery>((ref, query) =>
+        ref.watch(requestsRepositoryProvider).queue(
+              status: query.status,
+              from: query.from,
+              to: query.to,
+            ));
 
 class RequestQueueScreen extends ConsumerStatefulWidget {
   const RequestQueueScreen({super.key});
@@ -21,17 +31,56 @@ class RequestQueueScreen extends ConsumerStatefulWidget {
 
 class _RequestQueueScreenState extends ConsumerState<RequestQueueScreen> {
   String? _status;
+  late String _from = indiaToday();
+  late String _to = indiaToday();
+  bool _allDates = false;
 
-  void _refresh() => ref.invalidate(_queueFamily(_status));
+  _QueueQuery get _query => (
+        status: _status,
+        from: _allDates ? null : _from,
+        to: _allDates ? null : _to,
+      );
+
+  void _refresh() => ref.invalidate(_queueFamily(_query));
 
   @override
   Widget build(BuildContext context) {
-    final queueAsync = ref.watch(_queueFamily(_status));
+    final today = indiaToday();
+    final showingToday = !_allDates && _from == today && _to == today;
+    final queueAsync = ref.watch(_queueFamily(_query));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Repair Requests')),
       body: Column(
         children: [
+          OpenJobsBanner(
+            onShowDay: (date) => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => JobsListScreen(focusDate: date),
+              ),
+            ),
+          ),
+          DateRangeBar(
+            from: _allDates ? null : _from,
+            to: _allDates ? null : _to,
+            allDates: _allDates,
+            onFrom: (value) => setState(() {
+              _allDates = false;
+              _from = value;
+              if (_to.compareTo(value) < 0) _to = value;
+            }),
+            onTo: (value) => setState(() {
+              _allDates = false;
+              _to = value;
+              if (_from.compareTo(value) > 0) _from = value;
+            }),
+            onToday: () => setState(() {
+              _allDates = false;
+              _from = today;
+              _to = today;
+            }),
+            onAll: () => setState(() => _allDates = true),
+          ),
           _StatusFilterBar(
             selected: _status,
             onChanged: (s) => setState(() => _status = s),
@@ -57,10 +106,14 @@ class _RequestQueueScreenState extends ConsumerState<RequestQueueScreen> {
                 ),
               ),
               data: (items) => items.isEmpty
-                  ? const _EmptyQueue()
+                  ? _EmptyQueue(
+                      message: showingToday
+                          ? 'No requests for today'
+                          : 'No requests',
+                    )
                   : RefreshIndicator(
                       onRefresh: () =>
-                          ref.refresh(_queueFamily(_status).future),
+                          ref.refresh(_queueFamily(_query).future),
                       child: ListView.separated(
                         padding: const EdgeInsets.all(AppTheme.spaceM),
                         itemCount: items.length,
@@ -444,7 +497,8 @@ class _ActionButton extends StatelessWidget {
 // ── Empty state ───────────────────────────────────────────────────────────
 
 class _EmptyQueue extends StatelessWidget {
-  const _EmptyQueue();
+  const _EmptyQueue({required this.message});
+  final String message;
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -454,9 +508,8 @@ class _EmptyQueue extends StatelessWidget {
           const Icon(Icons.inbox_outlined,
               size: 64, color: AppTheme.textSecondary),
           const SizedBox(height: AppTheme.spaceM),
-          Text('No requests',
-              style: Theme.of(context).textTheme.titleMedium),
-          const Text('All caught up!',
+          Text(message, style: Theme.of(context).textTheme.titleMedium),
+          const Text('Try another date, or choose All dates.',
               style: TextStyle(color: AppTheme.textSecondary)),
         ],
       ),

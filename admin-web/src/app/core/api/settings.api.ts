@@ -12,6 +12,8 @@ export interface BusinessSettings {
   businessEmail?: string | null;
   slotDurationMinutes: number;
   bookingHorizonDays: number;
+  /** When true, the phone hides End day and the server closes the day at 8:00 PM. Default on. */
+  autoEndDay?: boolean | null;
   updatedAt?: string | null;
   version?: number;
 }
@@ -23,6 +25,7 @@ export interface UpdateSettingsBody {
   businessEmail?: string | null;
   slotDurationMinutes?: number;
   bookingHorizonDays?: number;
+  autoEndDay?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

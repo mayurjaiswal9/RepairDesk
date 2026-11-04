@@ -1,5 +1,6 @@
 package com.acetelecom.repairdesk.feature.request.repository;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,11 +33,17 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, UU
                 OR LOWER(COALESCE(r.contactMobile, '')) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR LOWER(r.customer.username) LIKE LOWER(CONCAT('%', :q, '%'))
               )
+              AND (:hasFrom = false OR r.submittedAt >= :fromInclusive)
+              AND (:hasTo = false OR r.submittedAt < :toExclusive)
             """)
     Page<RepairRequest> findQueueFiltered(
             @Param("status") RequestStatus status,
             @Param("categoryId") UUID categoryId,
             @Param("q") String q,
+            @Param("hasFrom") boolean hasFrom,
+            @Param("fromInclusive") Instant fromInclusive,
+            @Param("hasTo") boolean hasTo,
+            @Param("toExclusive") Instant toExclusive,
             Pageable pageable);
 
     Optional<RepairRequest> findByReferenceNumber(String referenceNumber);

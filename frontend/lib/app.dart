@@ -7,6 +7,7 @@ import 'core/auth/roles.dart';
 import 'core/auth/session_controller.dart';
 import 'core/branding/branding_config.dart';
 import 'features/trips/data/on_site_tracker.dart';
+import 'features/trips/data/presence_tracker.dart';
 import 'features/trips/data/trip_recorder.dart';
 import 'router/app_router.dart';
 import 'shared/theme/app_theme.dart';
@@ -30,9 +31,12 @@ class _RepairDeskAppState extends ConsumerState<RepairDeskApp>
     // Restore any persisted session from secure storage on startup.
     // Called here (not main) so the Riverpod ProviderScope is already active
     // and the provider is kept alive by this widget's subscription.
-    Future.microtask(
-      () => ref.read(sessionControllerProvider.notifier).restore(),
-    );
+    Future.microtask(() async {
+      await ref.read(sessionControllerProvider.notifier).restore();
+      unawaited(ref.read(tripRecorderProvider.notifier).restore());
+      unawaited(ref.read(onSiteTrackerProvider.notifier).refresh());
+      unawaited(ref.read(presenceTrackerProvider.notifier).refresh());
+    });
   }
 
   @override
@@ -48,6 +52,7 @@ class _RepairDeskAppState extends ConsumerState<RepairDeskApp>
     if (!session.isAuthenticated || !Roles.isTechnician(session.role)) return;
     unawaited(ref.read(tripRecorderProvider.notifier).restore());
     unawaited(ref.read(onSiteTrackerProvider.notifier).refresh());
+    unawaited(ref.read(presenceTrackerProvider.notifier).refresh());
   }
 
   @override

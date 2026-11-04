@@ -22,6 +22,8 @@
     </button>
   </div>
 
+  <app-open-jobs-banner [refreshToken]="carryoverToken()" />
+
   <div class="filter-bar">
     <div class="seg" role="group" aria-label="Status filter">
       @for (f of statusFilters; track f.key) {
@@ -63,6 +65,27 @@
       </select>
     }
 
+    <label class="range-field">
+      From
+      <input
+        type="date"
+        [value]="dateMode() === 'all' ? '' : activeFrom()"
+        (change)="onFromInput($event)"
+        aria-label="From date"
+      />
+    </label>
+    <label class="range-field">
+      To
+      <input
+        type="date"
+        [value]="dateMode() === 'all' ? '' : activeTo()"
+        (change)="onToInput($event)"
+        aria-label="To date"
+      />
+    </label>
+    <button type="button" class="ghost-btn sm" (click)="setToday()">Today</button>
+    <button type="button" class="ghost-btn sm" (click)="setAllDates()">All dates</button>
+
     <select class="select" [value]="activeSort()" (change)="onSortChange($event)" aria-label="Sort">
       <option value="updatedAt,desc">Updated (newest)</option>
       <option value="updatedAt,asc">Updated (oldest)</option>
@@ -85,8 +108,13 @@
         </span>
       }
       @if (activeStatus()) {
-        <span class="chip">Status: {{ statusLabel(activeStatus()!) }}
+        <span class="chip">Status: {{ statusText(activeStatus()!) }}
           <button type="button" (click)="setStatusFilter(undefined)" aria-label="Remove status filter">×</button>
+        </span>
+      }
+      @if (!isDefaultToday()) {
+        <span class="chip">{{ dateSummary() }}
+          <button type="button" (click)="setToday()" aria-label="Reset to today">×</button>
         </span>
       }
       @if (activeQ()) {
@@ -126,17 +154,17 @@
     <div class="state-panel">
       <div class="icon" aria-hidden="true">🔧</div>
       @if (isTechnician()) {
-        <h2>No jobs are assigned to you right now</h2>
-        <p>When work is assigned to you it will show up here.</p>
+        <h2>{{ isDefaultToday() ? 'No jobs for today' : 'No jobs are assigned to you right now' }}</h2>
+        <p>When work is assigned to you it will show up here. Use the date range to look at other days.</p>
         <a routerLink="/appointments">View your schedule</a>
       } @else {
-        <h2>No jobs yet</h2>
-        <p>Jobs are created automatically when a repair request is approved.</p>
+        <h2>{{ isDefaultToday() ? 'No jobs for today' : 'No jobs yet' }}</h2>
+        <p>Jobs are created automatically when a repair request is approved. Use the date range to look at other days.</p>
       }
     </div>
   } @else if (filteredEmpty()) {
     <div class="state-panel">
-      <h2>No jobs match your filters</h2>
+      <h2>{{ dateMode() === 'all' ? 'No jobs match your filters' : 'No jobs in ' + dateSummary() }}</h2>
       <p>
         @if (activeQ() && activeStatus()) {
           Nothing matched “{{ activeQ() }}” in {{ statusLabel(activeStatus()!) }}.

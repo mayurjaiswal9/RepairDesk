@@ -114,6 +114,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'location/live/:technicianId/:jobId',
+        loadComponent: () =>
+          import('./features/location/live-track.component').then((m) => m.LiveTrackComponent),
+      },
+      {
         path: 'location',
         loadComponent: () =>
           import('./features/location/location-board.component').then(

@@ -1,0 +1,91 @@
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .sep {
+    opacity: 0.5;
+  }
+
+  .current {
+    color: var(--color-text-primary);
+  }
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.display {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.lede,
+.muted,
+.legend {
+  color: var(--color-text-secondary);
+}
+
+.lede a {
+  color: #1552cc;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.legend {
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.primary-btn,
+.ghost-btn {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: #1552cc;
+  color: #fff;
+  border: 0;
+  text-decoration: none;
+  display: inline-flex;
+}
+
+.ghost-btn {
+  background: #fff;
+  color: #1552cc;
+  border: 1px solid #1552cc;
+}
+
+.ghost-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}

@@ -52,6 +52,10 @@ public class BusinessSettings implements CompanyScoped {
     @Column(name = "booking_horizon_days", nullable = false)
     private int bookingHorizonDays = 60;
 
+    /** When true, an open work day closes at the office auto-end time and the phone hides End day. */
+    @Column(name = "auto_end_day", nullable = false)
+    private boolean autoEndDay = true;
+
     @Column(name = "shop_lat")
     private Double shopLat;
 

@@ -28,13 +28,15 @@ export class AttendanceApi {
     return this.http.get<AttendanceConfig>(`${this.base}/location/config`);
   }
 
-  list(from: string, to: string): Observable<AttendanceRow[]> {
-    const params = new HttpParams().set('from', from).set('to', to);
+  list(from: string, to: string, technicianId?: string | null): Observable<AttendanceRow[]> {
+    let params = new HttpParams().set('from', from).set('to', to);
+    if (technicianId) params = params.set('technicianId', technicianId);
     return this.http.get<AttendanceRow[]>(`${this.base}/attendance`, { params });
   }
 
-  export(from: string, to: string): Observable<Blob> {
-    const params = new HttpParams().set('from', from).set('to', to);
+  export(from: string, to: string, technicianId?: string | null): Observable<Blob> {
+    let params = new HttpParams().set('from', from).set('to', to);
+    if (technicianId) params = params.set('technicianId', technicianId);
     return this.http.get(`${this.base}/attendance/export`, { params, responseType: 'blob' });
   }
 }

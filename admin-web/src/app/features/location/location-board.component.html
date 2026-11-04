@@ -17,17 +17,27 @@
 } @else if (state() === 'loading') {
   <p class="muted">Loading the map…</p>
 } @else {
+  <label class="filter">
+    Technician
+    <select [value]="technicianId()" (change)="onTechnicianInput($event)">
+      <option value="">All technicians</option>
+      @for (tech of technicians(); track tech.id) {
+        <option [value]="tech.id">{{ tech.name }}</option>
+      }
+    </select>
+  </label>
+
   <app-pin-map [pins]="pins()" [height]="420" />
   <p class="legend">O office · T technician · unmarked pins are jobs</p>
 
   <div class="columns">
     <section class="card">
       <h2>Technicians</h2>
-      @if (!board()?.technicians?.length) {
+      @if (!visibleTechnicians().length) {
         <p class="muted">No technicians yet.</p>
       } @else {
         <ul>
-          @for (tech of board()!.technicians; track tech.id) {
+          @for (tech of visibleTechnicians(); track tech.id) {
             <li>
               <strong>{{ tech.name }}</strong>
               @if (tech.latitude == null) {
@@ -35,11 +45,16 @@
               } @else {
                 @if (presenceLabel(tech); as presence) {
                   <span class="presence {{ presence.tone }}">{{ presence.text }}</span>
-                }
-                <span>{{ tech.latitude | number: '1.4-4' }}, {{ tech.longitude | number: '1.4-4' }}</span>
-                @if (tech.recordedAt && !tech.state) {
+                } @else if (tech.recordedAt) {
                   <span class="muted">{{ tech.recordedAt | date: 'short' }}</span>
                 }
+              }
+              @if (canLiveTrack(tech)) {
+                <span class="live-line">
+                  <a [routerLink]="['/jobs', tech.jobId]">{{ jobReference(tech.jobId) || 'Job' }}</a>
+                  <span class="sep">—</span>
+                  <a [routerLink]="['/location/live', tech.id, tech.jobId]">Live Track</a>
+                </span>
               }
             </li>
           }
@@ -49,11 +64,11 @@
 
     <section class="card">
       <h2>Jobs and ETA</h2>
-      @if (!board()?.jobs?.length) {
+      @if (!visibleJobs().length) {
         <p class="muted">No open job has a service pin yet.</p>
       } @else {
         <ul>
-          @for (job of board()!.jobs; track job.id) {
+          @for (job of visibleJobs(); track job.id) {
             <li>
               <a [routerLink]="['/jobs', job.id]"><strong>{{ job.referenceNumber }}</strong></a>
               <span>{{ job.address || 'Pin saved' }}</span>

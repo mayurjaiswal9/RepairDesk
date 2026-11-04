@@ -1,7 +1,7 @@
 name: repairdesk
 description: RepairDesk — mobile-first repair shop management app (ACE Telecom V1).
 publish_to: 'none'
-version: 1.1.2+4
+version: 1.1.4+6
 
 environment:
   sdk: ^3.12.1

@@ -102,6 +102,10 @@ public class MileageService {
     }
 
     public MileageDayResponse day(UUID technicianId, LocalDate date, AuthenticatedUser actor) {
+        return day(technicianId, date, date, actor);
+    }
+
+    public MileageDayResponse day(UUID technicianId, LocalDate from, LocalDate to, AuthenticatedUser actor) {
         if ("TECHNICIAN".equals(actor.role()) && !actor.id().equals(technicianId)) {
             throw new ApiException(ErrorCode.FORBIDDEN, "Access denied");
         }
@@ -109,8 +113,9 @@ public class MileageService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Technician not found"));
         CompanyContext.requireSame(technician.getCompanyId(), "Technician not found");
 
-        Instant start = date.atStartOfDay(IST).toInstant();
-        Instant end = date.plusDays(1).atStartOfDay(IST).toInstant();
+        Range span = range(from, to == null ? from : to);
+        Instant start = span.from().atStartOfDay(IST).toInstant();
+        Instant end = span.to().plusDays(1).atStartOfDay(IST).toInstant();
         List<JobTrip> dayTrips = trips
                 .findByTechnicianIdAndStartedAtGreaterThanEqualAndStartedAtLessThanOrderByStartedAtAsc(
                         technicianId, start, end);
@@ -118,7 +123,7 @@ public class MileageService {
                 .findByTechnicianIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
                         technicianId, start, end);
 
-        Bucket bucket = new Bucket(technicianId, technician, date, null);
+        Bucket bucket = new Bucket(technicianId, technician, span.from(), null);
         for (JobTrip trip : dayTrips) {
             if (trip.getStatus() != TripStatus.CANCELLED) {
                 bucket.trips.add(trip);
@@ -143,7 +148,7 @@ public class MileageService {
                     reason.getReasonText(), reason.getCreatedAt()));
         }
         GeoPoint shop = business().map(b -> GeoPoint.of(b.getShopLat(), b.getShopLng())).orElse(null);
-        return new MileageDayResponse(date, technicianId, TripViews.displayName(technician), row.vehicleType(),
+        return new MileageDayResponse(span.from(), technicianId, TripViews.displayName(technician), row.vehicleType(),
                 shop, summary(List.of(row)), views.toResponses(dayTrips, true), noTrip);
     }
 

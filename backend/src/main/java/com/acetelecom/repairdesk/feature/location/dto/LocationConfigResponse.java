@@ -21,5 +21,6 @@ public record LocationConfigResponse(
         boolean strictTripMode,
         boolean tripOpenMaps,
         int travelPingSeconds,
-        int onSitePingMinutes) {
+        int onSitePingMinutes,
+        boolean autoEndDay) {
 }

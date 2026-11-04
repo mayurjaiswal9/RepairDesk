@@ -37,9 +37,9 @@ export class LocationSettingsComponent implements OnInit {
     trackingEnabled: [false],
     travelEnabled: [false],
     etaEnabled: [false],
-    pingIntervalMinutes: [5, [Validators.required, Validators.min(1), Validators.max(30)]],
+    pingIntervalMinutes: [30, [Validators.required, Validators.min(1), Validators.max(30)]],
     pingDistanceM: [200, [Validators.required, Validators.min(50), Validators.max(5000)]],
-    dayAutoEndTime: ['19:00', Validators.required],
+    dayAutoEndTime: ['20:00', Validators.required],
     allowStartOutsideGeofence: [false],
     farFromAddressM: [300, [Validators.required, Validators.min(50), Validators.max(5000)]],
     rateTwoWheeler: [5, [Validators.required, Validators.min(0)]],
@@ -49,7 +49,7 @@ export class LocationSettingsComponent implements OnInit {
     strictTripMode: [{ value: true, disabled: true }],
     tripOpenMaps: [true],
     travelPingSeconds: [120, [Validators.required, Validators.min(30), Validators.max(600)]],
-    onSitePingMinutes: [60, [Validators.required, Validators.min(15), Validators.max(240)]],
+    onSitePingMinutes: [30, [Validators.required, Validators.min(15), Validators.max(240)]],
   });
 
   constructor() {
@@ -151,7 +151,7 @@ export class LocationSettingsComponent implements OnInit {
   }
 
   private apply(settings: LocationSettings): void {
-    const time = (settings.dayAutoEndTime || '19:00').slice(0, 5);
+    const time = (settings.dayAutoEndTime || '20:00').slice(0, 5);
     this.form.patchValue({
       shopLatitude: settings.shopLatitude == null ? '' : String(settings.shopLatitude),
       shopLongitude: settings.shopLongitude == null ? '' : String(settings.shopLongitude),
@@ -173,7 +173,7 @@ export class LocationSettingsComponent implements OnInit {
       strictTripMode: settings.strictTripMode ?? true,
       tripOpenMaps: settings.tripOpenMaps ?? true,
       travelPingSeconds: settings.travelPingSeconds ?? 120,
-      onSitePingMinutes: settings.onSitePingMinutes ?? 60,
+      onSitePingMinutes: settings.onSitePingMinutes ?? 30,
     });
     this.syncStrictMode(settings.travelEnabled);
     this.refreshPins();

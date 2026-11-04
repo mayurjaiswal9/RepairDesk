@@ -41,6 +41,8 @@ class TechnicianMarker {
     this.latitude,
     this.longitude,
     this.recordedAt,
+    this.jobId,
+    this.state,
   });
 
   final String id;
@@ -48,6 +50,8 @@ class TechnicianMarker {
   final double? latitude;
   final double? longitude;
   final DateTime? recordedAt;
+  final String? jobId;
+  final String? state;
 
   bool get hasPosition => latitude != null && longitude != null;
 
@@ -58,6 +62,8 @@ class TechnicianMarker {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       recordedAt: DateTime.tryParse(json['recordedAt'] as String? ?? ''),
+      jobId: json['jobId'] as String?,
+      state: json['state'] as String?,
     );
   }
 }
@@ -69,6 +75,7 @@ class JobMarker {
     this.address,
     this.latitude,
     this.longitude,
+    this.technicianId,
     this.technicianName,
     this.etaMinutes,
     this.distanceMetres,
@@ -81,6 +88,7 @@ class JobMarker {
   final String? address;
   final double? latitude;
   final double? longitude;
+  final String? technicianId;
   final String? technicianName;
   final int? etaMinutes;
   final int? distanceMetres;
@@ -96,6 +104,7 @@ class JobMarker {
       address: json['address'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      technicianId: json['technicianId'] as String?,
       technicianName: json['technicianName'] as String?,
       etaMinutes: (json['etaMinutes'] as num?)?.toInt(),
       distanceMetres: (json['distanceMetres'] as num?)?.toInt(),
@@ -144,7 +153,7 @@ class LocationSettings {
     this.strictTripMode = true,
     this.tripOpenMaps = true,
     this.travelPingSeconds = 120,
-    this.onSitePingMinutes = 60,
+    this.onSitePingMinutes = 30,
   });
 
   final double? shopLatitude;
@@ -179,7 +188,7 @@ class LocationSettings {
       trackingEnabled: json['trackingEnabled'] as bool? ?? false,
       travelEnabled: json['travelEnabled'] as bool? ?? false,
       etaEnabled: json['etaEnabled'] as bool? ?? false,
-      pingIntervalMinutes: (json['pingIntervalMinutes'] as num?)?.toInt() ?? 5,
+      pingIntervalMinutes: (json['pingIntervalMinutes'] as num?)?.toInt() ?? 30,
       pingDistanceM: (json['pingDistanceM'] as num?)?.toInt() ?? 200,
       dayAutoEndTime: clockText(json['dayAutoEndTime']),
       allowStartOutsideGeofence: json['allowStartOutsideGeofence'] as bool? ?? false,
@@ -191,7 +200,7 @@ class LocationSettings {
       strictTripMode: json['strictTripMode'] as bool? ?? true,
       tripOpenMaps: json['tripOpenMaps'] as bool? ?? true,
       travelPingSeconds: (json['travelPingSeconds'] as num?)?.toInt() ?? 120,
-      onSitePingMinutes: (json['onSitePingMinutes'] as num?)?.toInt() ?? 60,
+      onSitePingMinutes: (json['onSitePingMinutes'] as num?)?.toInt() ?? 30,
     );
   }
 
@@ -228,7 +237,7 @@ String clockText(Object? value) {
     final minute = value[1].toString().padLeft(2, '0');
     return '$hour:$minute';
   }
-  return '19:00';
+  return '20:00';
 }
 
 /// Feature switches from `GET /location/config` (any signed-in user). Missing
@@ -240,8 +249,10 @@ class LocationConfig {
     this.strictTripMode = true,
     this.tripOpenMaps = true,
     this.travelPingSeconds = 120,
-    this.onSitePingMinutes = 60,
-    this.dayAutoEndTime = '19:00',
+    this.pingIntervalMinutes = 30,
+    this.onSitePingMinutes = 30,
+    this.autoEndDay = true,
+    this.dayAutoEndTime = '20:00',
     this.privacyNoticeVersion = '1',
   });
 
@@ -250,7 +261,9 @@ class LocationConfig {
   final bool strictTripMode;
   final bool tripOpenMaps;
   final int travelPingSeconds;
+  final int pingIntervalMinutes;
   final int onSitePingMinutes;
+  final bool autoEndDay;
   final String dayAutoEndTime;
   final String privacyNoticeVersion;
 
@@ -265,8 +278,11 @@ class LocationConfig {
       tripOpenMaps: json['tripOpenMaps'] as bool? ?? true,
       travelPingSeconds:
           ((json['travelPingSeconds'] as num?)?.toInt() ?? 120).clamp(30, 600),
+      pingIntervalMinutes:
+          ((json['pingIntervalMinutes'] as num?)?.toInt() ?? 30).clamp(1, 30),
       onSitePingMinutes:
-          ((json['onSitePingMinutes'] as num?)?.toInt() ?? 60).clamp(15, 240),
+          ((json['onSitePingMinutes'] as num?)?.toInt() ?? 30).clamp(15, 240),
+      autoEndDay: json['autoEndDay'] != false,
       dayAutoEndTime: clockText(json['dayAutoEndTime']),
       privacyNoticeVersion: json['privacyNoticeVersion']?.toString() ?? '1',
     );

@@ -1,5 +1,7 @@
 package com.acetelecom.repairdesk.feature.request.controller;
 
+import java.time.LocalDate;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
@@ -83,8 +85,10 @@ public class RepairRequestController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) UUID deviceCategoryId,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to,
             Pageable pageable) {
-        return service.getQueue(status, deviceCategoryId, q, pageable);
+        return service.getQueue(status, deviceCategoryId, q, from, to, pageable);
     }
 
     // ── Review actions (RV-002, RV-003, RV-004) ───────────────────────────

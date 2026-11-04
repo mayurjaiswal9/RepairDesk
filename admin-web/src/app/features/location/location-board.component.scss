@@ -1,4 +1,26 @@
 .head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 280px;
+  margin: 0 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.filter select {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d9e4f3;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  color: #14306e;
+  background: #fff;
+}
+.live-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 700; }
+.live-line .sep { opacity: 0.5; font-weight: 600; }
 .display { margin: 0 0 8px; font-size: 28px; }
 .lede, .muted, .legend { color: var(--color-text-secondary); }
 .legend { font-size: 13px; }
