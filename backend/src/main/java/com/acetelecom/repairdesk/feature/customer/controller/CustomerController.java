@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.job.dto.JobSummary;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.request.dto.RepairRequestSummary;
@@ -81,6 +82,7 @@ public class CustomerController {
     public UserProfile profile(@PathVariable UUID id) {
         User user = userRepo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Customer not found"));
+        CompanyContext.requireSame(user.getCompanyId(), "Customer not found");
         if (user.getRole() != Role.CUSTOMER) {
             throw new ApiException(ErrorCode.NOT_FOUND, "Customer not found");
         }
@@ -102,6 +104,7 @@ public class CustomerController {
     public CustomerHistory history(@PathVariable UUID id) {
         User user = userRepo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Customer not found"));
+        CompanyContext.requireSame(user.getCompanyId(), "Customer not found");
         if (user.getRole() != Role.CUSTOMER) {
             throw new ApiException(ErrorCode.NOT_FOUND, "Customer not found");
         }

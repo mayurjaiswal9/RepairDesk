@@ -4,9 +4,20 @@ import 'package:intl/intl.dart';
 
 import '../../../core/auth/roles.dart';
 import '../../../core/auth/session_controller.dart';
+import '../../../core/error/app_exception.dart';
+import '../../../core/location/location_service.dart';
+import '../../../core/location/maps_repository.dart';
+import '../../../core/location/pin_picker_screen.dart';
+import '../../../core/location/service_location.dart';
+import '../../../core/location/service_location_card.dart';
+import '../../../core/location/trip_repository.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../attachments/presentation/attachments_widget.dart';
 import '../../scheduling/presentation/schedule_appointment_screen.dart';
+import '../../trips/data/on_site_tracker.dart';
+import '../../trips/data/trip_recorder.dart';
+import '../../trips/presentation/job_travel_card.dart';
+import '../../trips/presentation/no_trip_reason_sheet.dart';
 import '../data/jobs_repository.dart';
 
 final _jobDetailFamily = FutureProvider.autoDispose
@@ -56,6 +67,10 @@ class _JobDetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Scheduling and cancelling are Staff/Admin-only on the server.
+    final isTechnician =
+        Roles.isTechnician(ref.watch(sessionControllerProvider).role);
+    final actions = _availableActions(job.status, isTechnician: isTechnician);
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
       child: ListView(
@@ -83,6 +98,27 @@ class _JobDetailBody extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: AppTheme.spaceS),
+          if (isTechnician) ...[
+            _PresencePing(jobId: job.id),
+            JobTravelCard(job: job),
+          ],
+
+          // Actions sit above the map so Start Repair is on the first screen
+          // and the confirm dialog is not covered by the Google Map view.
+          if (actions.isNotEmpty) ...[
+            Text('Actions',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(color: AppTheme.primary)),
+            const Divider(),
+            ...actions.map((a) => _ActionTile(
+                key: ValueKey('job-action-${a.name}-${job.id}'),
+                action: a,
+                job: job,
+                onRefresh: onRefresh)),
+            const SizedBox(height: AppTheme.spaceM),
+          ],
 
           // ── Device & Contact ──────────────────────────────────────────
           _Section(
@@ -102,6 +138,26 @@ class _JobDetailBody extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppTheme.spaceM),
+
+          if (job.serviceLocation != null || !isTechnician) ...[
+            _Section(
+              title: 'Service address',
+              children: [
+                if (job.serviceLocation != null)
+                  ServiceLocationCard(location: job.serviceLocation)
+                else
+                  const Text(
+                    'No address yet',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                if (!isTechnician) ...[
+                  const SizedBox(height: AppTheme.spaceS),
+                  _EditJobPinButton(job: job, onSaved: onRefresh),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppTheme.spaceM),
+          ],
 
           // ── Issue ─────────────────────────────────────────────────────
           _Section(
@@ -126,7 +182,8 @@ class _JobDetailBody extends ConsumerWidget {
                     style: TextStyle(color: AppTheme.textSecondary)),
               const SizedBox(height: AppTheme.spaceS),
               _AssignTechnicianButton(job: job, onRefresh: onRefresh),
-              if (job.status == 'ASSIGNED' || job.status == 'SCHEDULED') ...[
+              if (!isTechnician &&
+                  (job.status == 'ASSIGNED' || job.status == 'SCHEDULED')) ...[
                 const SizedBox(height: AppTheme.spaceS),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.calendar_today_outlined, size: 18),
@@ -162,19 +219,6 @@ class _JobDetailBody extends ConsumerWidget {
                         const TextStyle(color: AppTheme.textPrimary)),
               ],
             ),
-            const SizedBox(height: AppTheme.spaceM),
-          ],
-
-          // ── Actions ──────────────────────────────────────────────────
-          if (_availableActions(job.status).isNotEmpty) ...[
-            Text('Actions',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(color: AppTheme.primary)),
-            const Divider(),
-            ..._availableActions(job.status)
-                .map((a) => _ActionTile(action: a, job: job, onRefresh: onRefresh)),
             const SizedBox(height: AppTheme.spaceM),
           ],
 
@@ -229,14 +273,18 @@ class _JobDetailBody extends ConsumerWidget {
     }
   }
 
-  static List<_JobAction> _availableActions(String status) {
-    return switch (status) {
+  static List<_JobAction> _availableActions(String status,
+      {required bool isTechnician}) {
+    final actions = switch (status) {
       'ASSIGNED' || 'SCHEDULED' => [_JobAction.start],
       'IN_PROGRESS' => [_JobAction.awaitingParts, _JobAction.complete, _JobAction.cancel],
       'AWAITING_PARTS' => [_JobAction.resume, _JobAction.complete, _JobAction.cancel],
       'CREATED' || 'ASSIGNED' => [_JobAction.cancel],
-      _ => [],
+      _ => <_JobAction>[],
     };
+    return isTechnician
+        ? actions.where((a) => a != _JobAction.cancel).toList()
+        : actions;
   }
 }
 
@@ -367,110 +415,227 @@ extension on _JobAction {
       };
 }
 
-class _ActionTile extends ConsumerWidget {
+class _ActionTile extends ConsumerStatefulWidget {
   const _ActionTile(
-      {required this.action, required this.job, required this.onRefresh});
+      {super.key,
+      required this.action,
+      required this.job,
+      required this.onRefresh});
   final _JobAction action;
   final JobDetail job;
   final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ActionTile> createState() => _ActionTileState();
+}
+
+class _ActionTileState extends ConsumerState<_ActionTile> {
+  bool _busy = false;
+
+  _JobAction get action => widget.action;
+  JobDetail get job => widget.job;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppTheme.spaceS),
       child: OutlinedButton.icon(
-        icon: Icon(action.icon, color: action.color),
-        label: Text(action.label,
-            style: TextStyle(color: action.color)),
+        icon: _busy
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: action.color),
+              )
+            : Icon(action.icon, color: action.color),
+        label: Text(action.label, style: TextStyle(color: action.color)),
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: action.color.withValues(alpha: 0.5)),
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.spaceM, vertical: 14),
         ),
-        onPressed: () => _run(context, ref),
+        onPressed: _busy ? null : _run,
       ),
     );
   }
 
-  Future<void> _run(BuildContext context, WidgetRef ref) async {
+  Future<void> _run() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+
     String? resolution;
     String? reason;
-
-    if (action == _JobAction.complete) {
-      final ctrl = TextEditingController();
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (dlg) => AlertDialog(
-          title: const Text('Complete Job'),
-          content: TextField(
-            controller: ctrl,
-            maxLines: 3,
-            decoration: const InputDecoration(
-                labelText: 'Resolution summary *',
-                border: OutlineInputBorder()),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(dlg, false),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.pop(dlg, true),
-                child: const Text('Complete')),
-          ],
-        ),
-      );
-      if (ok != true || ctrl.text.trim().isEmpty || !context.mounted) return;
-      resolution = ctrl.text.trim();
-    }
-
-    if (action == _JobAction.cancel) {
-      final ctrl = TextEditingController();
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (dlg) => AlertDialog(
-          title: const Text('Cancel Job'),
-          content: TextField(
-            controller: ctrl,
-            maxLines: 3,
-            decoration: const InputDecoration(
-                labelText: 'Reason *', border: OutlineInputBorder()),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(dlg, false),
-                child: const Text('Cancel')),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
-              onPressed: () => Navigator.pop(dlg, true),
-              child: const Text('Cancel Job'),
-            ),
-          ],
-        ),
-      );
-      if (ok != true || ctrl.text.trim().isEmpty || !context.mounted) return;
-      reason = ctrl.text.trim();
-    }
+    String? noTripReason;
+    String? noTripNote;
 
     try {
+      if (action == _JobAction.start) {
+        final started = await _confirmStart();
+        if (started == null) return;
+        noTripReason = started.$1;
+        noTripNote = started.$2;
+      }
+
+      if (action == _JobAction.complete) {
+        final ctrl = TextEditingController();
+        final ok = await showDialog<bool>(
+          context: context,
+          useRootNavigator: true,
+          builder: (dlg) => AlertDialog(
+            title: const Text('Complete Job'),
+            content: TextField(
+              controller: ctrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                  labelText: 'Resolution summary *',
+                  border: OutlineInputBorder()),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(dlg, false),
+                  child: const Text('Cancel')),
+              FilledButton(
+                  onPressed: () => Navigator.pop(dlg, true),
+                  child: const Text('Complete')),
+            ],
+          ),
+        );
+        if (ok != true || ctrl.text.trim().isEmpty) return;
+        resolution = ctrl.text.trim();
+      }
+
+      if (action == _JobAction.cancel) {
+        final ctrl = TextEditingController();
+        final ok = await showDialog<bool>(
+          context: context,
+          useRootNavigator: true,
+          builder: (dlg) => AlertDialog(
+            title: const Text('Cancel Job'),
+            content: TextField(
+              controller: ctrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                  labelText: 'Reason *', border: OutlineInputBorder()),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(dlg, false),
+                  child: const Text('Cancel')),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+                onPressed: () => Navigator.pop(dlg, true),
+                child: const Text('Cancel Job'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || ctrl.text.trim().isEmpty) return;
+        reason = ctrl.text.trim();
+      }
+
+      if (action == _JobAction.start) {
+        await ref.read(tripRecorderProvider.notifier).prepareJobStart(job.id);
+      }
       await ref.read(jobsRepositoryProvider).transition(
             job.id,
             action.apiAction,
             resolution: resolution,
             reason: reason,
+            noTripReason: noTripReason,
+            noTripNote: noTripNote,
           );
-      onRefresh();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${action.label} — done')));
+      if (action == _JobAction.start) {
+        await ref.read(tripRecorderProvider.notifier).jobStarted(job.id);
       }
+      await ref.read(onSiteTrackerProvider.notifier).refresh();
+      widget.onRefresh();
+      messenger.showSnackBar(SnackBar(content: Text('${action.label} — done')));
+    } on AppException catch (e) {
+      if (action == _JobAction.start && e.tripRequired) {
+        final choice = await showNoTripReasonSheet(context);
+        if (choice == null) return;
+        try {
+          await ref.read(jobsRepositoryProvider).transition(
+                job.id,
+                'start',
+                noTripReason: choice.reason.code,
+                noTripNote: choice.note,
+              );
+          await ref.read(onSiteTrackerProvider.notifier).refresh();
+          widget.onRefresh();
+          messenger.showSnackBar(
+              const SnackBar(content: Text('Start Repair — done')));
+          return;
+        } on AppException catch (retry) {
+          messenger.showSnackBar(SnackBar(
+              content: Text(retry.userMessage),
+              backgroundColor: AppTheme.error));
+          return;
+        }
+      }
+      messenger.showSnackBar(SnackBar(
+          content: Text(e.userMessage), backgroundColor: AppTheme.error));
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Error: $e'),
-                backgroundColor: AppTheme.error));
+      messenger.showSnackBar(SnackBar(
+          content: Text('Error: $e'), backgroundColor: AppTheme.error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Confirm Start Repair. Returns `(reason, note)` when strict mode needs one,
+  /// or `(null, null)` when a trip already covers the job. Null means cancelled.
+  Future<(String?, String?)?> _confirmStart() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (dlg) => AlertDialog(
+        title: const Text('Start Repair?'),
+        content: Text(
+            'Job ${job.referenceNumber} will move to In Progress and the '
+            'customer may be notified.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dlg, false),
+              child: const Text('Not now')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dlg, true),
+              child: const Text('Start Repair')),
+        ],
+      ),
+    );
+    if (ok != true) return null;
+
+    try {
+      final cached = ref.read(locationConfigProvider).value;
+      final config = cached ??
+          await ref
+              .read(locationConfigProvider.future)
+              .timeout(const Duration(seconds: 5));
+      final recorder = ref.read(tripRecorderProvider);
+      if (!config.tripRequiredToStart || recorder.isFor(job.id)) {
+        return (null, null);
       }
+      try {
+        final trips = await ref.read(tripRepositoryProvider).forJob(job.id);
+        final userId = ref.read(sessionControllerProvider).userId;
+        if (trips.hasTripBy(userId)) return (null, null);
+      } catch (_) {
+        // Offline: the server still asks if a reason is required.
+      }
+      if (!mounted) return null;
+      final choice = await showNoTripReasonSheet(context);
+      if (choice == null) return null;
+      return (choice.reason.code, choice.note);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not start repair: $e'),
+            backgroundColor: AppTheme.error));
+      }
+      return null;
     }
   }
 }
@@ -590,6 +755,75 @@ class _NotesSectionState extends ConsumerState<_NotesSection> {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+class _EditJobPinButton extends ConsumerStatefulWidget {
+  const _EditJobPinButton({required this.job, required this.onSaved});
+  final JobDetail job;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_EditJobPinButton> createState() => _EditJobPinButtonState();
+}
+
+class _EditJobPinButtonState extends ConsumerState<_EditJobPinButton> {
+  bool _saving = false;
+
+  Future<void> _edit() async {
+    final current = widget.job.serviceLocation;
+    final picked = await Navigator.of(context).push<PinPick>(
+      MaterialPageRoute(
+        builder: (_) => PinPickerScreen(
+          latitude: current?.latitude ?? 19.0760,
+          longitude: current?.longitude ?? 72.8777,
+          initialIsGeocode: current?.pinSource == 'GEOCODED',
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _saving = true);
+    final address = picked.addressLine?.trim() ?? '';
+    final location = ServiceLocation(
+      addressLine: address.isNotEmpty ? address : current?.addressLine,
+      landmark: current?.landmark,
+      city: current?.city,
+      pincode: current?.pincode,
+      latitude: picked.latitude,
+      longitude: picked.longitude,
+      pinSource: picked.pinSource,
+    );
+    try {
+      await ref.read(jobsRepositoryProvider).updateServiceLocation(widget.job.id, location);
+      if (!mounted) return;
+      widget.onSaved();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Job location saved')),
+      );
+    } on AppException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.userMessage)));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: OutlinedButton.icon(
+        onPressed: _saving ? null : _edit,
+        icon: _saving
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.edit_outlined, size: 18),
+        label: Text(_saving ? 'Saving…' : 'Edit'),
+      ),
+    );
+  }
+}
+
 class _Section extends StatelessWidget {
   const _Section({required this.title, required this.children});
   final String title;
@@ -679,4 +913,39 @@ class _StatusBadge extends StatelessWidget {
               fontSize: 12, color: color, fontWeight: FontWeight.w600)),
     );
   }
+}
+
+/// Shares the technician's current position once when the job is opened.
+class _PresencePing extends ConsumerStatefulWidget {
+  const _PresencePing({required this.jobId});
+  final String jobId;
+
+  @override
+  ConsumerState<_PresencePing> createState() => _PresencePingState();
+}
+
+class _PresencePingState extends ConsumerState<_PresencePing> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _send());
+  }
+
+  Future<void> _send() async {
+    final fix = await LocationService().bestFix(timeout: const Duration(seconds: 8));
+    if (!mounted || fix == null) return;
+    try {
+      await ref.read(mapsRepositoryProvider).sharePresence(
+            latitude: fix.latitude,
+            longitude: fix.longitude,
+            accuracyM: fix.accuracyM,
+            jobId: widget.jobId,
+          );
+    } catch (_) {
+      // The job stays usable when location is off.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

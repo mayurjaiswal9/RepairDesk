@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TEZVOFlow — Field Service Management with WhatsApp Booking | TEZVO TECH</title>
+<meta name="description" content="TEZVOFlow by TEZVO TECH: WhatsApp booking, live appointment planner, work orders and a technician app for field service businesses." />
+<script>
+(function () {
+  var h = location.hostname;
+  if (h === "tezvo-tech.com" || /\.azurestaticapps\.net$/i.test(h)) {
+    location.replace("https://www.tezvo-tech.com" + location.pathname + location.search + location.hash);
+  }
+})();
+/* Scale the desktop layout to the window width on arrival (reference design: 1920px),
+   so it looks the same at any initial browser zoom; later zooming still works. */
+(function () {
+  var DESIGN = 1920, MIN_DESKTOP = 1100, MIN_FIT = 0.8;
+  var root = document.documentElement;
+  var baseDpr = window.devicePixelRatio || 1;
+  function fit() {
+    var dpr = window.devicePixelRatio || 1;
+    var baseWidth = root.clientWidth * dpr / baseDpr;
+    var f = baseWidth >= MIN_DESKTOP ? Math.max(MIN_FIT, baseWidth / DESIGN) : 1;
+    root.style.setProperty("--fit", f.toFixed(4));
+  }
+  fit();
+  window.addEventListener("resize", fit);
+})();
+</script>
+<link rel="icon" href="logo-mark-blue.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #050d1b;
+    --navy-2: #071427;
+    --ink: #0b1628;
+    --text: #1d2a3d;
+    --muted: #5f6d80;
+    --muted-d: #9fb0c6;
+    --blue: #2563eb;
+    --blue-h: #1d4ed8;
+    --blue-l: #5b9bff;
+    --line: #e6eaf1;
+    --line-d: rgba(255,255,255,.1);
+    --light: #f5f7fa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: Inter, system-ui, sans-serif; color: var(--text); background: #fff; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4 { font-family: "Plus Jakarta Sans", Inter, sans-serif; letter-spacing: -0.025em; color: var(--ink); }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+  button { font: inherit; }
+  .wrap { margin: 0 5%; }
+
+  .kick { font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; }
+  .dark .kick { color: var(--blue-l); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; border-radius: 999px;
+    padding: 13px 22px; font-weight: 600; font-size: 14.5px; cursor: pointer;
+    background: var(--blue); color: #fff; border: 1px solid var(--blue); transition: background .2s, border-color .2s;
+  }
+  .btn:hover { background: var(--blue-h); border-color: var(--blue-h); }
+  .btn.line { background: transparent; border-color: rgba(255,255,255,.35); color: #fff; }
+  .btn.line:hover { background: rgba(255,255,255,.08); }
+  .more { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; color: var(--blue); font-weight: 600; font-size: 14.5px; }
+  .more:hover { color: var(--blue-h); }
+  .arrow { display: inline-block; transition: transform .2s; }
+  a:hover .arrow, button:hover .arrow { transform: translateX(3px); }
+
+  /* NAV */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(5,13,27,.92); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line-d); }
+  .nav .wrap { display: flex; align-items: center; height: 76px; }
+  .brand { display: flex; align-items: center; gap: 11px; color: #fff; }
+  .brand img { width: 34px; height: 34px; }
+  .brand b { display: block; font-family: "Plus Jakarta Sans"; font-size: 16px; letter-spacing: .06em; line-height: 1.1; }
+  .brand small { display: block; font-size: 10.5px; color: var(--muted-d); letter-spacing: .02em; margin-top: 2px; }
+  .nav .links { display: flex; gap: 34px; margin: 0 auto; }
+  .nav .links a { color: #d7e0ec; font-size: 14.5px; font-weight: 500; }
+  .nav .links a:hover { color: #fff; }
+  .dd { position: relative; }
+  .dd::after { content: ""; position: absolute; left: -20px; right: -20px; top: 100%; height: 22px; }
+  .dd-btn { background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #d7e0ec; font-size: 14.5px; font-weight: 500; }
+  .dd-btn:hover, .dd.open .dd-btn, .dd-btn.on { color: #fff; }
+  .dd-btn svg { width: 12px; height: 12px; transition: transform .2s; }
+  .dd:hover .dd-btn svg, .dd.open .dd-btn svg { transform: rotate(180deg); }
+  .dd-menu {
+    position: absolute; top: calc(100% + 20px); left: 50%; min-width: 320px; z-index: 70;
+    background: #fff; border-radius: 14px; padding: 8px; box-shadow: 0 30px 60px -20px rgba(5,13,27,.55), 0 0 0 1px rgba(11,22,40,.06);
+    opacity: 0; visibility: hidden; transform: translate(-50%, 8px); transition: opacity .18s, transform .18s, visibility .18s;
+  }
+  .dd:hover .dd-menu, .dd.open .dd-menu { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+  .dd-menu::before { content: ""; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; background: #fff; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
+  .nav .links .dd-menu a { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; color: var(--ink); position: relative; }
+  .nav .links .dd-menu a:hover { background: #f1f5ff; color: var(--ink); }
+  .dd-ic { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, #6aa8ff, #1d4ed8); color: #fff; display: grid; place-items: center; font-family: "Plus Jakarta Sans"; font-weight: 700; font-size: 16px; }
+  .dd-menu b { display: block; font-size: 14.5px; font-weight: 600; font-family: "Plus Jakarta Sans"; }
+  .dd-menu small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; font-weight: 400; }
+
+  /* HERO */
+  .hero { position: relative; background: var(--navy); color: #fff; overflow: hidden; }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: url("img/tezvo-hero-abstract.png") 78% center / cover no-repeat;
+  }
+  .hero-bg::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, var(--navy) 0%, rgba(5,13,27,.92) 38%, rgba(5,13,27,.25) 70%, rgba(5,13,27,.1) 100%);
+  }
+  .hero-inner { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; min-height: 540px; padding: 56px 0 32px; }
+  .hslides { display: grid; }
+  .hslide { grid-area: 1 / 1; opacity: 0; transform: translateY(12px); transition: opacity .6s, transform .6s; pointer-events: none; max-width: 680px; }
+  .hslide.on { opacity: 1; transform: none; pointer-events: auto; }
+  .hero .kick { color: #9ec2ff; }
+  .hero h1 { color: #fff; font-size: clamp(42px, 5vw, 66px); line-height: 1.06; font-weight: 600; }
+  .hero h1 em { font-style: normal; color: #4f8cff; }
+  .hero p.lede { margin-top: 18px; max-width: 520px; color: #c5d3e6; font-size: 17px; line-height: 1.65; }
+  .hero .ctas { display: flex; gap: 14px; margin-top: 26px; flex-wrap: wrap; }
+  .vlabels { list-style: none; border-left: 1px solid rgba(255,255,255,.35); padding-left: 16px; display: grid; gap: 10px; }
+  .vlabels li { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #d6e2f3; }
+  .hero-foot { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 26px; }
+  .feats { display: grid; grid-template-columns: repeat(4, auto); gap: 0; border-top: 1px solid var(--line-d); padding-top: 18px; }
+  .feats div { display: flex; gap: 12px; align-items: center; padding: 0 28px; border-left: 1px solid var(--line-d); color: #d8e2ef; font-size: 13.5px; line-height: 1.35; }
+  .feats div:first-child { padding-left: 0; border-left: 0; }
+  .feats svg { width: 22px; height: 22px; color: #7fb0ff; flex-shrink: 0; }
+  .pager { text-align: right; }
+  .pager .count { font-size: 13px; letter-spacing: .1em; color: #cdd9ea; margin-bottom: 12px; }
+  .pager .count b { color: #fff; font-weight: 600; }
+  .pager .ctrls { display: flex; gap: 10px; justify-content: flex-end; }
+  .pager button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; cursor: pointer; display: grid; place-items: center; }
+  .pager button:hover { background: rgba(255,255,255,.1); }
+  .pager svg { width: 16px; height: 16px; }
+
+  /* LIGHT SECTIONS */
+  section { padding: 60px 0; }
+  .light { background: var(--light); }
+  .white { background: #fff; }
+  .head2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 28px; }
+  .head2 > div:last-child { justify-self: end; max-width: 460px; }
+  .head2 h2, .why h2 { font-size: clamp(30px, 3.2vw, 42px); line-height: 1.12; font-weight: 600; }
+  h2 em { font-style: normal; color: var(--blue); }
+  .head2 p, .why p.body { color: var(--muted); font-size: 16px; line-height: 1.7; max-width: 440px; }
+
+  .svc4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .svc { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform .25s, box-shadow .25s; }
+  .svc:hover { transform: translateY(-4px); box-shadow: 0 24px 44px -26px rgba(11,22,40,.35); }
+  .svc .img { position: relative; aspect-ratio: 16 / 10; background: var(--navy); }
+  .svc .img img { width: 100%; height: 100%; object-fit: cover; }
+  .svc .no { position: absolute; left: 18px; bottom: 14px; color: #fff; font-family: "Plus Jakarta Sans"; font-weight: 600; font-size: 22px; }
+  .svc .b { padding: 18px 20px 16px; display: flex; flex-direction: column; flex: 1; }
+  .svc h3 { font-size: 19px; font-weight: 600; margin-bottom: 10px; }
+  .svc p { color: var(--muted); font-size: 14.5px; line-height: 1.6; flex: 1; }
+  .svc .go { margin-top: 10px; color: var(--ink); font-size: 18px; }
+
+  /* CASE STUDY (dark) */
+  .dark { background: radial-gradient(900px 500px at 80% 40%, #0d2a5e 0%, transparent 60%), var(--navy); color: #fff; }
+  .dark h2, .dark h3 { color: #fff; }
+  .case { display: grid; grid-template-columns: .8fr 1.2fr; gap: 40px; align-items: center; }
+  .case h2 { font-size: clamp(36px, 4vw, 50px); line-height: 1.08; font-weight: 600; }
+  .pill { display: inline-block; margin: 14px 0 12px; padding: 6px 14px; border: 1px solid rgba(91,155,255,.55); border-radius: 999px; color: #9ec2ff; font-size: 13px; }
+  .case p.body { color: #c2cfe2; font-size: 16px; line-height: 1.7; max-width: 440px; }
+  .case .btn { margin-top: 20px; }
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 28px; border-top: 1px solid var(--line-d); padding-top: 22px; }
+  .metrics div { padding-right: 16px; }
+  .metrics div + div { padding-left: 20px; border-left: 1px solid var(--line-d); }
+  .metrics small { display: block; color: #9fb0c6; font-size: 13px; line-height: 1.35; }
+  .metrics b { display: block; font-family: "Plus Jakarta Sans"; font-size: 28px; font-weight: 600; margin-top: 6px; color: #7fb0ff; white-space: nowrap; }
+
+  .devices { position: relative; padding-right: 150px; }
+  .laptop .screen { background: #0f1115; border-radius: 16px 16px 0 0; padding: 12px 12px 14px; box-shadow: 0 40px 80px -30px rgba(0,0,0,.7); }
+  .laptop .base { height: 16px; background: linear-gradient(#cfd5dd, #9aa3ae); border-radius: 0 0 14px 14px; margin: 0 -26px; position: relative; }
+  .laptop .base::after { content: ""; position: absolute; left: 50%; top: 0; width: 90px; height: 6px; transform: translateX(-50%); background: #7f8894; border-radius: 0 0 8px 8px; }
+  .fa { display: grid; grid-template-columns: 112px 1fr; background: #f4f6fb; border-radius: 6px; overflow: hidden; color: #0b1628; font-size: 10px; height: 372px; }
+  .fa-side { background: #0b1628; color: #9fb0c6; padding: 14px 10px; display: flex; flex-direction: column; gap: 3px; }
+  .fa-logo { display: flex; align-items: center; gap: 7px; color: #fff; font-family: "Plus Jakarta Sans"; font-weight: 700; font-size: 12px; margin: 0 4px 14px; }
+  .fa-logo i { width: 18px; height: 18px; border-radius: 6px; background: linear-gradient(135deg, #6aa8ff, #1d4ed8); display: grid; place-items: center; font-style: normal; font-size: 10px; color: #fff; }
+  .fa-side span { display: flex; align-items: center; gap: 7px; padding: 7px 8px; white-space: nowrap; border-radius: 7px; }
+  .fa-side span::before { content: ""; flex-shrink: 0; width: 7px; height: 7px; border-radius: 2px; background: currentColor; opacity: .6; }
+  .fa-side span.on { background: rgba(79,140,255,.16); color: #fff; }
+  .fa-side span.on::before { background: #4f8cff; opacity: 1; }
+  .fa-side em { margin-left: auto; font-style: normal; background: #25d366; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 9px; line-height: 15px; }
+  .fa-main { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .fa-top { display: flex; align-items: center; gap: 8px; }
+  .fa-top b { font-family: "Plus Jakarta Sans"; font-size: 14px; }
+  .fa-top small { color: #5f6d80; margin-right: auto; }
+  .fa-top .srch { width: 110px; height: 22px; border-radius: 6px; background: #fff; border: 1px solid #e3e8f0; }
+  .fa-top .new { background: #2563eb; color: #fff; font-weight: 600; border-radius: 6px; padding: 5px 9px; }
+  .fa-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .fa-kpi div { background: #fff; border: 1px solid #e6eaf1; border-radius: 8px; padding: 8px 9px; }
+  .fa-kpi small { color: #5f6d80; font-size: 9px; display: block; }
+  .fa-kpi b { font-family: "Plus Jakarta Sans"; font-size: 17px; display: block; margin-top: 2px; }
+  .fa-kpi b i { font-style: normal; font-size: 9px; font-weight: 600; color: #16a34a; margin-left: 4px; }
+  .fa-plan { background: #fff; border: 1px solid #e6eaf1; border-radius: 8px; padding: 8px 10px 10px; flex: 1; position: relative; }
+  .fa-hours, .fa-row { display: grid; grid-template-columns: 64px 1fr; align-items: center; }
+  .fa-hours div { display: flex; justify-content: space-between; color: #8a97a8; font-size: 8.5px; padding-bottom: 6px; border-bottom: 1px solid #eef1f5; }
+  .fa-row { height: 36px; border-bottom: 1px dashed #eef1f5; }
+  .fa-row:last-child { border-bottom: 0; }
+  .fa-row > span { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .fa-row > span i { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-style: normal; font-size: 8px; }
+  .fa-track { position: relative; height: 26px; }
+  .job { position: absolute; top: 0; height: 26px; border-radius: 6px; padding: 3px 6px; font-size: 8.5px; line-height: 1.25; overflow: hidden; white-space: nowrap; border-left: 3px solid; }
+  .job b { display: block; font-size: 9px; }
+  .job.b { background: #e8f0ff; border-color: #2563eb; color: #1e3a8a; }
+  .job.g { background: #e7f8ee; border-color: #16a34a; color: #14532d; }
+  .job.o { background: #fff3e2; border-color: #f59e0b; color: #7c4a03; }
+  .job.w { background: #e9fbf0; border-color: #25d366; color: #14532d; box-shadow: 0 0 0 2px rgba(37,211,102,.25); }
+  .fa-now { position: absolute; top: 22px; bottom: 8px; left: calc(74px + (100% - 84px) * .34); width: 2px; background: #ef4444; border-radius: 2px; }
+  .fa-now::before { content: ""; position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+
+  .wa-toast { position: absolute; left: -40px; bottom: -34px; width: 238px; background: #fff; color: #0b1628; border-radius: 14px; padding: 12px 14px; box-shadow: 0 26px 50px -18px rgba(0,0,0,.6); font-size: 11px; line-height: 1.45; display: grid; grid-template-columns: 30px 1fr; gap: 10px; }
+  .wa-toast .ic { width: 30px; height: 30px; border-radius: 50%; background: #25d366; color: #fff; display: grid; place-items: center; }
+  .wa-toast .ic svg { width: 17px; height: 17px; }
+  .wa-toast b { display: block; font-size: 11.5px; }
+  .wa-toast span { color: #5f6d80; }
+  .wa-toast .ok { display: inline-block; margin-top: 5px; background: #e7f8ee; color: #15803d; font-weight: 600; border-radius: 999px; padding: 2px 8px; font-size: 10px; }
+
+  .phone { position: absolute; right: 0; bottom: -26px; width: 206px; background: #0f1115; border-radius: 32px; padding: 8px; box-shadow: 0 40px 70px -24px rgba(0,0,0,.75); }
+  .phone .scr { background: #f4f6fb; border-radius: 25px; overflow: hidden; height: 404px; color: #0b1628; font-size: 10px; position: relative; }
+  .ft-head { background: linear-gradient(135deg, #2f6fed, #1745b8); color: #fff; padding: 8px 14px 34px; }
+  .ft-head .notch { width: 70px; height: 16px; background: #0f1115; border-radius: 0 0 12px 12px; margin: -8px auto 10px; }
+  .ft-head small { opacity: .8; font-size: 9.5px; }
+  .ft-head h5 { font-family: "Plus Jakarta Sans"; font-size: 15px; margin-top: 2px; color: #fff; }
+  .ft-next { margin: -26px 10px 0; background: #fff; border-radius: 14px; padding: 11px 12px; box-shadow: 0 14px 26px -16px rgba(11,22,40,.45); position: relative; }
+  .ft-next .tag { font-size: 8.5px; font-weight: 700; letter-spacing: .08em; color: #2563eb; }
+  .ft-next b { display: block; font-size: 12px; margin: 3px 0 1px; }
+  .ft-next span { color: #5f6d80; font-size: 9.5px; }
+  .ft-next .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 9px; }
+  .ft-next .acts i { font-style: normal; text-align: center; border-radius: 8px; padding: 6px 0; font-weight: 600; font-size: 9.5px; border: 1px solid #dbe4f3; color: #1d4ed8; }
+  .ft-next .acts i.go { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .ft-list { padding: 10px 10px 0; display: grid; gap: 7px; }
+  .ft-list h6 { font-size: 10px; color: #5f6d80; font-weight: 600; margin: 0 2px; font-family: Inter, sans-serif; letter-spacing: 0; }
+  .ft-job { background: #fff; border: 1px solid #e6eaf1; border-radius: 10px; padding: 8px 10px; display: grid; grid-template-columns: 34px 1fr; gap: 6px; align-items: center; }
+  .ft-job time { font-weight: 700; font-size: 10px; color: #0b1628; }
+  .ft-job b { display: block; font-size: 10px; }
+  .ft-job span { color: #5f6d80; font-size: 9px; }
+  .ft-job em { display: inline-block; margin-top: 4px; font-style: normal; font-size: 8.5px; font-weight: 600; border-radius: 999px; padding: 2px 6px; }
+  .ft-job em.s { background: #e8f0ff; color: #1d4ed8; }
+  .ft-job em.w { background: #e7f8ee; color: #15803d; }
+  .ft-tabs { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; border-top: 1px solid #e6eaf1; padding: 8px 0 10px; text-align: center; font-size: 8.5px; color: #8a97a8; }
+  .ft-tabs span::before { content: ""; display: block; width: 14px; height: 14px; border-radius: 4px; background: currentColor; opacity: .35; margin: 0 auto 3px; }
+  .ft-tabs span.on { color: #2563eb; font-weight: 600; }
+  .ft-tabs span.on::before { opacity: 1; }
+
+  /* INDUSTRIES */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .tile { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 1.2 / 1; display: block; }
+  .tile img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+  .tile:hover img { transform: scale(1.04); }
+  .tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(5,13,27,.78) 100%); }
+  .tile span { position: absolute; left: 20px; right: 20px; bottom: 18px; z-index: 1; color: #fff; font-family: "Plus Jakarta Sans"; font-size: 19px; font-weight: 600; line-height: 1.25; }
+
+  /* WHY */
+  .why { display: grid; grid-template-columns: 1.08fr 1fr; background: var(--light); }
+  .why .pic { position: relative; min-height: 440px; }
+  .why .pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .why .txt { padding: 48px 4.5vw 48px 48px; align-self: center; max-width: 720px; }
+  .why p.body { margin-top: 12px; max-width: 480px; }
+  .points { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px; }
+  .points div { font-size: 13.5px; color: var(--text); line-height: 1.4; }
+  .points svg { width: 24px; height: 24px; color: var(--blue); display: block; margin-bottom: 8px; }
+
+  /* PROCESS */
+  .tline { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 8px; }
+  .tline::before { content: ""; position: absolute; left: 24px; right: 24px; top: 24px; height: 1px; background: #cfd8e6; }
+  .tstep { position: relative; }
+  .tstep .node { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .tstep .num {
+    width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+    background: #fff; border: 1px solid #cddcf6; color: var(--blue); font-weight: 700; font-size: 14px; position: relative; z-index: 1;
+    box-shadow: 0 0 0 6px var(--light);
+  }
+  .tstep .ic { width: 34px; height: 34px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; position: relative; z-index: 1; box-shadow: 0 0 0 6px var(--light); }
+  .tstep .ic svg { width: 16px; height: 16px; }
+  .tstep h3 { font-size: 19px; font-weight: 600; margin-bottom: 8px; }
+  .tstep p { color: var(--muted); font-size: 14.5px; line-height: 1.6; max-width: 240px; }
+
+  /* CTA BAND */
+  .band { position: relative; background: var(--navy) url("img/tezvo-cta-skyline.png") center 70% / cover no-repeat; color: #fff; }
+  .band::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,13,27,.9) 0%, rgba(5,13,27,.55) 55%, rgba(5,13,27,.35) 100%); }
+  .band .wrap { position: relative; display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 40px; align-items: center; padding: 48px 0; }
+  .band h2 { color: #fff; font-size: clamp(30px, 3.2vw, 42px); line-height: 1.15; font-weight: 600; }
+  .band p { color: #c7d4e6; font-size: 16px; line-height: 1.6; max-width: 320px; }
+
+  /* FOOTER */
+  footer { background: var(--navy); color: #c2cfe0; padding: 44px 0 22px; }
+  .fgrid { display: grid; grid-template-columns: 1.5fr .9fr .9fr .8fr 1.1fr; gap: 32px; }
+  footer p.about { color: #9fb0c6; font-size: 14px; line-height: 1.7; margin-top: 18px; max-width: 300px; }
+  footer h5 { color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 16px; font-family: "Plus Jakarta Sans"; }
+  footer .col a { display: block; color: #9fb0c6; font-size: 14px; line-height: 2.1; }
+  footer .col a:hover { color: #fff; }
+  .fcontact div { display: flex; gap: 12px; margin-bottom: 16px; font-size: 14px; line-height: 1.5; color: #c2cfe0; }
+  .fcontact small { display: block; color: #8395ad; font-size: 12.5px; }
+  .fcontact svg { width: 18px; height: 18px; color: #7fb0ff; flex-shrink: 0; margin-top: 2px; }
+  .flegal { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid var(--line-d); margin-top: 32px; padding-top: 18px; color: #7f91a9; font-size: 13px; }
+  .flegal a:hover { color: #fff; }
+
+  /* CONTACT DIALOG */
+  dialog.talk { margin: auto; border: 0; border-radius: 20px; padding: 0; width: min(560px, calc(100% - 32px)); box-shadow: 0 40px 90px -30px rgba(5,13,27,.6); }
+  dialog.talk::backdrop { background: rgba(5,13,27,.6); backdrop-filter: blur(4px); }
+  .talk .in { padding: 30px 30px 26px; }
+  .talk h3 { font-size: 24px; font-weight: 600; }
+  .talk .sub { color: var(--muted); font-size: 14.5px; margin: 6px 0 20px; line-height: 1.6; }
+  .talk form { display: grid; gap: 14px; }
+  .talk .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .talk label { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text); }
+  .talk input, .talk select, .talk textarea { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; font: 400 14.5px Inter, sans-serif; color: var(--ink); background: #fff; }
+  .talk input:focus, .talk select:focus, .talk textarea:focus { outline: 2px solid rgba(37,99,235,.25); border-color: var(--blue); }
+  .talk textarea { min-height: 100px; resize: vertical; }
+  .talk .hp { position: absolute; left: -9999px; }
+  .talk .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .talk .mail { color: var(--muted); font-size: 13px; }
+  .talk .mail a { color: var(--blue); font-weight: 600; }
+  .talk .x { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 18px; color: var(--muted); }
+  .form-note { font-size: 13.5px; color: var(--muted); }
+  .form-note.ok { color: #15803d; }
+  .form-note.err { color: #b91c1c; }
+
+  /* WhatsApp */
+  .btn.wa { background: #25d366; border-color: #25d366; color: #fff; }
+  .btn.wa:hover { background: #1ebe5b; border-color: #1ebe5b; }
+  .btn.wa svg, .wa-float svg { width: 18px; height: 18px; }
+  .wa-float {
+    position: fixed; right: 24px; bottom: 24px; z-index: 60; display: flex; align-items: center; gap: 10px;
+    background: #25d366; color: #fff; border-radius: 999px; padding: 12px 18px 12px 14px; font-weight: 600; font-size: 14.5px;
+    box-shadow: 0 14px 30px -10px rgba(0,0,0,.45); transition: transform .2s;
+  }
+  .wa-float:hover { transform: translateY(-2px); }
+  .wa-float svg { width: 24px; height: 24px; }
+
+  .nav, main, footer, .wa-float { zoom: var(--fit, 1); }
+  .nav-cta { display: flex; align-items: center; gap: 10px; }
+  .wa-icon { width: 44px; height: 44px; border-radius: 50%; background: #25d366; color: #fff; display: grid; place-items: center; transition: background .2s, transform .2s; }
+  .wa-icon:hover { background: #1ebe5b; transform: translateY(-1px); }
+  .wa-icon svg { width: 22px; height: 22px; }
+
+  @media (max-width: 1080px) {
+    .nav .links { display: none; }
+    .nav .wrap { justify-content: space-between; }
+    .head2, .case, .why, .band .wrap { grid-template-columns: 1fr; }
+    .svc4, .tiles, .tline, .points { grid-template-columns: 1fr 1fr; }
+    .tline::before { display: none; }
+    .feats { grid-template-columns: 1fr 1fr; row-gap: 16px; }
+    .feats div:nth-child(3) { padding-left: 0; border-left: 0; }
+    .vlabels { display: none; }
+    .why .txt { padding: 56px 32px; }
+    .why .pic { min-height: 300px; }
+    .fgrid { grid-template-columns: 1fr 1fr; }
+    .devices { padding-right: 90px; }
+  }
+  @media (max-width: 640px) {
+    .wrap { margin: 0 18px; }
+    .brand small { display: none; }
+    .nav .btn { padding: 10px 16px; white-space: nowrap; }
+    .nav-cta { gap: 8px; }
+    .wa-icon { width: 40px; height: 40px; }
+    .wa-float span { display: none; }
+    .wa-float { padding: 14px; right: 16px; bottom: 16px; }
+    section { padding: 64px 0; }
+    .svc4, .tiles, .tline, .points, .metrics, .fgrid, .feats, .talk .two { grid-template-columns: 1fr; }
+    .feats div { padding: 0; border-left: 0; }
+    .metrics div + div { padding-left: 0; border-left: 0; margin-top: 14px; }
+    .hero-foot { flex-direction: column; align-items: stretch; }
+    .devices { padding-right: 0; }
+    .phone, .wa-toast { display: none; }
+    .site .shero { grid-template-columns: 1fr; }
+    .flegal { flex-direction: column; }
+  }
+
+  /* ===== TEZVOFlow product page ===== */
+  .p-hero { position: relative; background: radial-gradient(1000px 600px at 75% 35%, #0d2a5e 0%, transparent 60%), var(--navy); color: #fff; overflow: hidden; padding: 64px 0 72px; }
+  .p-hero > .wrap { display: grid; grid-template-columns: .85fr 1.15fr; gap: 40px; align-items: center; }
+  .p-hero .kick { color: #9ec2ff; }
+  .p-hero h1 { color: #fff; font-size: clamp(40px, 4.4vw, 60px); line-height: 1.06; font-weight: 600; }
+  .p-hero h1 em { font-style: normal; color: #4f8cff; }
+  .p-hero .lede { margin-top: 18px; color: #c5d3e6; font-size: 17px; line-height: 1.65; max-width: 520px; }
+  .p-hero .ctas { display: flex; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
+  .p-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; max-width: 540px; }
+  .p-badges span { border: 1px solid var(--line-d); background: rgba(255,255,255,.04); color: #d8e2ef; border-radius: 999px; padding: 7px 12px; font-size: 13px; display: inline-flex; gap: 8px; align-items: center; }
+  .p-badges span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #4f8cff; }
+
+  .p-strip { background: var(--navy-2); border-top: 1px solid var(--line-d); padding: 20px 0; }
+  .p-strip .wrap { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; color: #9fb0c6; font-size: 14px; }
+  .p-strip b { color: #fff; font-weight: 600; }
+  .p-strip span { display: inline-flex; align-items: center; gap: 8px; }
+  .p-strip span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #25d366; }
+
+  .feat-row { display: grid; grid-template-columns: .9fr 1.1fr; gap: 64px; align-items: center; }
+  .feat-row + .feat-row { margin-top: 80px; }
+  .feat-row.rev .copy { order: 2; }
+  .feat-row h3 { font-size: clamp(26px, 2.6vw, 36px); line-height: 1.15; font-weight: 600; margin-bottom: 12px; }
+  .feat-row h3 em { font-style: normal; color: var(--blue); }
+  .feat-row p { color: var(--muted); font-size: 16px; line-height: 1.7; max-width: 470px; }
+  .ticks { list-style: none; margin-top: 20px; display: grid; gap: 11px; }
+  .ticks li { display: flex; gap: 10px; font-size: 15px; color: var(--text); align-items: center; }
+  .ticks li::before { content: "✓"; width: 20px; height: 20px; border-radius: 50%; background: #e8f0ff; color: var(--blue); font-size: 11px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0; }
+
+  .mock { background: radial-gradient(600px 300px at 70% 20%, #1b4fb8 0%, transparent 70%), linear-gradient(135deg, #0d2a5e, #050d1b); border-radius: 22px; padding: 30px; position: relative; box-shadow: 0 30px 60px -30px rgba(11,22,40,.55); }
+  .win { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 24px 50px -20px rgba(0,0,0,.55); font-size: 11px; color: #0b1628; }
+  .win-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: #eef2f8; border-bottom: 1px solid #e3e8f0; }
+  .win-bar i { width: 9px; height: 9px; border-radius: 50%; background: #cfd6e2; }
+  .win-bar span { margin-left: 10px; background: #fff; border-radius: 6px; padding: 3px 10px; font-size: 10px; color: #5f6d80; }
+
+  .wa-app { display: grid; grid-template-columns: 150px 1fr 178px; height: 340px; }
+  .wa-list { border-right: 1px solid #eef1f5; padding: 10px 8px; display: grid; align-content: start; gap: 3px; }
+  .wa-list h6 { font-size: 11px; font-family: "Plus Jakarta Sans"; margin: 2px 6px 6px; }
+  .wa-list div { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 7px 6px; border-radius: 8px; align-items: center; }
+  .wa-list div.on { background: #e9fbf0; }
+  .wa-list i { width: 26px; height: 26px; border-radius: 50%; font-style: normal; display: grid; place-items: center; font-size: 9px; font-weight: 700; color: #fff; }
+  .wa-list b { display: block; font-size: 10.5px; }
+  .wa-list small { color: #8a97a8; font-size: 9.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wa-conv { background: #efeae2; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .wa-conv .who { display: flex; align-items: center; gap: 8px; background: #fff; margin: -12px -12px 4px; padding: 8px 12px; border-bottom: 1px solid #e6eaf1; }
+  .wa-conv .who b { font-size: 11px; } .wa-conv .who small { color: #25a35a; font-size: 9.5px; display: block; }
+  .bub { max-width: 80%; padding: 7px 10px; border-radius: 10px; font-size: 10.5px; line-height: 1.45; background: #fff; box-shadow: 0 1px 1px rgba(0,0,0,.06); }
+  .bub.me { align-self: flex-end; background: #d9fdd3; }
+  .bub small { display: block; color: #8a97a8; font-size: 8.5px; text-align: right; margin-top: 2px; }
+  .slots { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .slots span { background: #fff; border: 1px solid #25d366; color: #128c4a; border-radius: 999px; padding: 3px 9px; font-size: 10px; font-weight: 600; }
+  .slots span.on { background: #25d366; color: #fff; }
+  .wa-book { padding: 12px; display: grid; align-content: start; gap: 8px; border-left: 1px solid #eef1f5; }
+  .wa-book h6 { font-size: 11px; font-family: "Plus Jakarta Sans"; }
+  .kv { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; border-bottom: 1px dashed #eef1f5; padding-bottom: 6px; }
+  .kv span:first-child { color: #8a97a8; } .kv span:last-child { font-weight: 600; text-align: right; }
+  .pillok { background: #e7f8ee; color: #15803d; border-radius: 8px; padding: 7px; font-weight: 600; font-size: 10px; text-align: center; }
+
+  .wo { padding: 16px 18px; display: grid; gap: 14px; }
+  .wo-head { display: flex; align-items: center; gap: 10px; }
+  .wo-head b { font-family: "Plus Jakarta Sans"; font-size: 15px; }
+  .wo-head em { font-style: normal; background: #e8f0ff; color: #1d4ed8; font-weight: 600; border-radius: 999px; padding: 2px 9px; font-size: 10px; }
+  .wo-head span { margin-left: auto; color: #8a97a8; font-size: 10px; }
+  .wo-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .wo-steps div { height: 6px; border-radius: 3px; background: #e6eaf1; }
+  .wo-steps div.done { background: #2563eb; }
+  .wo-steps div.now { background: linear-gradient(90deg, #2563eb 55%, #e6eaf1 55%); }
+  .wo-labels { display: grid; grid-template-columns: repeat(5, 1fr); font-size: 9.5px; color: #8a97a8; margin-top: -8px; }
+  .wo-labels span.on { color: #1d4ed8; font-weight: 600; }
+  .wo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .wo-card { border: 1px solid #e6eaf1; border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
+  .wo-card h6 { font-size: 10px; font-family: Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #8a97a8; font-weight: 600; }
+  .wo-card .tech { display: flex; align-items: center; gap: 8px; }
+  .wo-card .tech i { width: 24px; height: 24px; border-radius: 50%; background: #2563eb; color: #fff; font-style: normal; font-size: 9px; font-weight: 700; display: grid; place-items: center; }
+  .feed { display: grid; gap: 8px; }
+  .feed div { display: grid; grid-template-columns: 10px 1fr; gap: 8px; font-size: 10px; }
+  .feed i { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; }
+  .feed small { color: #8a97a8; display: block; font-size: 9px; }
+
+  .phones { display: flex; justify-content: center; gap: 30px; align-items: flex-end; padding: 10px 0; }
+  .phones .phone { position: relative; right: auto; bottom: auto; }
+  .phones .phone:first-child { transform: translateY(-20px); }
+  .ck { padding: 10px 12px; display: grid; gap: 7px; }
+  .ck h6 { font-size: 10px; color: #5f6d80; font-weight: 600; font-family: Inter, sans-serif; letter-spacing: 0; }
+  .ck .it { display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid #e6eaf1; border-radius: 9px; padding: 7px 9px; font-size: 10px; }
+  .ck .it i { width: 14px; height: 14px; border-radius: 4px; background: #16a34a; color: #fff; font-style: normal; font-size: 9px; display: grid; place-items: center; flex-shrink: 0; }
+  .ck .it i.off { background: #fff; border: 1.5px solid #cbd5e1; }
+  .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .photos span { aspect-ratio: 1; border-radius: 8px; background: linear-gradient(135deg, #cfe0ff, #8fb1f0); }
+  .photos span:nth-child(2) { background: linear-gradient(135deg, #d8f3e3, #86d3a6); }
+  .photos span.add { background: #fff; border: 1.5px dashed #cbd5e1; display: grid; place-items: center; color: #8a97a8; font-size: 14px; }
+  .sign { height: 40px; border-radius: 9px; background: #fff; border: 1px solid #e6eaf1; position: relative; }
+  .sign svg { position: absolute; left: 18px; top: 6px; width: 110px; height: 28px; }
+  .done-btn { background: #16a34a; color: #fff; text-align: center; border-radius: 10px; padding: 9px; font-weight: 600; font-size: 10.5px; }
+  .ft-head.green { background: linear-gradient(135deg, #16a34a, #0f7a37); }
+
+  .fgrid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .fcard { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px; transition: transform .25s, box-shadow .25s; }
+  .fcard:hover { transform: translateY(-3px); box-shadow: 0 24px 44px -28px rgba(11,22,40,.35); }
+  .fcard .ic { width: 44px; height: 44px; border-radius: 12px; background: #e8f0ff; color: var(--blue); display: grid; place-items: center; margin-bottom: 16px; }
+  .fcard .ic.g { background: #e7f8ee; color: #16a34a; }
+  .fcard .ic svg { width: 21px; height: 21px; }
+  .fcard h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .fcard p { color: var(--muted); font-size: 14.5px; line-height: 1.6; }
+
+  .faq { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .faq details { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .faq summary { cursor: pointer; font-weight: 600; font-family: "Plus Jakarta Sans"; font-size: 16px; color: var(--ink); list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; color: var(--blue); font-size: 20px; line-height: 1; }
+  .faq details[open] summary::after { content: "–"; }
+  .faq p { color: var(--muted); margin-top: 10px; font-size: 14.5px; line-height: 1.65; }
+
+  @media (max-width: 1080px) {
+    .p-hero > .wrap, .feat-row { grid-template-columns: 1fr; }
+    .feat-row.rev .copy { order: 0; }
+    .fgrid6 { grid-template-columns: 1fr 1fr; }
+    .faq { grid-template-columns: 1fr; }
+    .wa-app { grid-template-columns: 130px 1fr; }
+    .wa-book { display: none; }
+  }
+  @media (max-width: 640px) {
+    .fgrid6 { grid-template-columns: 1fr; }
+    .phones .phone:last-child { display: none; }
+    .phones .phone:first-child { transform: none; }
+    .wa-list { display: none; }
+    .wa-app { grid-template-columns: 1fr; }
+    .mock { padding: 16px; }
+    .wo-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="TEZVO TECH home">
+      <img src="logo-mark-blue.svg" alt="" />
+      <span><b>TEZVO TECH</b><small>Smart Digital. Real Growth.</small></span>
+    </a>
+    <nav class="links" aria-label="Primary">
+      <a href="index.html#services">What we do</a>
+      <a href="index.html#industries">Industries</a>
+      <div class="dd">
+        <button class="dd-btn on" type="button" aria-haspopup="true" aria-expanded="false">Products <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="dd-menu" role="menu">
+          <a href="tezvoflow.html" role="menuitem"><span class="dd-ic">T</span><span><b>TEZVOFlow (FSM)</b><small>Field service management with WhatsApp booking</small></span></a>
+        </div>
+      </div>
+      <a href="index.html#why">About</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="wa-icon" href="https://wa.me/919072306065?text=Hi%20TEZVO%20TECH%2C%20I%27d%20like%20to%20discuss%20a%20project." target="_blank" rel="noopener" aria-label="Chat on WhatsApp" title="Chat on WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg>
+      </a>
+      <button class="btn" type="button" data-talk>Let's talk <span class="arrow">→</span></button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="p-hero" style="padding-bottom:72px">
+  <div class="wrap">
+    <div>
+      <p class="kick">TEZVOFlow · Field service management</p>
+      <h1>Every job booked,<br>planned and closed —<br><em>in flow.</em></h1>
+      <p class="lede">TEZVOFlow brings WhatsApp bookings, a live appointment planner, work orders and a technician app together — so your office and field team always work from the same page.</p>
+      <div class="ctas">
+        <button class="btn" type="button" data-talk data-need="TEZVOFlow / Field service">Book a walkthrough <span class="arrow">→</span></button>
+        <a class="btn line" href="#how">See how it works</a>
+      </div>
+      <div class="p-badges">
+        <span>WhatsApp booking</span><span>Live planner</span><span>Work orders</span><span>Technician app</span><span>Invoices</span>
+      </div>
+    </div>
+    <div class="devices" aria-label="TEZVOFlow admin web app and technician mobile app">
+      <div class="laptop">
+        <div class="screen">
+          <div class="fa">
+            <div class="fa-side">
+              <div class="fa-logo"><i>T</i>TEZVOFlow</div>
+              <span>Dashboard</span>
+              <span class="on">Planner</span>
+              <span>Work orders</span>
+              <span>WhatsApp <em>3</em></span>
+              <span>Technicians</span>
+              <span>Customers</span>
+              <span>Invoices</span>
+            </div>
+            <div class="fa-main">
+              <div class="fa-top"><b>Planner</b><small>Tue, 22 Sep</small><span class="srch"></span><span class="new">+ New job</span></div>
+              <div class="fa-kpi">
+                <div><small>Jobs today</small><b>18</b></div>
+                <div><small>In progress</small><b>6</b></div>
+                <div><small>Completed</small><b>9 <i>50%</i></b></div>
+                <div><small>WhatsApp bookings</small><b>5</b></div>
+              </div>
+              <div class="fa-plan">
+                <div class="fa-hours"><span></span><div><span>9</span><span>10</span><span>11</span><span>12</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div></div>
+                <div class="fa-row"><span><i style="background:#2563eb">AK</i>Anika</span><div class="fa-track">
+                  <div class="job g" style="left:0;width:24%"><b>AC service</b>Banjara Hills</div>
+                  <div class="job b" style="left:30%;width:26%"><b>Leak check</b>Jubilee Hills</div>
+                  <div class="job w" style="left:64%;width:24%"><b>AMC visit</b>via WhatsApp</div>
+                </div></div>
+                <div class="fa-row"><span><i style="background:#16a34a">RV</i>Ravi</span><div class="fa-track">
+                  <div class="job g" style="left:6%;width:30%"><b>Geyser install</b>Madhapur</div>
+                  <div class="job o" style="left:44%;width:22%"><b>Wiring fault</b>Kondapur</div>
+                </div></div>
+                <div class="fa-row"><span><i style="background:#f59e0b">SM</i>Sameer</span><div class="fa-track">
+                  <div class="job b" style="left:14%;width:28%"><b>RO service</b>Gachibowli</div>
+                  <div class="job w" style="left:50%;width:22%"><b>Fan repair</b>via WhatsApp</div>
+                  <div class="job b" style="left:78%;width:20%"><b>Inspection</b>Kukatpally</div>
+                </div></div>
+                <div class="fa-row"><span><i style="background:#7c3aed">PR</i>Priya</span><div class="fa-track">
+                  <div class="job o" style="left:2%;width:22%"><b>Fridge repair</b>Ameerpet</div>
+                  <div class="job b" style="left:36%;width:30%"><b>AC install</b>Hitech City</div>
+                </div></div>
+                <div class="fa-row"><span><i style="background:#0891b2">KR</i>Kiran</span><div class="fa-track">
+                  <div class="job g" style="left:10%;width:24%"><b>Chimney clean</b>Manikonda</div>
+                  <div class="job w" style="left:58%;width:26%"><b>Washer repair</b>via WhatsApp</div>
+                </div></div>
+                <div class="fa-now"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="base"></div>
+      </div>
+      <div class="wa-toast">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg></span>
+        <div><b>New WhatsApp booking</b><span>“Can you schedule our AMC visit at 3pm today?”</span><br><span class="ok">✓ Booked · Anika · 3:00 PM</span></div>
+      </div>
+      <div class="phone">
+        <div class="scr">
+          <div class="ft-head"><div class="notch"></div><small>Good morning,</small><h5>Anika · 4 jobs today</h5></div>
+          <div class="ft-next">
+            <span class="tag">NEXT JOB · 12:00 PM</span>
+            <b>Leak check — Mr. Varma</b>
+            <span>Road No. 36, Jubilee Hills</span>
+            <div class="acts"><i>Navigate</i><i class="go">Start job</i></div>
+          </div>
+          <div class="ft-list">
+            <h6>Later today</h6>
+            <div class="ft-job"><time>3:00</time><div><b>AMC visit · Mrs. Reddy</b><span>Film Nagar</span><br><em class="w">Booked on WhatsApp</em></div></div>
+            <div class="ft-job"><time>5:00</time><div><b>AC service · Mr. Khan</b><span>Banjara Hills</span><br><em class="s">Scheduled</em></div></div>
+          </div>
+          <div class="ft-tabs"><span class="on">Jobs</span><span>Map</span><span>Chat</span><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="p-strip">
+  <div class="wrap">
+    <b>Built for service teams in</b>
+    <span>AC &amp; HVAC</span><span>Plumbing</span><span>Electrical</span><span>Appliance repair</span><span>Pest control</span><span>Facility management</span>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="light" id="how">
+  <div class="wrap">
+    <div class="head2">
+      <div>
+        <p class="kick">How it works</p>
+        <h2>From a WhatsApp message<br>to a <em>closed job.</em></h2>
+      </div>
+      <div>
+        <p>No double entry, no lost messages. Every step updates the same work order, so everyone sees what is happening in real time.</p>
+      </div>
+    </div>
+    <div class="tline">
+      <div class="tstep">
+        <div class="node"><span class="num">01</span><span class="ic" style="background:#25d366"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span></div>
+        <h3>Customer books</h3><p>They message on WhatsApp and pick an open slot — no app to install.</p>
+      </div>
+      <div class="tstep">
+        <div class="node"><span class="num">02</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span></div>
+        <h3>Office plans</h3><p>The job lands on the planner. Drag it to the right technician and time.</p>
+      </div>
+      <div class="tstep">
+        <div class="node"><span class="num">03</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span></div>
+        <h3>Technician works</h3><p>Job details, directions and checklist arrive on the technician's phone.</p>
+      </div>
+      <div class="tstep">
+        <div class="node"><span class="num">04</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></span></div>
+        <h3>Job closed</h3><p>Photos, signature and invoice are captured on site. The customer is updated.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE DEEP-DIVES -->
+<section class="white" id="features">
+  <div class="wrap">
+
+    <div class="feat-row">
+      <div class="copy">
+        <p class="kick">WhatsApp booking</p>
+        <h3>Bookings straight from <em>WhatsApp.</em></h3>
+        <p>Your customers already use WhatsApp. TEZVOFlow puts every chat in a shared inbox next to your schedule, and turns a “3pm please” into a booked job.</p>
+        <ul class="ticks">
+          <li>Shared inbox for your whole office team</li>
+          <li>Offer open slots right inside the chat</li>
+          <li>Confirmed slot creates the work order automatically</li>
+          <li>Reminders and “technician on the way” updates</li>
+        </ul>
+      </div>
+      <div class="mock">
+        <div class="win">
+          <div class="win-bar"><i></i><i></i><i></i><span>app.tezvoflow.com / inbox</span></div>
+          <div class="wa-app">
+            <div class="wa-list">
+              <h6>WhatsApp inbox</h6>
+              <div class="on"><i style="background:#25d366">MR</i><span><b>Mrs. Reddy</b><small>3pm works, thank you!</small></span></div>
+              <div><i style="background:#2563eb">VK</i><span><b>Vikram K.</b><small>Is the technician coming?</small></span></div>
+              <div><i style="background:#f59e0b">SF</i><span><b>Sunrise Foods</b><small>Need AMC for 4 units</small></span></div>
+              <div><i style="background:#7c3aed">AN</i><span><b>Anjali N.</b><small>Photo attached</small></span></div>
+              <div><i style="background:#0891b2">RS</i><span><b>Rahul S.</b><small>Thanks, all working now</small></span></div>
+            </div>
+            <div class="wa-conv">
+              <div class="who"><div><b>Mrs. Reddy</b><small>online</small></div></div>
+              <div class="bub">Hi, can you schedule our AMC visit today?<small>2:05 PM</small></div>
+              <div class="bub me">Sure! These slots are open today:
+                <div class="slots"><span>1:00</span><span class="on">3:00</span><span>5:00</span></div><small>2:06 PM ✓✓</small></div>
+              <div class="bub">3pm works, thank you!<small>2:07 PM</small></div>
+              <div class="bub me">Booked ✅ Anika will visit at 3:00 PM.<small>2:07 PM ✓✓</small></div>
+            </div>
+            <div class="wa-book">
+              <h6>New work order</h6>
+              <div class="kv"><span>Job</span><span>AMC visit</span></div>
+              <div class="kv"><span>Customer</span><span>Mrs. Reddy</span></div>
+              <div class="kv"><span>Area</span><span>Film Nagar</span></div>
+              <div class="kv"><span>Slot</span><span>Today 3:00 PM</span></div>
+              <div class="kv"><span>Technician</span><span>Anika</span></div>
+              <div class="pillok">✓ Added to planner · WO-1843</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-row rev">
+      <div class="copy">
+        <p class="kick">Work orders</p>
+        <h3>Every detail in <em>one work order.</em></h3>
+        <p>From the first message to the final invoice, each job has a single home — status, customer, technician, parts and a full activity history.</p>
+        <ul class="ticks">
+          <li>Clear status from booked to invoiced</li>
+          <li>Customer history and site details in one view</li>
+          <li>Parts used, notes and photos from the field</li>
+          <li>Full timeline of who did what, and when</li>
+        </ul>
+      </div>
+      <div class="mock">
+        <div class="win">
+          <div class="win-bar"><i></i><i></i><i></i><span>app.tezvoflow.com / work-orders / WO-1843</span></div>
+          <div class="wo">
+            <div class="wo-head"><b>WO-1843 · AMC visit</b><em>In progress</em><span>Created from WhatsApp</span></div>
+            <div class="wo-steps"><div class="done"></div><div class="done"></div><div class="now"></div><div></div><div></div></div>
+            <div class="wo-labels"><span>Booked</span><span>Assigned</span><span class="on">In progress</span><span>Completed</span><span>Invoiced</span></div>
+            <div class="wo-grid">
+              <div class="wo-card">
+                <h6>Customer</h6>
+                <b>Mrs. Reddy</b>
+                <span style="color:#5f6d80">Plot 12, Film Nagar, Hyderabad</span>
+                <span style="color:#5f6d80">2 split ACs · AMC since 2025</span>
+              </div>
+              <div class="wo-card">
+                <h6>Technician</h6>
+                <div class="tech"><i>AK</i><div><b>Anika</b><br><span style="color:#5f6d80">On site since 3:04 PM</span></div></div>
+              </div>
+              <div class="wo-card">
+                <h6>Parts &amp; checklist</h6>
+                <span>✓ Filter cleaning (2 units)</span>
+                <span>✓ Gas pressure check</span>
+                <span style="color:#8a97a8">○ Drain pipe flush</span>
+              </div>
+              <div class="wo-card">
+                <h6>Activity</h6>
+                <div class="feed">
+                  <div><i style="background:#25d366"></i><span>Booked on WhatsApp<small>2:07 PM</small></span></div>
+                  <div><i style="background:#2563eb"></i><span>Assigned to Anika<small>2:07 PM</small></span></div>
+                  <div><i style="background:#f59e0b"></i><span>Technician on site<small>3:04 PM</small></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-row">
+      <div class="copy">
+        <p class="kick">Technician app</p>
+        <h3>Your team's day, <em>in their pocket.</em></h3>
+        <p>Technicians see their jobs, get directions, follow checklists and close the job on site — photos, customer signature and all.</p>
+        <ul class="ticks">
+          <li>Today's jobs with navigation in one tap</li>
+          <li>Checklists so no step is missed</li>
+          <li>Before and after photos with signature</li>
+          <li>Office sees progress the moment it happens</li>
+        </ul>
+      </div>
+      <div class="mock">
+        <div class="phones">
+          <div class="phone">
+            <div class="scr">
+              <div class="ft-head"><div class="notch"></div><small>Good afternoon,</small><h5>Anika · 4 jobs today</h5></div>
+              <div class="ft-next">
+                <span class="tag">NOW · 3:00 PM</span>
+                <b>AMC visit — Mrs. Reddy</b>
+                <span>Plot 12, Film Nagar</span>
+                <div class="acts"><i>Navigate</i><i class="go">Open job</i></div>
+              </div>
+              <div class="ft-list">
+                <h6>Later today</h6>
+                <div class="ft-job"><time>5:00</time><div><b>AC service · Mr. Khan</b><span>Banjara Hills</span><br><em class="s">Scheduled</em></div></div>
+                <div class="ft-job"><time>6:30</time><div><b>Leak check · Mr. Varma</b><span>Jubilee Hills</span><br><em class="w">Booked on WhatsApp</em></div></div>
+              </div>
+              <div class="ft-tabs"><span class="on">Jobs</span><span>Map</span><span>Chat</span><span>Profile</span></div>
+            </div>
+          </div>
+          <div class="phone">
+            <div class="scr">
+              <div class="ft-head green"><div class="notch"></div><small>WO-1843 · AMC visit</small><h5>Close out job</h5></div>
+              <div class="ck">
+                <h6>Checklist</h6>
+                <div class="it"><i>✓</i>Filter cleaning (2 units)</div>
+                <div class="it"><i>✓</i>Gas pressure check</div>
+                <div class="it"><i class="off"></i>Drain pipe flush</div>
+                <h6>Photos</h6>
+                <div class="photos"><span></span><span></span><span class="add">+</span></div>
+                <h6>Customer signature</h6>
+                <div class="sign"><svg viewBox="0 0 110 28" fill="none" stroke="#1d4ed8" stroke-width="1.8" stroke-linecap="round"><path d="M3 20c8-14 12-14 10 0s8-12 14-10 2 12 10 6 10-10 14-4 6 8 14 2 10-6 18-4"/></svg></div>
+                <div class="done-btn">Complete job &amp; send invoice</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FEATURES GRID -->
+<section class="light" id="all-features">
+  <div class="wrap">
+    <div class="head2">
+      <div>
+        <p class="kick">Everything in one place</p>
+        <h2>Built for how service<br>businesses <em>really work.</em></h2>
+      </div>
+      <div>
+        <p>Start with what you need today and grow into the rest. We set it up around your services, team and areas.</p>
+      </div>
+    </div>
+    <div class="fgrid6">
+      <div class="fcard"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div><h3>Appointment planner</h3><p>Day and week views by technician, with a live now-line and drag-and-drop scheduling.</p></div>
+      <div class="fcard"><div class="ic g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><h3>WhatsApp inbox</h3><p>One shared inbox for the office. Chats become bookings without copying details.</p></div>
+      <div class="fcard"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><h3>Work orders</h3><p>Status, customer, parts, checklist and activity history for every single job.</p></div>
+      <div class="fcard"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div><h3>Technician app</h3><p>Jobs, directions, checklists, photos and customer signature on the technician's phone.</p></div>
+      <div class="fcard"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-4.4 7-10a7 7 0 10-14 0c0 5.6 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg></div><h3>Team &amp; areas</h3><p>See who is where, balance workload across technicians and plan by service area.</p></div>
+      <div class="fcard"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div><h3>Invoices &amp; reports</h3><p>Invoice from the completed job and track jobs, revenue and team performance.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="white" id="faq">
+  <div class="wrap">
+    <div class="head2">
+      <div>
+        <p class="kick">Questions</p>
+        <h2>Frequently asked.</h2>
+      </div>
+      <div>
+        <p>Can't find your answer? Message us on WhatsApp or email support@tezvo-tech.com.</p>
+      </div>
+    </div>
+    <div class="faq">
+      <details open><summary>Do my customers need to install an app?</summary><p>No. Customers simply message you on WhatsApp as they do today. Only your office team and technicians use TEZVOFlow.</p></details>
+      <details><summary>Can it work with more than one branch?</summary><p>Yes. You can run multiple planners and teams from one account, with the work order as the single source of truth.</p></details>
+      <details><summary>Can TEZVOFlow be customised for our services?</summary><p>Yes. TEZVOFlow is built by our team in Hyderabad, so we can tailor job types, checklists, forms and invoices to how you work.</p></details>
+      <details><summary>How much does it cost?</summary><p>Pricing depends on your team size and the modules you need. After a short walkthrough we share a clear, written quote.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<section class="band" style="padding:0">
+  <div class="wrap">
+    <div>
+      <p class="kick" style="color:#9ec2ff">See TEZVOFlow in action</p>
+      <h2>Ready to put your service business in flow?</h2>
+    </div>
+    <p>Book a free walkthrough. Bring last week's job list and we'll show it on the planner.</p>
+    <button class="btn" type="button" data-talk data-need="TEZVOFlow / Field service">Book a walkthrough <span class="arrow">→</span></button>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <a class="brand" href="index.html">
+          <img src="logo-mark-blue.svg" alt="" />
+          <span><b>TEZVO TECH</b><small>Smart Digital. Real Growth.</small></span>
+        </a>
+        <p class="about">A Hyderabad based technology company building digital products, AI solutions and automations for real businesses.</p>
+      </div>
+      <div class="col">
+        <h5>What we do</h5>
+        <a href="index.html#services">Websites &amp; Platforms</a>
+        <a href="index.html#services">Mobile Apps</a>
+        <a href="index.html#services">AI &amp; Automation</a>
+        <a href="index.html#services">Integrations &amp; Data</a>
+      </div>
+      <div class="col">
+        <h5>Industries</h5>
+        <a href="index.html#industries">Healthcare</a>
+        <a href="index.html#industries">Restaurants</a>
+        <a href="index.html#industries">Retail &amp; E-commerce</a>
+        <a href="index.html#industries">Education &amp; Training</a>
+      </div>
+      <div class="col">
+        <h5>Company</h5>
+        <a href="index.html#why">About</a>
+        <a href="tezvoflow.html">TEZVOFlow</a>
+        <a href="#" data-talk>Contact</a>
+      </div>
+      <div class="fcontact">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-4.4 7-10a7 7 0 10-14 0c0 5.6 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg><span>Hyderabad, India<small>Serving businesses across India</small></span></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><a href="mailto:support@tezvo-tech.com">support@tezvo-tech.com</a></div>
+        <div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg><a href="https://wa.me/919072306065" target="_blank" rel="noopener">WhatsApp +91 90723 06065</a></div>
+      </div>
+    </div>
+    <div class="flegal">
+      <span>© 2026 TEZVO TECH. All rights reserved.</span>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </div>
+</footer>
+
+<dialog class="talk" id="talk" aria-labelledby="talk-title">
+  <div class="in">
+    <button class="x" type="button" id="talk-close" aria-label="Close">×</button>
+    <h3 id="talk-title">Let's talk</h3>
+    <p class="sub">Tell us about your business. We reply within one business day with a clear next step.</p>
+    <form id="inquiry-form">
+      <div class="two">
+        <label>Name <input name="name" type="text" required autocomplete="name" placeholder="Your name" /></label>
+        <label>Email <input name="email" type="email" required autocomplete="email" placeholder="you@company.com" /></label>
+      </div>
+      <div class="two">
+        <label>Company <input name="company" type="text" autocomplete="organization" placeholder="Company name" /></label>
+        <label>What do you need?
+          <select name="need">
+            <option>Website</option>
+            <option>Mobile app</option>
+            <option>AI / Automation</option>
+            <option>TEZVOFlow / Field service</option>
+            <option>Not sure yet</option>
+          </select>
+        </label>
+      </div>
+      <label>Message <textarea name="message" required placeholder="What do you want to build or fix?"></textarea></label>
+      <label class="hp" aria-hidden="true">Leave blank <input name="company_website" tabindex="-1" autocomplete="off" /></label>
+      <div class="row">
+        <button class="btn wa" type="submit" id="inquiry-submit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg>Send on WhatsApp</button>
+        <span class="mail">or email <a href="mailto:support@tezvo-tech.com">support@tezvo-tech.com</a></span>
+      </div>
+      <p class="form-note" id="inquiry-note" role="status"></p>
+    </form>
+  </div>
+</dialog>
+
+<a class="wa-float" href="https://wa.me/919072306065?text=Hi%20TEZVO%20TECH%2C%20I%27d%20like%20to%20discuss%20a%20project." target="_blank" rel="noopener" aria-label="Chat with TEZVO TECH on WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg>
+  <span>Chat on WhatsApp</span>
+</a>
+
+<script>
+(function () {
+  /* Hero slider */
+  var slides = document.querySelectorAll(".hslide");
+  if (slides.length) {
+    var cur = document.getElementById("hcur");
+    var i = 0, timer;
+    var show = function (n) {
+      i = (n + slides.length) % slides.length;
+      slides.forEach(function (s, k) { s.classList.toggle("on", k === i); });
+      cur.textContent = "0" + (i + 1);
+    };
+    var restart = function () { clearInterval(timer); timer = setInterval(function () { show(i + 1); }, 7000); };
+    document.getElementById("hnext").addEventListener("click", function () { show(i + 1); restart(); });
+    document.getElementById("hprev").addEventListener("click", function () { show(i - 1); restart(); });
+    restart();
+  }
+
+  /* Products dropdown (hover on desktop, click/tap anywhere) */
+  document.querySelectorAll(".dd").forEach(function (dd) {
+    var btn = dd.querySelector(".dd-btn");
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var open = dd.classList.toggle("open");
+      btn.setAttribute("aria-expanded", open);
+    });
+  });
+  function closeDropdowns() {
+    document.querySelectorAll(".dd.open").forEach(function (dd) {
+      dd.classList.remove("open");
+      dd.querySelector(".dd-btn").setAttribute("aria-expanded", "false");
+    });
+  }
+  document.addEventListener("click", function (e) { if (!e.target.closest(".dd")) closeDropdowns(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeDropdowns(); });
+
+  /* Contact dialog */
+  var dlg = document.getElementById("talk");
+  var form = document.getElementById("inquiry-form");
+  document.querySelectorAll("[data-talk]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (el.dataset.need) form.need.value = el.dataset.need;
+      if (typeof dlg.showModal === "function") dlg.showModal();
+      else location.href = "mailto:support@tezvo-tech.com";
+    });
+  });
+  document.getElementById("talk-close").addEventListener("click", function () { dlg.close(); });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+
+  /* Inquiry form → WhatsApp +91 90723 06065, with an email copy via the Azure Function */
+  var WA_NUMBER = "919072306065";
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var note = document.getElementById("inquiry-note");
+    var data = {
+      name: form.name.value.trim(),
+      email: form.email.value.trim(),
+      company: form.company.value.trim(),
+      need: form.need.value,
+      message: form.message.value.trim(),
+      company_website: form.company_website.value
+    };
+    if (data.company_website) return;
+
+    var text = [
+      "*New enquiry — TEZVO TECH website*",
+      "Name: " + data.name,
+      "Email: " + data.email,
+      data.company ? "Company: " + data.company : null,
+      "Need: " + data.need,
+      "",
+      data.message
+    ].filter(function (l) { return l !== null; }).join("\n");
+    var waUrl = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(text);
+    var win = window.open(waUrl, "_blank");
+    if (win) win.opener = null;
+    else location.href = waUrl;
+
+    note.className = "form-note ok";
+    note.textContent = "WhatsApp opened with your message — press Send in WhatsApp to deliver it.";
+
+    fetch("/api/inquiry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    }).then(function (res) { return res.json().then(function (body) { return res.ok && body.ok; }); })
+      .then(function (ok) {
+        if (ok) note.textContent += " A copy was also emailed to our team.";
+      })
+      .catch(function () {});
+    form.reset();
+  });
+})();
+</script>
+</body>
+</html>

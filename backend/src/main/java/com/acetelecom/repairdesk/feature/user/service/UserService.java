@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.user.domain.AccountStatus;
 import com.acetelecom.repairdesk.feature.user.domain.Role;
 import com.acetelecom.repairdesk.feature.user.domain.User;
@@ -101,6 +102,11 @@ public class UserService {
         user.setName(req.name());
         user.setMobile(req.mobile());
         user.setPasswordHash(passwordEncoder.encode(req.password()));
+        UUID companyId = CompanyContext.get();
+        if (companyId == null) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "Sign in again");
+        }
+        user.setCompanyId(companyId);
         user.setRole(role);
         user.setStatus(AccountStatus.ACTIVE);
         user.setMustChangePassword(true);
@@ -215,7 +221,9 @@ public class UserService {
     // ─────────────────────────────────────────────────────────────────────
 
     private User requireUser(UUID id) {
-        return userRepo.findById(id)
+        User user = userRepo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "User not found"));
+        CompanyContext.requireSame(user.getCompanyId(), "User not found");
+        return user;
     }
 }

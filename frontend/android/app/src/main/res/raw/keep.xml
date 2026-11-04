@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- geolocator looks the notification icons up by name at runtime, so release
+     resource shrinking cannot see that they are used. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_trip,@drawable/ic_stat_on_site" />

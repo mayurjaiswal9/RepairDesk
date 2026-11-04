@@ -46,6 +46,7 @@ export class LoginComponent implements OnInit {
   readonly correlationId = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
+    companyCode: [''],
     username: ['', Validators.required],
     password: ['', Validators.required],
   });
@@ -100,12 +101,17 @@ export class LoginComponent implements OnInit {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
-    const { username, password } = this.form.getRawValue();
+    const { username, password, companyCode } = this.form.getRawValue();
+    const code = companyCode.trim();
     this.submitting.set(true);
     this.form.disable({ emitEvent: false });
 
     this.authApi
-      .login({ username: username.trim(), password })
+      .login({
+        username: username.trim(),
+        password,
+        ...(code ? { companyCode: code } : {}),
+      })
       .pipe(
         finalize(() => {
           this.submitting.set(false);

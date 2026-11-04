@@ -11,8 +11,15 @@ import '../../admin/presentation/categories_screen.dart';
 import '../../admin/presentation/settings_screen.dart';
 import '../../admin/presentation/staff_screen.dart';
 import '../../customer_home/presentation/customer_home_screen.dart';
+import '../../attendance/presentation/attendance_screen.dart';
+import '../../attendance/presentation/duty_card.dart';
+import '../../location/presentation/location_board_screen.dart';
+import '../../location/presentation/office_location_screen.dart';
 import '../../customer_management/presentation/customers_screen.dart';
 import '../../jobs/presentation/jobs_list_screen.dart';
+import '../../trips/data/on_site_tracker.dart';
+import '../../trips/data/trip_recorder.dart';
+import '../../trips/presentation/my_trips_screen.dart';
 import '../../notifications/data/unread_count_provider.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../requests/presentation/request_queue_screen.dart';
@@ -153,6 +160,22 @@ class _StaffDashboard extends ConsumerWidget {
               ),
             ),
           _NavTile(
+            icon: Icons.my_location_outlined,
+            label: 'Locations',
+            subtitle: 'Office, technician positions, and job travel times',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LocationBoardScreen()),
+            ),
+          ),
+          _NavTile(
+            icon: Icons.fact_check_outlined,
+            label: 'Attendance',
+            subtitle: 'Technician work days',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AttendanceScreen()),
+            ),
+          ),
+          _NavTile(
             icon: Icons.build_outlined,
             label: 'Jobs',
             subtitle: 'Track and manage repair jobs',
@@ -196,6 +219,14 @@ class _StaffDashboard extends ConsumerWidget {
               ),
             ),
             _NavTile(
+              icon: Icons.place_outlined,
+              label: 'Office location',
+              subtitle: 'Shop pin, geofence, and location features',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const OfficeLocationScreen()),
+              ),
+            ),
+            _NavTile(
               icon: Icons.settings_outlined,
               label: 'Settings',
               subtitle: 'Business settings and working hours',
@@ -212,13 +243,28 @@ class _StaffDashboard extends ConsumerWidget {
 
 // ── Technician dashboard ──────────────────────────────────────────────────
 
-/// Technicians get Jobs + Appointments only. No Customers, Staff, Catalog, or
-/// Repair Requests (see docs/features/customer-management.md).
-class _TechnicianDashboard extends ConsumerWidget {
+/// Technicians get a work-day card only while attendance is on, then Jobs and
+/// Appointments. No Customers, Staff, Catalog, or Repair Requests.
+class _TechnicianDashboard extends ConsumerStatefulWidget {
   const _TechnicianDashboard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TechnicianDashboard> createState() =>
+      _TechnicianDashboardState();
+}
+
+class _TechnicianDashboardState extends ConsumerState<_TechnicianDashboard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(tripRecorderProvider.notifier).restore();
+      ref.read(onSiteTrackerProvider.notifier).refresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final role = Roles.normalize(ref.watch(sessionControllerProvider).role);
     return ListView(
       padding: const EdgeInsets.all(AppTheme.spaceM),
@@ -227,10 +273,12 @@ class _TechnicianDashboard extends ConsumerWidget {
         Text('My work', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppTheme.spaceXS),
         Text(
-          'Role: $role — only jobs and appointments assigned to you.',
+          'Role: $role — jobs and appointments assigned to you.',
           style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: AppTheme.spaceL),
+        const DutyCard(),
+        const SizedBox(height: AppTheme.spaceS),
         Text('Quick Actions',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppTheme.spaceM),
@@ -240,6 +288,14 @@ class _TechnicianDashboard extends ConsumerWidget {
           subtitle: 'Jobs assigned to you',
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const JobsListScreen()),
+          ),
+        ),
+        _NavTile(
+          icon: Icons.route_outlined,
+          label: 'My trips',
+          subtitle: 'Kilometres recorded for your jobs',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const MyTripsScreen()),
           ),
         ),
         _NavTile(

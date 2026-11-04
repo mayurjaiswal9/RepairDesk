@@ -23,6 +23,7 @@ import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.devicecategory.repository.DeviceCategoryRepository;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.job.service.JobService;
+import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
 import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
@@ -46,6 +47,7 @@ class RepairRequestServiceTest {
     @Mock private AuditService auditService;
     @Mock private JobService jobService;
     @Mock private NotificationService notifService;
+    @Mock private ServiceLocationApplier locationApplier;
 
     private RepairRequestService service;
     private AuthenticatedUser customerActor;
@@ -54,7 +56,7 @@ class RepairRequestServiceTest {
     @BeforeEach
     void setUp() {
         service = new RepairRequestService(requestRepo, categoryRepo,
-                userRepo, jobRepo, jdbc, auditService, jobService, notifService);
+                userRepo, jobRepo, jdbc, auditService, jobService, notifService, locationApplier);
 
         UUID customerId = UUID.randomUUID();
         customerActor = new AuthenticatedUser(customerId, "cust1", "CUSTOMER");
@@ -168,7 +170,7 @@ class RepairRequestServiceTest {
                 "Samsung", "S23", null, null, null,
                 "Screen cracked after a drop.",
                 LocalDate.now().plusDays(1), LocalTime.of(10, 0),
-                ownerId, false, null, null, "WALK_IN");
+                ownerId, false, null, null, "WALK_IN", null);
 
         var res = service.create(dto, staffActor);
 

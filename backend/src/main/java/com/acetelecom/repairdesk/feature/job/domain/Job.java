@@ -3,13 +3,18 @@ package com.acetelecom.repairdesk.feature.job.domain;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import com.acetelecom.repairdesk.common.domain.BaseEntity;
+import org.hibernate.annotations.Filter;
+
+import com.acetelecom.repairdesk.common.domain.TenantEntity;
+import com.acetelecom.repairdesk.feature.company.CompanyFilters;
+import com.acetelecom.repairdesk.feature.location.domain.ServiceLocation;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.user.domain.User;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -24,10 +29,11 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "jobs")
+@Filter(name = CompanyFilters.NAME, condition = CompanyFilters.CONDITION)
 @Getter
 @Setter
 @NoArgsConstructor
-public class Job extends BaseEntity {
+public class Job extends TenantEntity {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "request_id", nullable = false, unique = true)
@@ -94,6 +100,9 @@ public class Job extends BaseEntity {
     // ── Technician-visible fields only ──
     @Column(name = "internal_notes", columnDefinition = "text")
     private String internalNotes;
+
+    @Embedded
+    private ServiceLocation serviceLocation = new ServiceLocation();
 
     /** Convenience: is this job in a state where a technician can transition it? */
     public boolean canTechnicianTransition(UUID technicianId) {

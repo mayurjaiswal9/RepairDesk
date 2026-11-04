@@ -1,6 +1,7 @@
 package com.acetelecom.repairdesk.feature.auth.service;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,6 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyCodes;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
+import com.acetelecom.repairdesk.feature.company.CompanyRepository;
+import com.acetelecom.repairdesk.feature.company.domain.Company;
+import com.acetelecom.repairdesk.feature.company.domain.CompanyStatus;
 import com.acetelecom.repairdesk.feature.auth.dto.AuthResponse;
 import com.acetelecom.repairdesk.feature.auth.dto.ChangePasswordRequest;
 import com.acetelecom.repairdesk.feature.auth.dto.LoginRequest;
@@ -27,12 +33,14 @@ import com.acetelecom.repairdesk.security.JwtService;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+    public AuthService(UserRepository userRepository, CompanyRepository companyRepository,
+            PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.companyRepository = companyRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -46,7 +54,12 @@ public class AuthService {
             throw new ApiException(ErrorCode.CONFLICT, "Mobile number already in use");
         }
 
+        Company ace = companyRepository.findByCode(CompanyCodes.ACE)
+                .filter(company -> company.getStatus() == CompanyStatus.ACTIVE)
+                .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR, "Company is not configured"));
+
         User user = new User();
+        user.setCompanyId(ace.getId());
         user.setUsername(req.username().strip());
         user.setMobile(req.mobile().replaceAll("[\\s\\-]", ""));
         user.setPasswordHash(passwordEncoder.encode(req.password()));
@@ -60,7 +73,10 @@ public class AuthService {
     /** AUTH-011: Authenticate and return a JWT. */
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest req) {
-        User user = userRepository.findActiveByUsername(req.username())
+        Company company = companyRepository.findByCode(normalizeCompanyCode(req.companyCode()))
+                .filter(found -> found.getStatus() == CompanyStatus.ACTIVE)
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "Invalid credentials"));
+        User user = userRepository.findActiveByUsernameAndCompany(req.username(), company.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "Invalid credentials"));
 
         if (user.getStatus() == AccountStatus.DISABLED) {
@@ -75,14 +91,22 @@ public class AuthService {
 
     /** AUTH-012: Reset password (enumeration-safe — same response regardless of account existence). */
     public void resetPassword(ResetPasswordRequest req) {
-        userRepository.findActiveByUsername(req.username()).ifPresent(user -> {
+        companyRepository.findByCode(CompanyCodes.ACE).ifPresent(ace -> userRepository
+                .findActiveByUsernameAndCompany(req.username(), ace.getId()).ifPresent(user -> {
             if (user.getStatus() == AccountStatus.DISABLED) {
                 return;
             }
             user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
             user.setUpdatedAt(Instant.now());
             userRepository.save(user);
-        });
+        }));
+    }
+
+    private static String normalizeCompanyCode(String companyCode) {
+        if (companyCode == null || companyCode.isBlank()) {
+            return CompanyCodes.ACE;
+        }
+        return companyCode.strip().toLowerCase(Locale.ROOT);
     }
 
     /** AUTH-013: Return own profile. */
@@ -119,9 +143,11 @@ public class AuthService {
     }
 
     private User requireUser(UUID userId) {
-        return userRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .filter(u -> u.getStatus() != AccountStatus.DELETED)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "User not found"));
+        CompanyContext.requireSame(user.getCompanyId(), "User not found");
+        return user;
     }
 
     private AuthResponse toAuthResponse(User user) {

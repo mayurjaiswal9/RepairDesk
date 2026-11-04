@@ -1,5 +1,6 @@
 package com.acetelecom.repairdesk.feature.job.repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -95,4 +96,31 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
 
     /** Dashboard counters. */
     long countByStatus(JobStatus status);
+
+    /** Open jobs that already have a service pin, with the assigned technician loaded. */
+    @Query("""
+            SELECT j FROM Job j
+            LEFT JOIN FETCH j.assignedTechnician
+            WHERE j.status NOT IN (
+                com.acetelecom.repairdesk.feature.job.domain.JobStatus.COMPLETED,
+                com.acetelecom.repairdesk.feature.job.domain.JobStatus.CANCELLED)
+              AND j.serviceLocation.latitude IS NOT NULL
+              AND j.serviceLocation.longitude IS NOT NULL
+            """)
+    List<Job> findOpenWithServicePin();
+
+    /** Other pinned, non-cancelled jobs of one technician changed since {@code since}. */
+    @Query("""
+            SELECT j FROM Job j
+            WHERE j.assignedTechnician.id = :technicianId
+              AND j.id <> :excludeJobId
+              AND j.status <> com.acetelecom.repairdesk.feature.job.domain.JobStatus.CANCELLED
+              AND j.serviceLocation.latitude IS NOT NULL
+              AND j.serviceLocation.longitude IS NOT NULL
+              AND j.updatedAt >= :since
+            """)
+    List<Job> findPinnedForTechnicianSince(
+            @Param("technicianId") UUID technicianId,
+            @Param("excludeJobId") UUID excludeJobId,
+            @Param("since") Instant since);
 }

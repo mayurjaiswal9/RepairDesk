@@ -1,0 +1,71 @@
+<div class="head">
+  <div>
+    <h1 class="display">Technician locations</h1>
+    <p class="lede">
+      Office, open jobs, and the latest position each technician has shared.
+      Travel time uses the technician when a position is available, otherwise the office.
+    </p>
+  </div>
+  <button type="button" class="ghost-btn" (click)="reload()">Refresh</button>
+</div>
+
+@if (state() === 'error') {
+  <div class="state-panel" role="alert">
+    <p>{{ error()?.message }}</p>
+    <button type="button" class="primary-btn" (click)="reload()">Retry</button>
+  </div>
+} @else if (state() === 'loading') {
+  <p class="muted">Loading the map…</p>
+} @else {
+  <app-pin-map [pins]="pins()" [height]="420" />
+  <p class="legend">O office · T technician · unmarked pins are jobs</p>
+
+  <div class="columns">
+    <section class="card">
+      <h2>Technicians</h2>
+      @if (!board()?.technicians?.length) {
+        <p class="muted">No technicians yet.</p>
+      } @else {
+        <ul>
+          @for (tech of board()!.technicians; track tech.id) {
+            <li>
+              <strong>{{ tech.name }}</strong>
+              @if (tech.latitude == null) {
+                <span class="muted">No position shared yet</span>
+              } @else {
+                @if (presenceLabel(tech); as presence) {
+                  <span class="presence {{ presence.tone }}">{{ presence.text }}</span>
+                }
+                <span>{{ tech.latitude | number: '1.4-4' }}, {{ tech.longitude | number: '1.4-4' }}</span>
+                @if (tech.recordedAt && !tech.state) {
+                  <span class="muted">{{ tech.recordedAt | date: 'short' }}</span>
+                }
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="card">
+      <h2>Jobs and ETA</h2>
+      @if (!board()?.jobs?.length) {
+        <p class="muted">No open job has a service pin yet.</p>
+      } @else {
+        <ul>
+          @for (job of board()!.jobs; track job.id) {
+            <li>
+              <a [routerLink]="['/jobs', job.id]"><strong>{{ job.referenceNumber }}</strong></a>
+              <span>{{ job.address || 'Pin saved' }}</span>
+              <span>{{ job.technicianName || 'Unassigned' }}</span>
+              <span class="eta">{{ etaLabel(job) }}</span>
+              @if (directionsUrl(job); as mapsUrl) {
+                <a class="ghost-btn nav-link" [href]="mapsUrl" target="_blank" rel="noopener noreferrer">Start Navigating</a>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+}

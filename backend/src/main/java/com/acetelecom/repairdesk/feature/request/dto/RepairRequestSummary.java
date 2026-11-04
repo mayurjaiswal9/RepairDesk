@@ -24,7 +24,9 @@ public record RepairRequestSummary(
         Instant updatedAt,
         UUID jobId,
         JobStatus jobStatus,
-        String assignedTechnicianName) {
+        String assignedTechnicianName,
+        String serviceCity,
+        String serviceLandmark) {
 
     /** @param job the Job created on approval (1:1), or null if not yet approved. */
     public static RepairRequestSummary from(RepairRequest r, Job job) {
@@ -44,6 +46,8 @@ public record RepairRequestSummary(
                 job != null ? job.getId() : null,
                 job != null ? job.getStatus() : null,
                 job != null && job.getAssignedTechnician() != null
-                        ? job.getAssignedTechnician().getName() : null);
+                        ? job.getAssignedTechnician().getName() : null,
+                r.getServiceLocation() == null ? null : r.getServiceLocation().getCity(),
+                r.getServiceLocation() == null ? null : r.getServiceLocation().getLandmark());
     }
 }

@@ -1,0 +1,45 @@
+<div class="assist">
+  <label class="field">
+    <span>Search a place</span>
+    <input
+      [value]="query()"
+      (input)="onQuery($any($event.target).value)"
+      placeholder="Building, area, or PIN code"
+      autocomplete="off"
+      role="combobox"
+      aria-autocomplete="list"
+      [attr.aria-expanded]="suggestions().length > 0"
+    />
+  </label>
+  <p class="hint">Suggestions start after 5 letters, then refresh every 5 seconds.</p>
+  @if (searching()) {
+    <p class="hint">Looking up places…</p>
+  }
+  @if (suggestions().length) {
+    <ul class="suggest-list" role="listbox">
+      @for (item of suggestions(); track item.placeId) {
+        <li>
+          <button type="button" role="option" (click)="choose(item)">
+            <strong>{{ item.primaryText }}</strong>
+            @if (item.secondaryText) {
+              <small>{{ item.secondaryText }}</small>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  <label class="field">
+    <span>Customer's location</span>
+    <textarea
+      rows="2"
+      [value]="pasted()"
+      (input)="pasted.set($any($event.target).value)"
+      placeholder="Paste the Maps link the customer sent"
+    ></textarea>
+  </label>
+  <button type="button" class="ghost-btn" [disabled]="readingLink() || !pasted().trim()" (click)="useCustomerLink()">
+    {{ readingLink() ? 'Reading…' : 'Use this pin' }}
+  </button>
+</div>

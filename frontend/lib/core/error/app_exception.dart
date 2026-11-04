@@ -8,12 +8,19 @@ class AppException implements Exception {
   final String errorCode;
   final String message;
   final List<FieldError> fieldErrors;
+  final int? statusCode;
+  final Map<String, dynamic> details;
 
   const AppException({
     required this.errorCode,
     required this.message,
     this.fieldErrors = const [],
+    this.statusCode,
+    this.details = const {},
   });
+
+  /// `POST /jobs/{id}/start` refused because no trip was recorded and no reason was sent.
+  bool get tripRequired => details['tripRequired'] == true;
 
   bool get isUnauthorized => errorCode == 'UNAUTHORIZED';
   bool get isConflict     => errorCode == 'CONFLICT';
@@ -43,6 +50,7 @@ class AppException implements Exception {
     final map = _asJsonMap(data);
     if (map != null) {
       final fieldErrorsRaw = map['fieldErrors'] as List<dynamic>? ?? [];
+      final details = map['details'];
       return AppException(
         errorCode: map['errorCode'] as String? ?? 'UNKNOWN',
         message:   map['message']   as String? ?? 'An unexpected error occurred',
@@ -53,6 +61,8 @@ class AppException implements Exception {
                   message: e['message'] as String? ?? '',
                 ))
             .toList(),
+        statusCode: error.response?.statusCode,
+        details: details is Map ? Map<String, dynamic>.from(details) : const {},
       );
     }
 
@@ -74,8 +84,10 @@ class AppException implements Exception {
       );
     }
 
-    return const AppException(
-        errorCode: 'UNKNOWN', message: 'An unexpected error occurred.');
+    return AppException(
+        errorCode: 'UNKNOWN',
+        message: 'An unexpected error occurred.',
+        statusCode: error.response?.statusCode);
   }
 
   /// Binary downloads use [ResponseType.bytes], so error bodies arrive as

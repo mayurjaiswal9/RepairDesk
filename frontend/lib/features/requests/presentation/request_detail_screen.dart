@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/location/service_location_card.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../attachments/presentation/attachments_widget.dart';
 import '../data/requests_repository.dart';
@@ -144,6 +145,13 @@ class _RequestDetailBody extends ConsumerWidget {
               _InfoRow(label: 'Email', value: detail.contactEmail!),
           ]),
           const SizedBox(height: AppTheme.spaceM),
+
+          if (detail.serviceLocation != null) ...[
+            _Section(title: 'Service address', children: [
+              ServiceLocationCard(location: detail.serviceLocation),
+            ]),
+            const SizedBox(height: AppTheme.spaceM),
+          ],
 
           // ── Device ────────────────────────────────────────────────
           _Section(title: 'Device', children: [

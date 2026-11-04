@@ -18,7 +18,9 @@ public record JobSummary(
         Priority priority,
         UUID assignedTechnicianId,
         String assignedTechnicianName,
-        Instant updatedAt) {
+        Instant updatedAt,
+        String serviceCity,
+        String serviceLandmark) {
 
     public static JobSummary from(Job j) {
         return new JobSummary(
@@ -32,6 +34,8 @@ public record JobSummary(
                 j.getPriority(),
                 j.getAssignedTechnician() != null ? j.getAssignedTechnician().getId() : null,
                 j.getAssignedTechnician() != null ? j.getAssignedTechnician().getName() : null,
-                j.getUpdatedAt());
+                j.getUpdatedAt(),
+                j.getServiceLocation() == null ? null : j.getServiceLocation().getCity(),
+                j.getServiceLocation() == null ? null : j.getServiceLocation().getLandmark());
     }
 }

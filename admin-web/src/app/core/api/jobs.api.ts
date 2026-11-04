@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { toFileFormData } from './multipart';
-import { AttachmentMeta } from '../models/request.models';
+import { AttachmentMeta, ServiceLocation } from '../models/request.models';
 import { AppointmentSummary, JobDetail, Priority } from '../models/job.models';
 import { JobSummary, PageResponse } from '../models/dashboard.models';
 
@@ -77,6 +77,10 @@ export class JobsApi {
 
   setWarranty(id: string, confirmed: boolean): Observable<JobDetail> {
     return this.http.post<JobDetail>(`${this.base}/jobs/${id}/warranty`, { confirmed });
+  }
+
+  updateServiceLocation(id: string, serviceLocation: ServiceLocation): Observable<JobDetail> {
+    return this.http.put<JobDetail>(`${this.base}/jobs/${id}/service-location`, serviceLocation);
   }
 
   appendNote(id: string, note: string): Observable<JobDetail> {

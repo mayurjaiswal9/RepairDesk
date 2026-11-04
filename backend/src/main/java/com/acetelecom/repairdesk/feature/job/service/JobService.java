@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.common.web.PageResponse;
 import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.job.domain.Job;
@@ -19,10 +20,15 @@ import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
 import com.acetelecom.repairdesk.feature.job.dto.JobResponse;
 import com.acetelecom.repairdesk.feature.job.dto.JobSummary;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
+import com.acetelecom.repairdesk.feature.location.domain.ServiceLocation;
+import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
+import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
 import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
 import com.acetelecom.repairdesk.feature.request.repository.RepairRequestRepository;
+import com.acetelecom.repairdesk.feature.trip.domain.NoTripReason;
+import com.acetelecom.repairdesk.feature.trip.service.TripService;
 import com.acetelecom.repairdesk.feature.user.domain.Role;
 import com.acetelecom.repairdesk.feature.user.domain.User;
 import com.acetelecom.repairdesk.feature.user.repository.UserRepository;
@@ -37,15 +43,20 @@ public class JobService {
     private final UserRepository userRepo;
     private final NotificationService notifService;
     private final AuditService auditService;
+    private final ServiceLocationApplier locationApplier;
+    private final TripService tripService;
 
     public JobService(JobRepository jobRepo, RepairRequestRepository requestRepo,
             UserRepository userRepo, NotificationService notifService,
-            AuditService auditService) {
+            AuditService auditService, ServiceLocationApplier locationApplier,
+            TripService tripService) {
         this.jobRepo = jobRepo;
         this.requestRepo = requestRepo;
         this.userRepo = userRepo;
         this.notifService = notifService;
         this.auditService = auditService;
+        this.locationApplier = locationApplier;
+        this.tripService = tripService;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -98,6 +109,7 @@ public class JobService {
         job.setIssueDescription(req.getIssueDescription());
         job.setPurchaseDate(req.getPurchaseDate());
         job.setPriority(req.getPriority());
+        job.setServiceLocation(ServiceLocation.copyOf(req.getServiceLocation()));
         Job saved = jobRepo.save(job);
 
         notifService.send(req.getCustomer().getId(), "JOB_APPROVED",
@@ -248,6 +260,7 @@ public class JobService {
                 .filter(u -> u.getRole() == Role.TECHNICIAN && u.isActive())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
                         "Active technician not found"));
+        CompanyContext.requireSame(tech.getCompanyId(), "Active technician not found");
 
         job.setAssignedTechnician(tech);
         job.setStatus(JobStatus.ASSIGNED);
@@ -280,8 +293,14 @@ public class JobService {
     }
 
     public JobResponse start(UUID jobId, AuthenticatedUser actor) {
+        return start(jobId, null, null, actor);
+    }
+
+    /** With job trips on, a technician in strict mode needs a trip for this job or a no-trip reason. */
+    public JobResponse start(UUID jobId, NoTripReason noTripReason, String noTripNote, AuthenticatedUser actor) {
         Job job = requireJob(jobId);
         assertCanTransitionJob(job, actor, JobStatus.ASSIGNED, JobStatus.SCHEDULED);
+        tripService.beforeJobStart(job, actor, noTripReason, noTripNote);
 
         job.setStatus(JobStatus.IN_PROGRESS);
         job.setUpdatedAt(Instant.now());
@@ -291,6 +310,26 @@ public class JobService {
                 "Work has started on your repair " + job.getReferenceNumber() + ".",
                 job.getReferenceNumber(), "JOB", job.getId());
         auditService.record(actor, "JOB", jobId, "STARTED", null);
+        return JobResponse.from(job);
+    }
+
+    /** Staff correction of the customer address or pin. Technicians cannot call this. */
+    public JobResponse updateServiceLocation(UUID jobId, ServiceLocationDto dto, AuthenticatedUser actor) {
+        assertStaffOrAdmin(actor);
+        if (dto == null || !dto.hasContent()) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Enter an address or a map pin");
+        }
+        Job job = requireJob(jobId);
+        if (job.getServiceLocation() == null) {
+            job.setServiceLocation(new ServiceLocation());
+        }
+        locationApplier.apply(job.getServiceLocation(), dto);
+        job.setUpdatedAt(Instant.now());
+        jobRepo.save(job);
+        ServiceLocation loc = job.getServiceLocation();
+        auditService.record(actor, "JOB", jobId, "SERVICE_LOCATION_CHANGED",
+                (loc.getCity() == null ? "" : loc.getCity())
+                        + (loc.getLatitude() == null ? "" : " " + loc.getLatitude() + "," + loc.getLongitude()));
         return JobResponse.from(job);
     }
 
@@ -371,13 +410,17 @@ public class JobService {
     // ─────────────────────────────────────────────────────────────────────────
 
     private RepairRequest requireRequest(UUID id) {
-        return requestRepo.findById(id)
+        RepairRequest request = requestRepo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Request not found"));
+        CompanyContext.requireSame(request.getCompanyId(), "Request not found");
+        return request;
     }
 
     private Job requireJob(UUID id) {
-        return jobRepo.findById(id)
+        Job job = jobRepo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Job not found"));
+        CompanyContext.requireSame(job.getCompanyId(), "Job not found");
+        return job;
     }
 
     private void checkReadAccess(Job job, AuthenticatedUser caller) {

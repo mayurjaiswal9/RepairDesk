@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -45,6 +46,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiError> handleApiException(ApiException ex) {
         return build(ex.getErrorCode(), ex.getMessage(), List.of(), ex.getDetails());
+    }
+
+    /**
+     * {@code @Secured} denials are thrown inside the controller, so they reach
+     * this advice before the security filter can turn them into 403. Map them
+     * explicitly; the catch-all below would otherwise report them as 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
+        return build(ErrorCode.FORBIDDEN, "Access denied", List.of());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

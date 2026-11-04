@@ -38,6 +38,38 @@ export const NAV_GROUPS: NavGroupDef[] = [
         description: 'Review and approve incoming requests',
       },
       {
+        id: 'create-request',
+        label: 'Request repair',
+        path: '/requests/new',
+        icon: 'add_circle',
+        roles: ['ADMIN', 'STAFF'],
+        description: 'Walk-in or phone intake for a customer',
+      },
+      {
+        id: 'location',
+        label: 'Locations',
+        path: '/location',
+        icon: 'my_location',
+        roles: ['ADMIN', 'STAFF'],
+        description: 'Office, technician positions, and job ETAs',
+      },
+      {
+        id: 'attendance',
+        label: 'Attendance',
+        path: '/attendance',
+        icon: 'fact_check',
+        roles: ['ADMIN', 'STAFF'],
+        description: 'Technician work days',
+      },
+      {
+        id: 'mileage',
+        label: 'Mileage',
+        path: '/mileage',
+        icon: 'route',
+        roles: ['ADMIN'],
+        description: 'Trip km, routes, and travel allowance',
+      },
+      {
         id: 'jobs',
         label: 'Jobs',
         path: '/jobs',
@@ -103,6 +135,14 @@ export const NAV_GROUPS: NavGroupDef[] = [
         roles: ['ADMIN'],
         description: 'Business details and working hours',
       },
+      {
+        id: 'office-location',
+        label: 'Office location',
+        path: '/settings/location',
+        icon: 'place',
+        roles: ['ADMIN'],
+        description: 'Shop pin, geofence, and location features',
+      },
     ],
   },
 ];
@@ -120,17 +160,19 @@ export function quickLinksForRole(role: UserRole | null): NavItemDef[] {
     .flatMap((g) => g.items)
     .filter((i) => i.id !== 'dashboard');
   if (role === 'ADMIN' || role === 'STAFF') {
-    const create: NavItemDef = {
-      id: 'create-request',
-      label: 'Create request',
-      path: '/requests/new',
-      icon: 'add_circle',
-      roles: ['ADMIN', 'STAFF'],
-      description: 'Walk-in or phone intake',
-    };
-    const idx = links.findIndex((l) => l.id === 'requests');
-    if (idx >= 0) links.splice(idx + 1, 0, create);
-    else links.unshift(create);
+    if (!links.some((l) => l.id === 'create-request')) {
+      const create: NavItemDef = {
+        id: 'create-request',
+        label: 'Request repair',
+        path: '/requests/new',
+        icon: 'add_circle',
+        roles: ['ADMIN', 'STAFF'],
+        description: 'Walk-in or phone intake for a customer',
+      };
+      const idx = links.findIndex((l) => l.id === 'requests');
+      if (idx >= 0) links.splice(idx + 1, 0, create);
+      else links.unshift(create);
+    }
   }
   return links;
 }
@@ -138,6 +180,13 @@ export function quickLinksForRole(role: UserRole | null): NavItemDef[] {
 export function isNavActive(currentUrl: string, path: string): boolean {
   if (path === '/dashboard') {
     return currentUrl === '/dashboard' || currentUrl.startsWith('/dashboard?');
+  }
+  if (path === '/requests') {
+    return (
+      currentUrl === '/requests' ||
+      currentUrl.startsWith('/requests?') ||
+      (currentUrl.startsWith('/requests/') && !currentUrl.startsWith('/requests/new'))
+    );
   }
   return currentUrl === path || currentUrl.startsWith(path + '/') || currentUrl.startsWith(path + '?');
 }

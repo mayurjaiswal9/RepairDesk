@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../location/presentation/office_location_screen.dart';
 import '../data/admin_repository.dart';
 import 'settings_edit_screen.dart';
 
@@ -57,6 +58,17 @@ class SettingsScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(AppTheme.spaceM),
             children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.place_outlined, color: AppTheme.primary),
+                title: const Text('Office location'),
+                subtitle: const Text('Shop pin, geofence, and location features'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const OfficeLocationScreen()),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spaceM),
               // ── Scheduling ─────────────────────────────────────────
               _Section(
                 title: 'Scheduling',

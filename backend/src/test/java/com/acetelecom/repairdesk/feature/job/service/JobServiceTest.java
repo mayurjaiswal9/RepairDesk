@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +27,11 @@ import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
 import com.acetelecom.repairdesk.feature.job.dto.JobResponse;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
+import com.acetelecom.repairdesk.feature.location.domain.PinSource;
+import com.acetelecom.repairdesk.feature.location.domain.ServiceLocation;
+import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
+import com.acetelecom.repairdesk.feature.location.service.MapsService;
+import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
 import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
@@ -52,16 +58,20 @@ class JobServiceTest {
     private NotificationService notifService;
     @Mock
     private AuditService auditService;
+    @Mock
+    private MapsService mapsService;
 
     private JobService jobService;
+    private ServiceLocationApplier locationApplier;
 
     private AuthenticatedUser staffActor;
     private AuthenticatedUser techActor;
 
     @BeforeEach
     void setUp() {
+        locationApplier = new ServiceLocationApplier(mapsService);
         jobService = new JobService(jobRepo, requestRepo, userRepo,
-                notifService, auditService);
+                notifService, auditService, locationApplier);
 
         UUID staffId = UUID.randomUUID();
         staffActor = new AuthenticatedUser(staffId, "staff1", "STAFF");
@@ -91,6 +101,57 @@ class JobServiceTest {
         verify(notifService).send(any(), eq("JOB_APPROVED"), any(), any(), any(), any());
         verify(auditService).record(eq(staffActor), eq("REQUEST"), eq(reqId),
                 eq("APPROVED"), any());
+    }
+
+    @Test
+    void approve_copiesServiceLocationOntoTheJob() {
+        UUID reqId = UUID.randomUUID();
+        RepairRequest req = buildRequest(reqId, RequestStatus.PENDING_REVIEW);
+        ServiceLocation loc = new ServiceLocation();
+        loc.setCity("Mumbai");
+        loc.setLatitude(19.14);
+        loc.setLongitude(72.82);
+        loc.setPinSource(PinSource.MANUAL_PIN);
+        req.setServiceLocation(loc);
+        when(requestRepo.findById(reqId)).thenReturn(Optional.of(req));
+        when(jobRepo.findByRequestId(reqId)).thenReturn(Optional.empty());
+        when(jobRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        jobService.approve(reqId, staffActor);
+
+        ArgumentCaptor<Job> saved = ArgumentCaptor.forClass(Job.class);
+        verify(jobRepo).save(saved.capture());
+        assertThat(saved.getValue().getServiceLocation()).isNotSameAs(loc);
+        assertThat(saved.getValue().getServiceLocation().getCity()).isEqualTo("Mumbai");
+        assertThat(saved.getValue().getServiceLocation().getLatitude()).isEqualTo(19.14);
+        assertThat(saved.getValue().getServiceLocation().getPinSource()).isEqualTo(PinSource.MANUAL_PIN);
+    }
+
+    @Test
+    void updateServiceLocation_byTechnician_isForbidden() {
+        ServiceLocationDto dto = new ServiceLocationDto(
+                "Lokhandwala", null, "Mumbai", "400053", 19.14, 72.82, null);
+
+        assertThatThrownBy(() -> jobService.updateServiceLocation(UUID.randomUUID(), dto, techActor))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("Staff or Admin");
+    }
+
+    @Test
+    void updateServiceLocation_withPin_keepsCoordinatesAndDoesNotGeocode() {
+        UUID jobId = UUID.randomUUID();
+        Job job = buildJob(jobId, JobStatus.ASSIGNED);
+        when(jobRepo.findById(jobId)).thenReturn(Optional.of(job));
+        when(jobRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        ServiceLocationDto dto = new ServiceLocationDto(
+                "Lokhandwala", null, "Mumbai", "400053", 19.14, 72.82, null);
+
+        JobResponse result = jobService.updateServiceLocation(jobId, dto, staffActor);
+
+        assertThat(result.serviceLocation().city()).isEqualTo("Mumbai");
+        assertThat(result.serviceLocation().latitude()).isEqualTo(19.14);
+        assertThat(result.serviceLocation().pinSource()).isEqualTo("MANUAL_PIN");
+        verify(mapsService, never()).geocode(any());
     }
 
     @Test

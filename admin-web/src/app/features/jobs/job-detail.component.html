@@ -162,6 +162,50 @@
         </dl>
       </section>
 
+      <section class="card" aria-labelledby="address-heading">
+        <div class="section-head">
+          <h2 id="address-heading" class="section-title">Service address</h2>
+          @if (isStaffOrAdmin() && !editingLocation()) {
+            <button type="button" class="ghost-btn small" (click)="startLocationEdit()">Edit</button>
+          }
+        </div>
+        @if (editingLocation()) {
+          @if (draftPins().length) {
+            <app-pin-map
+              [pins]="draftPins()"
+              [height]="260"
+              [clickToSet]="true"
+              (positionChange)="stageJobPin($event)"
+            />
+          }
+          <p class="muted">Drag the pin, or search, then press Save. Nothing is stored until you save.</p>
+        } @else if (jobPins(d.serviceLocation).length) {
+          <app-pin-map [pins]="jobPins(d.serviceLocation)" [height]="260" />
+        }
+        <p class="issue-body">{{ editingLocation() ? (draftAddress() || shownAddress(d.serviceLocation)) : shownAddress(d.serviceLocation) }}</p>
+        @if (directionsUrl(d.serviceLocation); as mapsUrl) {
+          <a class="primary-btn nav-btn" [href]="mapsUrl" target="_blank" rel="noopener noreferrer">Start Navigating</a>
+        }
+        @if (editingLocation()) {
+          <app-place-assist
+            [biasLatitude]="draftLatitude()"
+            [biasLongitude]="draftLongitude()"
+            (queryChange)="locationQuery.set($event)"
+            (placePicked)="applyPickedPlace($event)"
+          />
+          <div class="panel-actions">
+            <button type="button" class="primary-btn" [disabled]="locating() || savingLocation()" (click)="saveLocationEdit()">
+              {{ locating() || savingLocation() ? 'Saving…' : 'Save' }}
+            </button>
+            <button type="button" class="ghost-btn" [disabled]="savingLocation()" (click)="cancelLocationEdit()">Cancel</button>
+          </div>
+        }
+      </section>
+
+      @if (isStaffOrAdmin()) {
+        <app-job-travel-panel [jobId]="d.id" [refreshKey]="d.updatedAt" />
+      }
+
       <section class="card" aria-labelledby="issue-heading">
         <h2 id="issue-heading" class="section-title">Issue description</h2>
         <p class="issue-body">{{ d.issueDescription || '—' }}</p>

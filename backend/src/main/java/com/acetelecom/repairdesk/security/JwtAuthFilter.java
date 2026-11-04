@@ -11,6 +11,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.user.domain.User;
 import com.acetelecom.repairdesk.feature.user.repository.UserRepository;
 
@@ -45,36 +46,43 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        String header = request.getHeader("Authorization");
-        if (header == null || !header.startsWith(BEARER_PREFIX)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String token = header.substring(BEARER_PREFIX.length());
+        CompanyContext.clear();
         try {
-            Claims claims = jwtService.validateAndParseClaims(token);
-            UUID userId = jwtService.extractUserId(claims);
-            String role = jwtService.extractRole(claims);
-
-            User user = userRepository.findById(userId).orElse(null);
-            if (user == null || !user.isActive()) {
-                // Account disabled/deleted or not found — treat as unauthenticated.
+            String header = request.getHeader("Authorization");
+            if (header == null || !header.startsWith(BEARER_PREFIX)) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            var auth = new UsernamePasswordAuthenticationToken(
-                    new AuthenticatedUser(user.getId(), user.getUsername(), role),
-                    null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            String token = header.substring(BEARER_PREFIX.length());
+            try {
+                Claims claims = jwtService.validateAndParseClaims(token);
+                UUID userId = jwtService.extractUserId(claims);
+                String role = jwtService.extractRole(claims);
+                UUID companyId = jwtService.extractCompanyId(claims);
 
-        } catch (JwtException | IllegalArgumentException ignored) {
-            // Invalid token — leave SecurityContext empty; security config returns 401.
+                User user = userRepository.findById(userId).orElse(null);
+                if (user == null || !user.isActive() || companyId == null
+                        || user.getCompanyId() == null || !companyId.equals(user.getCompanyId())) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                CompanyContext.set(user.getCompanyId());
+                var auth = new UsernamePasswordAuthenticationToken(
+                        new AuthenticatedUser(user.getId(), user.getUsername(), role, user.getCompanyId()),
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
+            } catch (JwtException | IllegalArgumentException ignored) {
+                // Invalid token — leave SecurityContext empty; security config returns 401.
+            }
+
+            filterChain.doFilter(request, response);
+        } finally {
+            CompanyContext.clear();
         }
-
-        filterChain.doFilter(request, response);
     }
 }

@@ -1,5 +1,6 @@
 package com.acetelecom.repairdesk.bootstrap;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.acetelecom.repairdesk.config.AppProperties;
+import com.acetelecom.repairdesk.feature.company.CompanyCodes;
 
 /**
  * Seeds the default administrator account once (GAP-03 / DB-008).
@@ -50,11 +52,27 @@ public class AdminAccountInitializer implements ApplicationRunner {
 
         String passwordHash = passwordEncoder.encode(admin.getDefaultPassword());
         jdbcTemplate.update(
-                "INSERT INTO users (id, username, mobile, name, password_hash, role, status, must_change_password, created_at, updated_at, version) "
-                        + "VALUES (?, ?, ?, ?, ?, 'ADMIN', 'ACTIVE', false, NOW(), NOW(), 0)",
-                UUID.randomUUID(), admin.getDefaultUsername(), admin.getDefaultMobile(),
+                "INSERT INTO users (id, company_id, username, mobile, name, password_hash, role, status, must_change_password, created_at, updated_at, version) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', 'ACTIVE', false, NOW(), NOW(), 0)",
+                UUID.randomUUID(), aceCompanyId(), admin.getDefaultUsername(), admin.getDefaultMobile(),
                 "Administrator", passwordHash);
 
         log.warn("Seeded default admin '{}'.", admin.getDefaultUsername());
+    }
+
+    /** Fresh databases get ACE Telecom. An existing admin is left untouched, including its company. */
+    private UUID aceCompanyId() {
+        List<UUID> ids = jdbcTemplate.query(
+                "SELECT id FROM companies WHERE code = ?",
+                (rs, row) -> rs.getObject(1, UUID.class),
+                CompanyCodes.ACE);
+        if (!ids.isEmpty()) {
+            return ids.get(0);
+        }
+        UUID created = UUID.randomUUID();
+        jdbcTemplate.update(
+                "INSERT INTO companies (id, code, name, status, created_at) VALUES (?, ?, 'ACE Telecom', 'ACTIVE', NOW())",
+                created, CompanyCodes.ACE);
+        return created;
     }
 }

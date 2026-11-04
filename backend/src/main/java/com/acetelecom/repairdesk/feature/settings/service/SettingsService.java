@@ -4,12 +4,14 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.settings.domain.BusinessSettings;
 import com.acetelecom.repairdesk.feature.settings.domain.WorkingHours;
 import com.acetelecom.repairdesk.feature.settings.dto.SchedulingConfigResponse;
@@ -32,6 +34,12 @@ public class SettingsService {
     }
 
     public BusinessSettings getSettings() {
+        UUID companyId = CompanyContext.get();
+        if (companyId != null) {
+            return settingsRepo.findByCompanyId(companyId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
+                            "Business settings not initialised"));
+        }
         return settingsRepo.findById((short) 1)
                 .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
                         "Business settings not initialised"));
@@ -39,7 +47,11 @@ public class SettingsService {
 
     public SchedulingConfigResponse getSchedulingConfig() {
         BusinessSettings settings = getSettings();
-        var hours = workingHoursRepo.findAllByOrderByDayOfWeekAsc().stream()
+        UUID companyId = CompanyContext.get();
+        var source = companyId == null
+                ? workingHoursRepo.findAllByOrderByDayOfWeekAsc()
+                : workingHoursRepo.findByCompanyIdOrderByDayOfWeekAsc(companyId);
+        var hours = source.stream()
                 .map(wh -> new SchedulingConfigResponse.WorkingHoursDto(
                         wh.getDayOfWeek(), wh.isClosed(), wh.getOpenTime(), wh.getCloseTime()))
                 .toList();

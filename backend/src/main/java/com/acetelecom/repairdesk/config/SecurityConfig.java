@@ -23,10 +23,11 @@ import com.acetelecom.repairdesk.security.JwtAuthFilter;
 /**
  * Spring Security filter chain (AUTH-005).
  * Public routes: /ping, /auth/**, /actuator/health.
- * Everything else requires a valid JWT.
+ * Everything else requires a valid JWT. {@code @Secured} role checks are on
+ * ({@code securedEnabled}); without that flag those annotations were ignored.
  */
 @Configuration
-@EnableMethodSecurity
+@EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
     private final AppProperties appProperties;

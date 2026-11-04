@@ -6,10 +6,25 @@ import '../error/app_exception.dart';
 
 part 'api_client.g.dart';
 
-const _baseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:8080/api/v1', // Android emulator → host loopback
-);
+/// Live API used by release builds when [API_BASE_URL] is not passed at
+/// compile time. A plain `flutter build apk --release` used to keep the
+/// emulator loopback below, so a phone that opened that APK waited out the
+/// connect timeout and showed "Request timed out. Please try again."
+const _liveApiBase =
+    'https://repairdesk-api-dev.politeground-f86bf509.centralindia.azurecontainerapps.io/api/v1';
+
+/// Android emulator → host loopback. Debug/profile only.
+const _emulatorApiBase = 'http://10.0.2.2:8080/api/v1';
+
+const _apiBaseFromDefine = String.fromEnvironment('API_BASE_URL');
+
+/// `--dart-define` / `--dart-define-from-file` wins. Otherwise release
+/// (`dart.vm.product`) talks to the live API, and debug keeps the emulator.
+const _baseUrl = _apiBaseFromDefine != ''
+    ? _apiBaseFromDefine
+    : bool.fromEnvironment('dart.vm.product')
+        ? _liveApiBase
+        : _emulatorApiBase;
 
 @Riverpod(keepAlive: true)
 Dio apiClient(Ref ref) {

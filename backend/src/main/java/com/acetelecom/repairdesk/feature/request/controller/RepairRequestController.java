@@ -76,9 +76,9 @@ public class RepairRequestController {
         return service.getMyRequests(currentUser.get(), pageable);
     }
 
-    /** Admin-only: request queue for review and approval. */
+    /** Staff and Admin request queue. */
     @GetMapping
-    @Secured({ "ROLE_ADMIN" })
+    @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
     public PageResponse<RepairRequestSummary> queue(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) UUID deviceCategoryId,

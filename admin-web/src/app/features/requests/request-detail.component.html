@@ -168,6 +168,19 @@
         <p class="issue-body">{{ d.issueDescription }}</p>
       </section>
 
+      @if (d.serviceLocation) {
+        <section class="card" aria-labelledby="address-heading">
+          <h2 id="address-heading" class="section-title">Service address</h2>
+          <p class="issue-body">{{ serviceAddress(d.serviceLocation) }}</p>
+          @if (directionsUrl(d.serviceLocation); as mapsUrl) {
+            <a class="primary-btn nav-btn" [href]="mapsUrl" target="_blank" rel="noopener noreferrer">Start Navigating</a>
+          }
+          @if (d.serviceLocation.latitude != null) {
+            <app-pin-map [pins]="requestPins(d.serviceLocation)" [height]="240" />
+          }
+        </section>
+      }
+
       <section class="card" aria-labelledby="photos-heading">
         <h2 id="photos-heading" class="section-title">
           Customer photos

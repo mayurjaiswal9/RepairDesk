@@ -16,12 +16,17 @@ abstract class AppRoutes {
   static const dashboard = '/dashboard';
 }
 
+/// Lets app-wide prompts (for example the trip arrival question) open a
+/// dialog over whatever screen is showing.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 @riverpod
 GoRouter appRouter(Ref ref) {
   // Watch session so the router rebuilds (and redirects) on auth state changes.
   final sessionListenable = _SessionListenable(ref);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.login,
     refreshListenable: sessionListenable,
     redirect: (context, state) {

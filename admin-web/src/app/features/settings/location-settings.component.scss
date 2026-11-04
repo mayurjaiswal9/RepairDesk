@@ -1,0 +1,36 @@
+.display { margin: 0 0 8px; font-size: 28px; }
+.lede { margin: 0 0 16px; color: var(--color-text-secondary); max-width: 68ch; }
+.muted { color: var(--color-text-secondary); }
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border, #d9e4f3);
+  border-radius: 12px;
+  background: #fff;
+}
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.field input { font: inherit; font-weight: 500; padding: 10px 12px; border: 1px solid #d3e1f5; border-radius: 8px; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.search-row { display: flex; gap: 8px; }
+.search-row input { flex: 1; }
+.switches { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; font-weight: 500; }
+.switches label { display: flex; gap: 8px; align-items: center; }
+.switch { display: flex; flex-direction: column; gap: 2px; }
+.switch.off label { color: var(--color-text-secondary); }
+.hint { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); }
+.switch .hint { padding-left: 24px; }
+.field input.ng-invalid.ng-touched { border-color: #b3261e; }
+h2 { margin: 8px 0 0; font-size: 16px; }
+.breadcrumb { display: flex; gap: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 600; }
+.breadcrumb a { color: var(--color-primary, #1552cc); text-decoration: none; }
+.primary-btn, .ghost-btn {
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.primary-btn { background: #1552cc; color: #fff; border: 0; align-self: flex-start; }
+.ghost-btn { background: #fff; color: #1552cc; border: 1px solid #1552cc; }
+.state-panel { padding: 24px 0; }

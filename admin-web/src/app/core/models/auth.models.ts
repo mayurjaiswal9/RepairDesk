@@ -2,6 +2,8 @@
 export interface LoginRequest {
   username: string;
   password: string;
+  /** Sent only when the person typed one. Blank means ACE Telecom. */
+  companyCode?: string;
 }
 
 export interface AuthResponse {

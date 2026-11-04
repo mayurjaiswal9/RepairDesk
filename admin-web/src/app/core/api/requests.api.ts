@@ -28,6 +28,15 @@ export interface CreateRequestBody {
   priority?: string;
   note?: string;
   intakeChannel?: string;
+  serviceLocation?: {
+    addressLine?: string;
+    landmark?: string;
+    city?: string;
+    pincode?: string;
+    latitude?: number;
+    longitude?: number;
+    pinSource?: 'GEOCODED' | 'MANUAL_PIN' | 'CUSTOMER_LINK';
+  };
 }
 
 export interface RequestListQuery {

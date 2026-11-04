@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.feature.audit.domain.AuditEvent;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.audit.repository.AuditEventRepository;
 import com.acetelecom.repairdesk.security.AuthenticatedUser;
 
@@ -32,6 +33,10 @@ public class AuditService {
         if (actor != null) {
             event.setActorId(actor.id());
             event.setActorUsername(actor.username());
+            event.setCompanyId(actor.companyId());
+        }
+        if (event.getCompanyId() == null) {
+            event.setCompanyId(CompanyContext.get());
         }
         event.setEntityType(entityType);
         event.setEntityId(entityId);

@@ -1,0 +1,138 @@
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a routerLink="/settings">Business settings</a>
+  <span class="sep" aria-hidden="true">›</span>
+  <span class="current">Office location</span>
+</nav>
+
+@if (state() === 'forbidden') {
+  <div class="state-panel" role="alert">
+    <h1>Restricted</h1>
+    <p>Only an admin can change the office location.</p>
+  </div>
+} @else if (state() === 'error') {
+  <div class="state-panel" role="alert">
+    <h1>Couldn't load location settings</h1>
+    <p>{{ error()?.message }}</p>
+    <button type="button" class="primary-btn" (click)="ngOnInit()">Retry</button>
+  </div>
+} @else if (state() === 'loading') {
+  <p class="muted">Loading office location…</p>
+} @else {
+  <h1 class="display">Office location</h1>
+  <p class="lede">
+    The shop pin is the start of travel-time estimates until a technician shares a live position.
+    Drag the pin, or click the map, to move it.
+  </p>
+
+  <form class="card" [formGroup]="form" (ngSubmit)="save()">
+    <label class="field">
+      <span>Search the office</span>
+      <span class="search-row">
+        <input formControlName="shopSearch" placeholder="Shop name, area, or PIN code" />
+        <button type="button" class="ghost-btn" [disabled]="searching()" (click)="searchOffice()">
+          {{ searching() ? 'Searching…' : 'Find' }}
+        </button>
+      </span>
+    </label>
+
+    <app-pin-map [pins]="pins()" [height]="320" [clickToSet]="true" (positionChange)="onMapClick($event)" />
+
+    <div class="form-row">
+      <label class="field">
+        <span>Latitude</span>
+        <input formControlName="shopLatitude" (change)="onMapClick({ latitude: +form.controls.shopLatitude.value, longitude: +form.controls.shopLongitude.value })" />
+      </label>
+      <label class="field">
+        <span>Longitude</span>
+        <input formControlName="shopLongitude" />
+      </label>
+      <label class="field">
+        <span>Geofence radius (m)</span>
+        <input type="number" formControlName="geofenceRadiusM" />
+      </label>
+    </div>
+
+    <h2>Features</h2>
+    <div class="switches">
+      <label><input type="checkbox" formControlName="checkInEnabled" /> Check-in</label>
+      <label><input type="checkbox" formControlName="attendanceEnabled" /> Attendance</label>
+      <label><input type="checkbox" formControlName="etaEnabled" /> Customer ETA</label>
+      <label><input type="checkbox" formControlName="allowStartOutsideGeofence" /> Allow start outside the office geofence</label>
+    </div>
+
+    <h2>Job trips and live location</h2>
+    <div class="switches">
+      <div class="switch">
+        <label><input type="checkbox" formControlName="travelEnabled" /> Record job trips (km)</label>
+        <span class="hint">Turn on after technicians install the latest app.</span>
+      </div>
+      <div class="switch" [class.off]="!form.controls.travelEnabled.value">
+        <label><input type="checkbox" formControlName="strictTripMode" /> Strict mode — no trip, no km</label>
+        <span class="hint">
+          {{ form.controls.travelEnabled.value ? 'Starting a job without a trip needs a reason.' : 'Needs Record job trips.' }}
+        </span>
+      </div>
+      <div class="switch">
+        <label><input type="checkbox" formControlName="tripOpenMaps" /> Open Google Maps on Start travel</label>
+      </div>
+      <div class="switch">
+        <label><input type="checkbox" formControlName="trackingEnabled" /> Live location on a job</label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="field">
+        <span>Upload while travelling (seconds)</span>
+        <input type="number" formControlName="travelPingSeconds" min="30" max="600" />
+        <span class="hint">30 to 600</span>
+      </label>
+      <label class="field">
+        <span>Update while on site (minutes)</span>
+        <input type="number" formControlName="onSitePingMinutes" min="15" max="240" />
+        <span class="hint">15 to 240</span>
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label class="field">
+        <span>Ping every (minutes)</span>
+        <input type="number" formControlName="pingIntervalMinutes" />
+      </label>
+      <label class="field">
+        <span>Or after moving (m)</span>
+        <input type="number" formControlName="pingDistanceM" />
+      </label>
+      <label class="field">
+        <span>Auto end of day</span>
+        <input type="time" formControlName="dayAutoEndTime" />
+      </label>
+      <label class="field">
+        <span>Far from address (m)</span>
+        <input type="number" formControlName="farFromAddressM" />
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label class="field">
+        <span>Two-wheeler rate (₹ / km)</span>
+        <input type="number" formControlName="rateTwoWheeler" step="0.5" />
+      </label>
+      <label class="field">
+        <span>Four-wheeler rate (₹ / km)</span>
+        <input type="number" formControlName="rateFourWheeler" step="0.5" />
+      </label>
+      <label class="field">
+        <span>Keep location history (days)</span>
+        <input type="number" formControlName="retentionDays" />
+      </label>
+      <label class="field">
+        <span>Privacy notice version</span>
+        <input formControlName="privacyNoticeVersion" />
+      </label>
+    </div>
+
+    <button type="submit" class="primary-btn" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Save office location' }}
+    </button>
+  </form>
+}

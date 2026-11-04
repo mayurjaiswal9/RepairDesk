@@ -3,8 +3,10 @@ package com.acetelecom.repairdesk.feature.request.dto;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
 import com.acetelecom.repairdesk.feature.request.domain.WarrantyStatus;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -31,5 +33,8 @@ public record UpdateRequestDto(
         @NotNull LocalDate preferredDate,
         @NotNull LocalTime preferredTime,
 
-        @NotNull Long version) {
+        @NotNull Long version,
+
+        @Valid
+        ServiceLocationDto serviceLocation) {
 }

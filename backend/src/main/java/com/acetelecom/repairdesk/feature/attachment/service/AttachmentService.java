@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.attachment.domain.Attachment;
 import com.acetelecom.repairdesk.feature.attachment.dto.AttachmentResponse;
 import com.acetelecom.repairdesk.feature.attachment.repository.AttachmentRepository;
@@ -95,6 +96,7 @@ public class AttachmentService {
         Attachment att = attachmentRepo.findById(attachmentId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
                         "Attachment not found"));
+        CompanyContext.requireSame(att.getCompanyId(), "Attachment not found");
         return openStream(att, actor);
     }
 
@@ -106,6 +108,7 @@ public class AttachmentService {
         Attachment att = attachmentRepo.findByStorageKey(key)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
                         "Attachment not found"));
+        CompanyContext.requireSame(att.getCompanyId(), "Attachment not found");
         return openStream(att, actor);
     }
 
@@ -143,6 +146,7 @@ public class AttachmentService {
         Attachment att = attachmentRepo.findById(attachmentId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
                         "Attachment not found"));
+        CompanyContext.requireSame(att.getCompanyId(), "Attachment not found");
         if (!"STAFF".equals(actor.role()) && !"ADMIN".equals(actor.role())) {
             if (!att.getUploadedBy().equals(actor.id())) {
                 throw new ApiException(ErrorCode.FORBIDDEN,

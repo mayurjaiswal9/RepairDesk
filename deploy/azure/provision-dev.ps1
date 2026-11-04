@@ -98,6 +98,7 @@ $secrets = Get-Or-GenerateSecrets
 $JWT_SECRET = $secrets["JWT_SECRET"]
 $DB_PASSWORD = $secrets["DB_PASSWORD"]
 $ADMIN_PASSWORD = $secrets["APP_ADMIN_DEFAULT_PASSWORD"]
+$GOOGLE_MAPS_SERVER_KEY = $secrets["GOOGLE_MAPS_SERVER_KEY"]
 
 # ── 0. Register resource providers (first-time subscriptions) ───────────────
 Write-Host "`n[0/7] Ensuring Azure resource providers..." -ForegroundColor Yellow
@@ -199,6 +200,11 @@ $envVars = @(
     "APP_ADMIN_DEFAULT_PASSWORD=secretref:admin-password",
     "APP_ADMIN_DEFAULT_MOBILE=0000000000"
 )
+$appSecrets = @("db-password=$DB_PASSWORD", "jwt-secret=$JWT_SECRET", "admin-password=$ADMIN_PASSWORD")
+if ($GOOGLE_MAPS_SERVER_KEY) {
+    $appSecrets += "google-maps-server-key=$GOOGLE_MAPS_SERVER_KEY"
+    $envVars += "GOOGLE_MAPS_SERVER_KEY=secretref:google-maps-server-key"
+}
 
 az containerapp show --name $ACA_APP --resource-group $RESOURCE_GROUP 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
@@ -217,11 +223,12 @@ if ($LASTEXITCODE -ne 0) {
             --max-replicas 1 `
             --cpu 0.25 `
             --memory 0.5Gi `
-            --secrets "db-password=$DB_PASSWORD" "jwt-secret=$JWT_SECRET" "admin-password=$ADMIN_PASSWORD" `
+            --secrets $appSecrets `
             --env-vars $envVars `
             -o none
     }
 } else {
+    Invoke-Az { az containerapp secret set --resource-group $RESOURCE_GROUP --name $ACA_APP --secrets $appSecrets -o none }
     Invoke-Az {
         az containerapp update `
             --resource-group $RESOURCE_GROUP `

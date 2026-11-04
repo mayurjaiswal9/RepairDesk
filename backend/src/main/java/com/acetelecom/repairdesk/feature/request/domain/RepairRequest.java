@@ -5,9 +5,14 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import com.acetelecom.repairdesk.common.domain.BaseEntity;
+import org.hibernate.annotations.Filter;
+
+import com.acetelecom.repairdesk.common.domain.TenantEntity;
+import com.acetelecom.repairdesk.feature.company.CompanyFilters;
+import com.acetelecom.repairdesk.feature.location.domain.ServiceLocation;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -24,10 +29,11 @@ import com.acetelecom.repairdesk.feature.user.domain.User;
 
 @Entity
 @Table(name = "repair_requests")
+@Filter(name = CompanyFilters.NAME, condition = CompanyFilters.CONDITION)
 @Getter
 @Setter
 @NoArgsConstructor
-public class RepairRequest extends BaseEntity {
+public class RepairRequest extends TenantEntity {
 
     @Column(name = "reference_number", nullable = false, unique = true, length = 30)
     private String referenceNumber;
@@ -118,6 +124,9 @@ public class RepairRequest extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "intake_channel", length = 20)
     private IntakeChannel intakeChannel;
+
+    @Embedded
+    private ServiceLocation serviceLocation = new ServiceLocation();
 
     public boolean isEditableByOwner() {
         return status == RequestStatus.PENDING_REVIEW

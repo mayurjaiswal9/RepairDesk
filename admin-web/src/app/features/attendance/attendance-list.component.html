@@ -1,0 +1,88 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Attendance</h1>
+    <p>Attendance is for staff and administrators.</p>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Attendance</h1>
+      <p class="meta">One row per technician per day. Times are India time. Coordinates are not shown.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="ghost-btn" (click)="load()" [disabled]="state() === 'loading'">
+        @if (state() === 'loading') {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon aria-hidden="true">refresh</mat-icon>
+        }
+        Refresh
+      </button>
+      <button type="button" class="primary-btn" (click)="download()">
+        <mat-icon aria-hidden="true">download</mat-icon>
+        Download CSV
+      </button>
+    </div>
+  </div>
+
+  @if (!attendanceEnabled()) {
+    <p class="notice">Attendance is off. Days already recorded stay in this list. An administrator turns it on from Office location.</p>
+  }
+
+  <form class="filter-bar" (submit)="$event.preventDefault(); load()">
+    <label>
+      From
+      <input type="date" [value]="from()" (input)="onFromInput($event)" />
+    </label>
+    <label>
+      To
+      <input type="date" [value]="to()" (input)="onToInput($event)" />
+    </label>
+    <button type="submit" class="ghost-btn">Show</button>
+  </form>
+
+  @if (rangeError()) {
+    <p class="range-error" role="alert">{{ rangeError() }}</p>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel">
+      <p>{{ error()?.message }}</p>
+      <button type="button" class="ghost-btn" (click)="load()">Try again</button>
+    </div>
+  } @else if (state() === 'ready' && !rangeError()) {
+    @if (rows().length === 0) {
+      <p class="meta">No active technicians.</p>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Start flag</th>
+              <th>End time</th>
+              <th>End</th>
+              <th>Hours</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.technicianId + row.workDate) {
+              <tr>
+                <td>{{ row.technicianName }}</td>
+                <td>{{ workDate(row.workDate) }}</td>
+                <td>{{ statusLabel(row) }}</td>
+                <td>{{ flagLabel(row.startFlag) }}</td>
+                <td>{{ clock(row.endAt) }}</td>
+                <td>{{ reasonLabel(row.endReason) }}</td>
+                <td>{{ hoursLabel(row.durationMinutes) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+}

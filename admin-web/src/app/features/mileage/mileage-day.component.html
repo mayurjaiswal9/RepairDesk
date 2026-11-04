@@ -1,0 +1,104 @@
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a routerLink="/mileage" [queryParams]="returnQuery()">Mileage</a>
+  <span class="sep" aria-hidden="true">›</span>
+  <span class="current">{{ detail()?.technicianName || 'Technician' }} · {{ dateText() }}</span>
+</nav>
+
+@if (state() === 'forbidden') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Restricted</h1>
+    <p>Mileage is for administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else if (state() === 'notfound') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Day not found</h1>
+    <p>This technician or date does not exist.</p>
+    <a routerLink="/mileage" [queryParams]="returnQuery()" class="primary-btn">Back to mileage</a>
+  </div>
+} @else if (state() === 'error') {
+  <div class="state-panel" role="alert">
+    <h1 class="display" tabindex="-1">Couldn't load this day</h1>
+    <p>{{ error()?.message }}</p>
+    @if (error()?.correlationId) {
+      <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+    }
+    <button type="button" class="primary-btn" (click)="refresh()">Retry</button>
+  </div>
+} @else if (state() === 'loading') {
+  <p class="muted">Loading the day…</p>
+} @else if (detail()) {
+  @let d = detail()!;
+  <header class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">{{ d.technicianName }}</h1>
+      <p class="meta">{{ dateText() }} · {{ vehicle(d.vehicleType) }}</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="ghost-btn" (click)="goToDay(previousDay())">
+        <mat-icon aria-hidden="true">chevron_left</mat-icon>
+        Previous day
+      </button>
+      <button type="button" class="ghost-btn" [disabled]="!hasNextDay()" (click)="goToDay(nextDay())">
+        Next day
+        <mat-icon aria-hidden="true">chevron_right</mat-icon>
+      </button>
+      <button type="button" class="ghost-btn icon-only" aria-label="Refresh" [disabled]="refetching()" (click)="refresh()">
+        @if (refetching()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon aria-hidden="true">refresh</mat-icon>
+        }
+      </button>
+    </div>
+  </header>
+
+  <app-mileage-summary class="summary" [summary]="d.summary" />
+
+  <div class="day-layout">
+    <section class="card map-card" aria-label="Routes map">
+      @if (d.trips.length || d.shop) {
+        <app-route-map [routes]="routes()" [pins]="pins()" [height]="440" />
+        <p class="legend">
+          Numbers mark where each trip started · O is the shop · red pins are jobs · dashed lines are cancelled trips
+        </p>
+      } @else {
+        <p class="muted">Nothing to show on the map.</p>
+      }
+    </section>
+
+    <div class="side">
+      <section class="card" aria-labelledby="trips-heading">
+        <h2 id="trips-heading" class="section-title">
+          Trips <span class="count">· {{ d.trips.length }}</span>
+        </h2>
+        @if (!d.trips.length) {
+          <p class="muted">No trips recorded on this day.</p>
+        } @else {
+          @for (trip of d.trips; track trip.id; let i = $index) {
+            <app-trip-card [trip]="trip" [index]="i" [canAdjust]="true" (adjust)="openAdjust($event)" />
+          }
+        }
+      </section>
+
+      <section class="card" aria-labelledby="no-trip-heading">
+        <h2 id="no-trip-heading" class="section-title">
+          Jobs started without a trip <span class="count">· {{ d.noTripJobs.length }}</span>
+        </h2>
+        @if (!d.noTripJobs.length) {
+          <p class="muted">None. Every job started on this day had a trip.</p>
+        } @else {
+          <ul class="no-trip-list">
+            @for (job of d.noTripJobs; track job.jobId) {
+              <li>
+                <a class="ref" [routerLink]="['/jobs', job.jobId]">{{ job.referenceNumber }}</a>
+                <span>{{ reasonLabel(job.reasonCode, job.reasonText) }}</span>
+                <span class="muted">{{ clock(job.createdAt) }} · 0 km</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  </div>
+}

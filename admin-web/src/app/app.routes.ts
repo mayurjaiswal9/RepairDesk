@@ -107,6 +107,39 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'settings/location',
+        loadComponent: () =>
+          import('./features/settings/location-settings.component').then(
+            (m) => m.LocationSettingsComponent,
+          ),
+      },
+      {
+        path: 'location',
+        loadComponent: () =>
+          import('./features/location/location-board.component').then(
+            (m) => m.LocationBoardComponent,
+          ),
+      },
+      {
+        path: 'attendance',
+        loadComponent: () =>
+          import('./features/attendance/attendance-list.component').then(
+            (m) => m.AttendanceListComponent,
+          ),
+      },
+      {
+        path: 'mileage',
+        loadComponent: () =>
+          import('./features/mileage/mileage-list.component').then((m) => m.MileageListComponent),
+      },
+      {
+        path: 'mileage/:technicianId/:date',
+        loadComponent: () =>
+          import('./features/mileage/mileage-day.component').then((m) => m.MileageDayComponent),
+      },
+      { path: 'milage', pathMatch: 'full', redirectTo: 'mileage' },
+      { path: 'milage/:technicianId/:date', redirectTo: 'mileage/:technicianId/:date' },
+      {
         path: 'account',
         loadComponent: () =>
           import('./features/account/account.component').then((m) => m.AccountComponent),

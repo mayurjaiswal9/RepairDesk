@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RepairDesk Location Features - Detailed Implementation Tasks</title>
+<style>@page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+body { font-family: "Segoe UI", Calibri, Arial, sans-serif; color: #1a1f36; font-size: 9.6pt; line-height: 1.42; margin: 0; }
+h1 { color: #0f172a; font-size: 19pt; margin: 0 0 10px; }
+h2 { color: #1e3a8a; font-size: 14pt; border-bottom: 2px solid #dbe4f0; padding-bottom: 5px; margin: 22px 0 8px; page-break-after: avoid; }
+h3 { color: #0f766e; font-size: 11.5pt; margin: 14px 0 4px; page-break-after: avoid; text-transform: uppercase; letter-spacing: .04em; }
+h4 { color: #0f172a; font-size: 10.4pt; margin: 12px 0 3px; padding: 4px 8px; background: #eef2ff; border-left: 4px solid #1e3a8a; page-break-after: avoid; }
+h4 + ul { margin-top: 3px; }
+ul, ol { margin: 4px 0 6px; padding-left: 20px; }
+li { margin: 2px 0; }
+p { margin: 6px 0; }
+hr { border: 0; margin: 4px 0; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 8.6pt; }
+tr { page-break-inside: avoid; }
+th, td { border: 1px solid #dbe4f0; padding: 4px 6px; text-align: left; vertical-align: top; }
+th { background: #1e3a8a; color: #fff; font-weight: 600; }
+tr:nth-child(even) td { background: #f8fafc; }
+code { font-family: Consolas, monospace; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 8.3pt; word-break: break-word; }
+a { color: #1d4ed8; }</style>
+</head>
+<body>
+<h1>RepairDesk Location Features — Detailed Implementation Tasks (App + Backend)</h1>
+<p><strong>Related:</strong> <a href="GPS-Location-Features-Wireframes.pdf">Wireframes</a> (screen numbers refer to it) · <a href="GPS-Implementation-Task-List.pdf">Phase plan</a><br><strong>Scope:</strong> Flutter app (<code>frontend/</code>) and Spring Boot backend (<code>backend/</code>). Admin website tasks are listed briefly at the end.<br><strong>Status:</strong> Ready for development — 17 October 2026</p>
+<p><strong>Task IDs:</strong> <code>BE</code> = backend · <code>APP</code> = Flutter app · <code>WEB</code> = admin website · <code>QA</code> = testing.<br><strong>Estimates</strong> are in developer-days for one developer who knows the codebase.<br><strong>Every task is done only when</strong> the code is reviewed, has tests where stated, builds cleanly (<code>mvn verify</code>, <code>flutter analyze</code>), and is deployed to the dev environment on Azure.</p>
+<hr>
+<h2>1. Starting point (what exists today)</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Today</th>
+<th>What this means for the work</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Google Maps</td>
+<td>Android, server and web keys created and tested. Server key is stored as the Azure secret <code>google-maps-server-key</code> (env <code>GOOGLE_MAPS_SERVER_KEY</code>); Android key is injected into the manifest from <code>local.properties</code></td>
+<td>Phase 0 is done, apart from daily quotas and the budget alert</td>
+</tr>
+<tr>
+<td>Customer address</td>
+<td>Requests and jobs store <strong>no</strong> service address; only the shop address exists in <code>business_settings</code></td>
+<td>Address + pin must be added first (BE-1.1)</td>
+</tr>
+<tr>
+<td>Job actions</td>
+<td><code>POST /jobs/{id}/start</code> and <code>/complete</code> take no location; <code>JobService</code> copies request fields onto the job at approval</td>
+<td>Location becomes an optional body field; address is copied the same way</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>No <code>@EnableScheduling</code>, no scheduled jobs</td>
+<td>Needed for auto end-of-day, cleanup and ETA refresh (BE-1.5)</td>
+</tr>
+<tr>
+<td>Outgoing HTTP</td>
+<td>Backend calls no external services yet</td>
+<td>New Google Maps client (BE-1.4)</td>
+</tr>
+<tr>
+<td>Notifications</td>
+<td>In-app inbox only (<code>notifications</code> table). No push notifications</td>
+<td>Customer ETA push needs Firebase Cloud Messaging (Phase 6)</td>
+</tr>
+<tr>
+<td>Database tests</td>
+<td>H2 in PostgreSQL mode, schema from JPA (<code>create-drop</code>)</td>
+<td>Store coordinates as plain <code>double precision</code>; do distance maths in Java, not PostGIS</td>
+</tr>
+<tr>
+<td>App navigation</td>
+<td>Role-based home in <code>dashboard_screen.dart</code> (<code>_TechnicianDashboard</code>, <code>_StaffDashboard</code>) with screens pushed from tiles</td>
+<td>New screens are added as tiles / pushed routes in the same style</td>
+</tr>
+<tr>
+<td>Last migration</td>
+<td><code>V11__staff_assisted_intake.sql</code></td>
+<td>New migrations start at <code>V12</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. Design decisions used in this plan</h2>
+<p>These use the defaults proposed earlier. Changing one changes only settings values, not the design.</p>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Shop geofence radius</td>
+<td>150 m (setting)</td>
+</tr>
+<tr>
+<td>Start day outside the shop</td>
+<td>Not allowed unless Admin switches it on</td>
+</tr>
+<tr>
+<td>Tracking interval while on duty</td>
+<td>5 minutes, and also every 200 m moved (setting)</td>
+</tr>
+<tr>
+<td>Working hours / auto end of day</td>
+<td>9:00 AM – 7:00 PM (setting)</td>
+</tr>
+<tr>
+<td>&quot;Far from customer address&quot; warning</td>
+<td>More than 300 m from the pin (setting)</td>
+</tr>
+<tr>
+<td>Allowance rates</td>
+<td>₹5 / km two-wheeler, ₹10 / km four-wheeler (setting, stored in paise)</td>
+</tr>
+<tr>
+<td>Location history kept</td>
+<td>90 days (setting), then deleted nightly</td>
+</tr>
+<tr>
+<td>Coordinates</td>
+<td>Latitude/longitude as <code>double precision</code>, accuracy in metres, all times in UTC (<code>timestamptz</code>)</td>
+</tr>
+<tr>
+<td>Weak GPS never blocks work</td>
+<td>A job action always succeeds; location is attached when available and flagged when poor</td>
+</tr>
+<tr>
+<td>Fake GPS</td>
+<td>Points from mock-location apps are accepted but flagged (<code>mocked = true</code>) and shown to Staff</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>3. Data model (new and changed tables)</h2>
+<table>
+<thead>
+<tr>
+<th>Migration</th>
+<th>Table / change</th>
+<th>Key columns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>V12__service_address.sql</code></td>
+<td><code>repair_requests</code>, <code>jobs</code>: add service address</td>
+<td><code>service_address_line</code>, <code>service_landmark</code>, <code>service_city</code>, <code>service_pincode</code>, <code>service_lat</code>, <code>service_lng</code>, <code>service_pin_source</code> (<code>GEOCODED</code> / <code>MANUAL_PIN</code> / <code>CHECK_IN</code>)</td>
+</tr>
+<tr>
+<td><code>V13__location_settings.sql</code></td>
+<td><code>business_settings</code>: add shop pin. New singleton <code>location_settings</code>. <code>users</code>: add vehicle type</td>
+<td><code>shop_lat</code>, <code>shop_lng</code>, <code>geofence_radius_m</code>; feature switches, <code>ping_interval_minutes</code>, <code>ping_distance_m</code>, <code>day_auto_end_time</code>, <code>allow_start_outside_geofence</code>, <code>far_from_address_m</code>, <code>rate_two_wheeler_paise</code>, <code>rate_four_wheeler_paise</code>, <code>retention_days</code>, <code>privacy_notice_version</code>; <code>users.vehicle_type</code></td>
+</tr>
+<tr>
+<td><code>V14__maps_cache_usage.sql</code></td>
+<td><code>geocode_cache</code>, <code>maps_api_usage</code></td>
+<td>cache: <code>address_hash</code> (PK), <code>normalized_address</code>, <code>lat</code>, <code>lng</code>, <code>formatted_address</code>, <code>created_at</code>; usage: <code>day</code>, <code>api</code>, <code>call_count</code> (PK <code>day, api</code>)</td>
+</tr>
+<tr>
+<td><code>V15__job_visits.sql</code></td>
+<td><code>job_visits</code></td>
+<td><code>job_id</code>, <code>technician_id</code>, <code>visit_type</code> (<code>ON_MY_WAY</code> / <code>CHECK_IN</code> / <code>CHECK_OUT</code>), <code>lat</code>, <code>lng</code>, <code>accuracy_m</code>, <code>captured_at</code>, <code>distance_from_pin_m</code>, <code>low_accuracy</code>, <code>far_from_address</code>, <code>mocked</code></td>
+</tr>
+<tr>
+<td><code>V16__attendance_days.sql</code></td>
+<td><code>attendance_days</code></td>
+<td><code>technician_id</code>, <code>work_date</code> (unique together), <code>start_at</code>, <code>start_lat/lng</code>, <code>start_inside_geofence</code>, <code>end_at</code>, <code>end_lat/lng</code>, <code>end_inside_geofence</code>, <code>end_reason</code> (<code>MANUAL</code> / <code>AUTO</code>)</td>
+</tr>
+<tr>
+<td><code>V17__location_points.sql</code></td>
+<td><code>location_points</code></td>
+<td><code>technician_id</code>, <code>captured_at</code>, <code>lat</code>, <code>lng</code>, <code>accuracy_m</code>, <code>speed_mps</code>, <code>battery_pct</code>, <code>mocked</code>, <code>client_point_id</code> (unique per technician, makes uploads safe to retry); index on <code>(technician_id, captured_at)</code></td>
+</tr>
+<tr>
+<td><code>V18__travel_claims.sql</code></td>
+<td><code>travel_days</code>, <code>travel_claims</code></td>
+<td>day: <code>technician_id</code>, <code>work_date</code>, <code>distance_m</code>, <code>legs_json</code>, <code>computed_at</code>; claim: <code>technician_id</code>, <code>period_from</code>, <code>period_to</code>, <code>distance_m</code>, <code>vehicle_type</code>, <code>rate_paise</code>, <code>amount_paise</code>, <code>status</code> (<code>SUBMITTED</code> / <code>APPROVED</code> / <code>REJECTED</code>), <code>decided_by</code>, <code>decided_at</code>, <code>note</code></td>
+</tr>
+<tr>
+<td><code>V19__eta_push.sql</code></td>
+<td><code>eta_sessions</code>, <code>device_tokens</code></td>
+<td>session: <code>job_id</code>, <code>technician_id</code>, <code>public_token</code> (random, unique), <code>started_at</code>, <code>ended_at</code>, <code>last_eta_seconds</code>, <code>last_distance_m</code>, <code>last_eta_at</code>; tokens: <code>user_id</code>, <code>fcm_token</code>, <code>platform</code>, <code>updated_at</code></td>
+</tr>
+<tr>
+<td><code>V20__location_consents.sql</code></td>
+<td><code>location_consents</code></td>
+<td><code>user_id</code>, <code>notice_version</code>, <code>accepted_at</code>, <code>app_version</code></td>
+</tr>
+</tbody></table>
+<p>All new tables follow the existing pattern: <code>uuid</code> primary key with <code>gen_random_uuid()</code>, <code>created_at</code>, foreign keys named <code>fk_…</code>, check constraints named <code>…_check</code>.</p>
+<hr>
+<h2>4. API endpoints (new and changed)</h2>
+<p>All paths are under <code>/api/v1</code>. The location body used everywhere is:<br><code>{ &quot;lat&quot;: 19.1197, &quot;lng&quot;: 72.8468, &quot;accuracyM&quot;: 12.5, &quot;capturedAt&quot;: &quot;2026-10-17T09:31:00Z&quot;, &quot;mocked&quot;: false }</code></p>
+<table>
+<thead>
+<tr>
+<th>Method and path</th>
+<th>Roles</th>
+<th>Purpose</th>
+<th>Task</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /location/config</code></td>
+<td>All signed-in</td>
+<td>Feature switches and intervals the app needs (no rates)</td>
+<td>BE-1.3</td>
+</tr>
+<tr>
+<td><code>GET</code> / <code>PUT /settings/location</code></td>
+<td>Admin</td>
+<td>Full location settings, shop pin, radius, rates</td>
+<td>BE-1.3</td>
+</tr>
+<tr>
+<td><code>POST /geocode</code></td>
+<td>Staff, Admin, Customer</td>
+<td>Address → pin (cached, counted)</td>
+<td>BE-1.4</td>
+</tr>
+<tr>
+<td><code>PUT /jobs/{id}/service-location</code></td>
+<td>Staff, Admin</td>
+<td>Correct the customer address or pin</td>
+<td>BE-1.2</td>
+</tr>
+<tr>
+<td><code>POST /jobs/{id}/start</code> <em>(changed)</em></td>
+<td>Technician, Staff, Admin</td>
+<td>Optional body <code>{ location }</code> = check-in</td>
+<td>BE-2.2</td>
+</tr>
+<tr>
+<td><code>POST /jobs/{id}/complete</code> <em>(changed)</em></td>
+<td>Technician, Staff, Admin</td>
+<td>Adds optional <code>location</code> = check-out</td>
+<td>BE-2.2</td>
+</tr>
+<tr>
+<td><code>GET /jobs/{id}/visits</code></td>
+<td>Assigned technician, Staff, Admin</td>
+<td>Visit record</td>
+<td>BE-2.3</td>
+</tr>
+<tr>
+<td><code>POST /attendance/start</code>, <code>POST /attendance/end</code></td>
+<td>Technician</td>
+<td>Start / end day with location</td>
+<td>BE-3.2</td>
+</tr>
+<tr>
+<td><code>GET /attendance/today</code></td>
+<td>Technician</td>
+<td>Duty card state</td>
+<td>BE-3.2</td>
+</tr>
+<tr>
+<td><code>GET /attendance?from&amp;to&amp;technicianId</code></td>
+<td>Staff, Admin</td>
+<td>Attendance report</td>
+<td>BE-3.4</td>
+</tr>
+<tr>
+<td><code>GET /attendance/export.csv?from&amp;to</code></td>
+<td>Staff, Admin</td>
+<td>Excel-compatible export</td>
+<td>BE-3.4</td>
+</tr>
+<tr>
+<td><code>POST /location/points</code></td>
+<td>Technician</td>
+<td>Batch upload (up to 500 points)</td>
+<td>BE-4.2</td>
+</tr>
+<tr>
+<td><code>GET /location/live</code></td>
+<td>Staff, Admin</td>
+<td>Last position of every on-duty technician</td>
+<td>BE-4.3</td>
+</tr>
+<tr>
+<td><code>GET /location/history?technicianId&amp;date</code></td>
+<td>Staff, Admin; technician for self</td>
+<td>Route for one day</td>
+<td>BE-4.3</td>
+</tr>
+<tr>
+<td><code>GET /travel/days?from&amp;to</code></td>
+<td>Technician (self), Staff, Admin</td>
+<td>Daily distance and legs</td>
+<td>BE-5.2</td>
+</tr>
+<tr>
+<td><code>POST /travel/claims</code>, <code>GET /travel/claims?status&amp;month</code></td>
+<td>Technician / Staff, Admin</td>
+<td>Submit and list claims</td>
+<td>BE-5.3</td>
+</tr>
+<tr>
+<td><code>POST /travel/claims/{id}/approve</code> · <code>/reject</code> · <code>POST /travel/claims/bulk-approve</code></td>
+<td>Staff, Admin</td>
+<td>Decide claims</td>
+<td>BE-5.3</td>
+</tr>
+<tr>
+<td><code>GET /travel/claims/export.csv?month</code></td>
+<td>Staff, Admin</td>
+<td>Monthly payout sheet</td>
+<td>BE-5.3</td>
+</tr>
+<tr>
+<td><code>POST /jobs/{id}/on-my-way</code></td>
+<td>Assigned technician</td>
+<td>Start customer ETA session</td>
+<td>BE-6.1</td>
+</tr>
+<tr>
+<td><code>GET /public/track/{token}</code></td>
+<td><strong>Public</strong> (no login)</td>
+<td>Customer tracking page data</td>
+<td>BE-6.3</td>
+</tr>
+<tr>
+<td><code>POST /devices/push-token</code></td>
+<td>All signed-in</td>
+<td>Register phone for push</td>
+<td>BE-6.2</td>
+</tr>
+<tr>
+<td><code>POST /me/location-consent</code>, <code>GET /me/location-history?date</code></td>
+<td>Technician</td>
+<td>Privacy acceptance and own history</td>
+<td>BE-7.1</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 1 — Foundations (address, settings, maps service, permissions)</h2>
+<h3>Backend</h3>
+<h4>BE-1.1 Migration V12: service address on requests and jobs — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>db/migration/V12__service_address.sql</code>; <code>RepairRequest.java</code>, <code>Job.java</code>.</li>
+<li>Add the seven <code>service_*</code> columns (all nullable, so existing rows stay valid). Check constraint on <code>service_pin_source</code>; PIN code is 6 digits.</li>
+<li>New embeddable <code>ServiceLocation</code> (<code>common/domain/ServiceLocation.java</code>) used by both entities, so the code is shared.</li>
+<li><strong>Done when:</strong> Flyway migrates the Azure dev database; existing requests and jobs load unchanged.</li>
+</ul>
+<h4>BE-1.2 Address in create, update, approve and detail — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>CreateRequestDto</code>, <code>UpdateRequestDto</code>, <code>RepairRequestResponse</code>, <code>RepairRequestService</code>; <code>JobResponse</code>, <code>JobSummary</code>, <code>JobService.approve</code>, <code>JobController</code>.</li>
+<li>Accept an optional <code>serviceLocation</code> object when a request is created or updated (Staff create-request and the customer&#39;s own request).</li>
+<li>If an address is given without a pin, geocode it through <code>MapsService</code> (BE-1.4) and set <code>pinSource = GEOCODED</code>; a dragged pin is <code>MANUAL_PIN</code>.</li>
+<li>In <code>JobService.approve</code>, copy the service location onto the job with the other copied fields.</li>
+<li>New <code>PUT /jobs/{id}/service-location</code> (Staff, Admin) with an audit entry <code>SERVICE_LOCATION_CHANGED</code>.</li>
+<li>Return <code>serviceLocation</code> in job and request detail; return only city/landmark in list summaries.</li>
+<li><strong>Done when:</strong> unit tests cover create-with-address, create-with-pin, approve copies the address, and technician cannot change the pin.</li>
+<li><strong>Depends on:</strong> BE-1.1, BE-1.4.</li>
+</ul>
+<h4>BE-1.3 Location settings and shop pin — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>V13__location_settings.sql</code>; new <code>feature/location/domain/LocationSettings.java</code>, <code>LocationSettingsRepository</code>, <code>LocationSettingsService</code>, <code>LocationSettingsController</code>; <code>BusinessSettings.java</code> (shop pin, radius); <code>User.java</code> (<code>vehicleType</code>).</li>
+<li><code>GET/PUT /settings/location</code> for Admin with validation (radius 50–1000 m, interval 1–30 min, rates ≥ 0, retention 7–365 days).</li>
+<li><code>GET /location/config</code> for any signed-in user, returning only switches, intervals and shop pin, so the app can adapt without a new release.</li>
+<li>Seed one row with the defaults from section 2; all feature switches start <strong>off</strong>.</li>
+<li><strong>Done when:</strong> settings save and reload; non-admins get 403 on <code>PUT</code>; the app config endpoint never exposes rates.</li>
+</ul>
+<h4>BE-1.4 Google Maps client with cache, counter and fallback — 3 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>feature/maps/</code> — <code>GoogleMapsClient</code> (Spring <code>RestClient</code>), <code>MapsService</code>, <code>GeoMath</code> (haversine distance, point-in-radius), <code>GeocodeCache</code> entity + repository, <code>MapsUsage</code> entity + repository; <code>V14__maps_cache_usage.sql</code>; <code>AppProperties</code> (new <code>app.maps.server-key</code>, <code>app.maps.daily-limit-geocode</code>, <code>app.maps.daily-limit-routes</code>); <code>application.yml</code> (<code>server-key: ${GOOGLE_MAPS_SERVER_KEY:}</code>).</li>
+<li><code>geocode(address)</code>: normalise (lowercase, trim, collapse spaces, append &quot;India&quot;), look up the cache by SHA-256 hash, otherwise call Geocoding with <code>region=in</code>, store and return.</li>
+<li><code>route(from, to)</code>: Routes API <code>computeRoutes</code>, <code>TWO_WHEELER</code> or <code>DRIVE</code>, field mask <code>routes.distanceMeters,routes.duration</code> (keeps the cheaper billing tier).</li>
+<li>Count every call in <code>maps_api_usage</code>. Stop at 2,000 per API per day (below Google&#39;s 2,250 quota) and fall back to straight-line distance × 1.3, marked <code>estimated = true</code>.</li>
+<li>Timeouts of 5 seconds; never let a Maps failure fail a job action.</li>
+<li>If the key is empty (local development or tests), use the fallback only.</li>
+<li><code>POST /geocode</code> endpoint, limited to 30 calls per user per hour.</li>
+<li><strong>Done when:</strong> unit tests for <code>GeoMath</code> against known distances (Andheri–Bandra ≈ 7 km straight line); tests with a mocked client for cache hit, limit reached and Google error; one manual call on Azure dev confirms the secret is read.</li>
+</ul>
+<h4>BE-1.5 Turn on scheduling — 0.5 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>RepairdeskApplication.java</code> (<code>@EnableScheduling</code>), new <code>config/SchedulingConfig.java</code> (thread pool of 2, <code>Asia/Kolkata</code> zone for cron).</li>
+<li>Because the Container App can scale to zero replicas, scheduled tasks must also run on demand: each task checks &quot;has today&#39;s run happened?&quot; in a small <code>scheduled_runs</code> row and catches up on the next request after a cold start.</li>
+<li><strong>Done when:</strong> a sample task logs on schedule locally and catches up after a restart.</li>
+</ul>
+<h3>App</h3>
+<h4>APP-1.1 Packages, permissions and Android setup — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>pubspec.yaml</code>; <code>android/app/src/main/AndroidManifest.xml</code>; <code>android/app/build.gradle.kts</code>.</li>
+<li>Add <code>google_maps_flutter</code>, <code>geolocator</code>, <code>permission_handler</code>, <code>url_launcher</code>, <code>device_info_plus</code>, <code>android_intent_plus</code>.</li>
+<li>Manifest: <code>ACCESS_FINE_LOCATION</code>, <code>ACCESS_COARSE_LOCATION</code>, <code>POST_NOTIFICATIONS</code> now; background and foreground-service permissions are added in Phase 4 only, so earlier releases don&#39;t trigger Google&#39;s background-location rules.</li>
+<li>Confirm <code>minSdk</code> is at least 21 and set <code>compileSdk</code> to what <code>google_maps_flutter</code> needs.</li>
+<li><strong>Done when:</strong> release APK builds, and a map renders on a test screen with the Android key.</li>
+</ul>
+<h4>APP-1.2 Location core service — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>lib/core/location/location_fix.dart</code> (model + JSON), <code>location_service.dart</code> (Riverpod provider), <code>location_permission_service.dart</code>, <code>location_config_repository.dart</code> (<code>GET /location/config</code>, cached for the session).</li>
+<li><code>bestFix({Duration timeout = 20s})</code>: listens to the position stream, returns the most accurate fix within the timeout, stops early at ≤ 20 m accuracy; returns <code>null</code> if location is off or denied. Never throws to the UI.</li>
+<li>Expose permission state as one enum: <code>granted</code>, <code>approximateOnly</code>, <code>whileInUseOnly</code>, <code>denied</code>, <code>deniedForever</code>, <code>serviceOff</code>.</li>
+<li>Copy <code>Position.isMocked</code> into <code>LocationFix.mocked</code>.</li>
+<li><strong>Done when:</strong> unit tests for the &quot;best fix&quot; selection using a fake position stream.</li>
+</ul>
+<h4>APP-1.3 Permission onboarding and banners (Screens 1A, 1B) — 3 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>lib/features/location_onboarding/presentation/location_intro_screen.dart</code>, <code>battery_help_sheet.dart</code>; <code>shared/widgets/location_banner.dart</code>; <code>dashboard_screen.dart</code> (show once after login for technicians).</li>
+<li>Explanation screen first (1A), then the Android prompt (1B). Asked after login, not at install.</li>
+<li>Banners on the technician home: location off (button opens location settings), approximate only, &quot;only this time&quot; chosen.</li>
+<li>Battery help sheet with steps per brand (Xiaomi/Redmi, Realme, Oppo, Vivo, Samsung), detected with <code>device_info_plus</code>; opens the right settings page with <code>android_intent_plus</code> where possible.</li>
+<li>Show only for technicians, and only when at least one location feature is switched on in <code>/location/config</code>.</li>
+<li><strong>Done when:</strong> tested on the emulator for each permission answer, including &quot;Don&#39;t allow&quot; twice (permanently denied → opens app settings).</li>
+</ul>
+<h4>APP-1.4 Map widgets and address entry — 3 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>shared/widgets/map_preview.dart</code> (small static map with a pin, tap to open full screen), <code>shared/widgets/pin_picker_screen.dart</code> (drag pin, &quot;use my location&quot;, returns lat/lng); <code>features/requests/presentation/new_request_screen.dart</code> (address fields + &quot;Find on map&quot;); <code>requests_repository.dart</code>, <code>jobs_repository.dart</code> (<code>serviceLocation</code> in models).</li>
+<li>Address fields: address line, landmark, city, 6-digit PIN code. &quot;Find on map&quot; calls <code>POST /geocode</code> and opens the pin picker at the result.</li>
+<li>Show the address and map preview on request detail and job detail.</li>
+<li><strong>Done when:</strong> a customer and a Staff user can create a request with an address and a pin, and it appears on the job after approval.</li>
+</ul>
+<hr>
+<h2>Phase 2 — Geotagged check-in and check-out (feature 1)</h2>
+<h3>Backend</h3>
+<h4>BE-2.1 Migration V15 and visit domain — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>V15__job_visits.sql</code>; new <code>feature/visit/domain/JobVisit.java</code>, <code>VisitType.java</code>, <code>JobVisitRepository</code>, <code>dto/JobVisitResponse.java</code>, <code>dto/LocationFixDto.java</code> (shared location body with validation: lat −90..90, lng −180..180, accuracy 0..5000, time not more than 24 h old or 5 min in the future).</li>
+<li><strong>Done when:</strong> entity tests pass on H2 and the migration runs on Azure dev.</li>
+</ul>
+<h4>BE-2.2 Location on Start Repair and Mark Complete — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>JobController</code> (<code>start</code> accepts an optional <code>StartRequest(LocationFixDto location)</code>; <code>CompleteRequest</code> gains <code>location</code>); <code>JobService.start</code>, <code>JobService.complete</code>; new <code>VisitService</code>.</li>
+<li>Keep old clients working: an empty body or no <code>location</code> must behave exactly as today.</li>
+<li><code>VisitService.record(job, technician, type, fix)</code>: distance from the job pin with <code>GeoMath</code>; <code>low_accuracy</code> if accuracy &gt; 100 m; <code>far_from_address</code> if distance &gt; setting; copy <code>mocked</code>.</li>
+<li>If the job has no pin and the check-in accuracy is ≤ 50 m, save the check-in as the job pin with <code>pinSource = CHECK_IN</code> (feature 2.5 in the phase plan).</li>
+<li>If <code>far_from_address</code> or <code>mocked</code>, send an in-app notification to Staff/Admin: &quot;RD-… checked in 1.2 km from the customer address&quot;.</li>
+<li>Audit entries <code>CHECKED_IN</code> / <code>CHECKED_OUT</code> with the distance.</li>
+<li><strong>Done when:</strong> tests for no location, near, far, low accuracy, mocked, pin saved from check-in, and old-style empty body.</li>
+<li><strong>Depends on:</strong> BE-1.2, BE-1.3, BE-2.1.</li>
+</ul>
+<h4>BE-2.3 Visits in job detail — 0.5 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>JobController</code> (<code>GET /jobs/{id}/visits</code>), <code>JobResponse</code> (add <code>lastCheckIn</code>, <code>lastCheckOut</code> summary).</li>
+<li>Same access rule as job detail (assigned technician, Staff, Admin).</li>
+<li><strong>Done when:</strong> controller test checks that another technician gets 403.</li>
+</ul>
+<h3>App</h3>
+<h4>APP-2.1 Capture location in the Start Repair and Mark Complete dialogs — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>features/jobs/presentation/job_detail_screen.dart</code> (<code>_run</code>, the &quot;Start Repair?&quot; dialog, the complete dialog); <code>jobs_repository.dart</code> (<code>transition</code> accepts <code>LocationFix?</code>).</li>
+<li>When the dialog opens, start <code>bestFix()</code> in the background; show &quot;Getting your location… ±15 m&quot; under the buttons.</li>
+<li>On confirm, wait up to the remaining part of 20 seconds, then send with or without a location. Weak or no GPS shows a note but never blocks.</li>
+<li>If permission is missing, offer &quot;Turn on location&quot; once, then continue without it.</li>
+<li><strong>Done when:</strong> tested on the emulator with a simulated location, location off, and permission denied.</li>
+</ul>
+<h4>APP-2.2 Visit section on Job Detail (Screen 3) — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>features/jobs/presentation/widgets/visit_section.dart</code>; <code>job_detail_screen.dart</code>; <code>jobs_repository.dart</code> (<code>visits(jobId)</code>).</li>
+<li>Before check-in: customer address, map preview, distance from the technician&#39;s current position, <strong>Navigate</strong> button (opens Google Maps with <code>google.navigation:q=lat,lng&amp;mode=l</code> for two-wheeler, falls back to a web link).</li>
+<li>After completion: Visit record — check-in and check-out times, time on site, distance from address, and warning chips (far, low accuracy, mocked).</li>
+<li><strong>Done when:</strong> matches Screen 3 in the wireframes on a 6-inch phone and a small 5-inch phone.</li>
+</ul>
+<h4>APP-2.3 Visit record for Staff and Admin in the app (Screen 6) — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>job_detail_screen.dart</code> (Staff/Admin view reuses <code>visit_section.dart</code> in read-only mode, with &quot;View on map&quot;).</li>
+<li><strong>Done when:</strong> Staff see the far-from-address warning on a job checked in from far away.</li>
+</ul>
+<hr>
+<h2>Phase 3 — Attendance by geofence (feature 2)</h2>
+<h3>Backend</h3>
+<h4>BE-3.1 Migration V16 and attendance domain — 0.5 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>V16__attendance_days.sql</code>; new <code>feature/attendance/domain/AttendanceDay.java</code>, <code>AttendanceRepository</code>, <code>dto/AttendanceDayResponse.java</code>.</li>
+<li><code>work_date</code> is the India date (<code>Asia/Kolkata</code>), not the UTC date.</li>
+</ul>
+<h4>BE-3.2 Start day and End day — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>AttendanceService</code>, <code>AttendanceController</code>.</li>
+<li><code>POST /attendance/start</code>: requires a location. Inside the shop radius → start. Outside → 409 with <code>OUTSIDE_GEOFENCE</code> and the distance, unless <code>allow_start_outside_geofence</code> is on (then start and flag it). Accuracy worse than the radius → 409 <code>LOW_ACCURACY</code> asking to retry outdoors. A second start on the same day returns the existing day.</li>
+<li><code>POST /attendance/end</code>: location optional, records inside/outside.</li>
+<li><code>GET /attendance/today</code>: state for the duty card (not started / on duty since 9:12 / ended).</li>
+<li><strong>Done when:</strong> tests for inside, outside, outside-allowed, low accuracy, double start, end without start.</li>
+<li><strong>Depends on:</strong> BE-1.3 (shop pin and radius).</li>
+</ul>
+<h4>BE-3.3 Automatic end of day — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> new <code>AttendanceAutoEndTask</code> (<code>@Scheduled</code>, every 15 minutes).</li>
+<li>Ends open days after the working-hours end time with <code>end_reason = AUTO</code>, and sends the technician a notification.</li>
+<li>Also stops any open ETA session (Phase 6) for that technician.</li>
+<li><strong>Done when:</strong> test with a fixed clock (<code>java.time.Clock</code> bean) covers before, at and after the end time.</li>
+<li><strong>Depends on:</strong> BE-1.5.</li>
+</ul>
+<h4>BE-3.4 Attendance report and CSV export — 1.5 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>AttendanceController</code> (<code>GET /attendance</code>, <code>GET /attendance/export.csv</code>), <code>AttendanceReportService</code>.</li>
+<li>One row per technician per day: start, end, hours, started inside/outside, auto-ended, jobs completed that day, distance (filled after Phase 5).</li>
+<li>CSV in UTF-8 with BOM so Excel opens it correctly; dates as <code>dd-MM-yyyy</code>, times in India time.</li>
+<li><strong>Done when:</strong> export opens correctly in Excel with ₹ and Hindi names intact.</li>
+</ul>
+<h3>App</h3>
+<h4>APP-3.1 Duty card on the technician home (Screen 2) — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>features/attendance/data/attendance_repository.dart</code>, <code>presentation/duty_card.dart</code>; <code>dashboard_screen.dart</code> (<code>_TechnicianDashboard</code>).</li>
+<li>States: not started (Start day button), checking location, outside shop area (shows distance; button disabled with explanation), on duty (since time, End day), ended.</li>
+<li>Start day uses <code>bestFix()</code> with a 20-second limit and shows the accuracy.</li>
+<li>Hidden when the attendance switch is off in <code>/location/config</code>.</li>
+<li><strong>Done when:</strong> all states shown on the emulator by moving the simulated location in and out of the radius.</li>
+</ul>
+<h4>APP-3.2 Attendance report for Staff in the app — 1.5 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>features/attendance/presentation/attendance_report_screen.dart</code>; <code>dashboard_screen.dart</code> (new tile for Staff/Admin).</li>
+<li>Date range picker, per-technician list with flags; export is web-only (link to the admin site).</li>
+<li><strong>Done when:</strong> Staff can view today&#39;s and last week&#39;s attendance.</li>
+</ul>
+<hr>
+<h2>Phase 4 — On-duty tracking (feature 3)</h2>
+<h3>Backend</h3>
+<h4>BE-4.1 Migration V17 and points domain — 0.5 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>V17__location_points.sql</code>; new <code>feature/location/points/LocationPoint.java</code>, <code>LocationPointRepository</code> (batch insert using <code>saveAll</code> with JDBC batching enabled: <code>hibernate.jdbc.batch_size: 100</code>).</li>
+<li>Not in <code>feature/tracking</code>: that package already exists for <strong>customer repair tracking</strong>.</li>
+</ul>
+<h4>BE-4.2 Batch upload endpoint — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>LocationPointController</code> (<code>POST /location/points</code>), <code>LocationPointService</code>.</li>
+<li>Accept up to 500 points; reject if the technician has no open attendance day covering the point time (protects privacy: no tracking off duty).</li>
+<li>Ignore duplicates by <code>(technician_id, client_point_id)</code>, so the app can safely resend after a network error.</li>
+<li>Drop impossible points (speed over 150 km/h compared with the previous point) but store them in a count for diagnostics.</li>
+<li>Returns <code>{ accepted, duplicates, rejected }</code>.</li>
+<li><strong>Done when:</strong> tests for a normal batch, a resend, off-duty points and impossible jumps; load test of 50 technicians × 12 points per hour on the B1ms database stays under 200 ms per request.</li>
+</ul>
+<h4>BE-4.3 Live map and history — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>LocationPointController</code> (<code>GET /location/live</code>, <code>GET /location/history</code>).</li>
+<li>Live: for each on-duty technician, last point, time since last point, battery, current job (if <code>IN_PROGRESS</code>), and a <code>stale</code> flag after 15 minutes.</li>
+<li>History: points for one technician and one day, simplified to at most 1,000 points (Douglas–Peucker, 10 m tolerance) for drawing.</li>
+<li>Technicians may only read their own history.</li>
+<li><strong>Done when:</strong> tests for access rules and simplification.</li>
+</ul>
+<h4>BE-4.4 Nightly cleanup — 0.5 day</h4>
+<ul>
+<li><strong>Files:</strong> new <code>LocationRetentionTask</code> (<code>@Scheduled</code>, 02:30 India time): delete <code>location_points</code> and <code>job_visits</code> coordinates older than <code>retention_days</code>, in chunks of 10,000 rows.</li>
+<li><strong>Done when:</strong> test with a fixed clock deletes only old rows.</li>
+</ul>
+<h4>BE-4.5 Sort technicians by distance in Assign — 1 day (optional)</h4>
+<ul>
+<li><strong>Files:</strong> <code>UserManagementController</code> / <code>UserService</code> (<code>GET /users?role=TECHNICIAN&amp;nearJobId=…</code>): adds <code>distanceM</code> from the technician&#39;s last live point to the job pin, sorted ascending; off-duty technicians at the end.</li>
+</ul>
+<h3>App</h3>
+<h4>APP-4.1 Background tracking service — 5 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>AndroidManifest.xml</code> (add <code>ACCESS_BACKGROUND_LOCATION</code>, <code>FOREGROUND_SERVICE</code>, <code>FOREGROUND_SERVICE_LOCATION</code>, <code>WAKE_LOCK</code>); new <code>lib/core/location/duty_tracker.dart</code>.</li>
+<li>Use <code>geolocator</code>&#39;s Android foreground-service mode (<code>AndroidSettings</code> with <code>foregroundNotificationConfig</code>) so Android keeps the app alive and shows the &quot;Sharing location while on duty&quot; notification. If testing on budget phones shows gaps, switch to <code>flutter_background_service</code>.</li>
+<li>Start on Start day, stop on End day, on auto end (checked from <code>/attendance/today</code> on every app resume), and on sign-out.</li>
+<li>Interval and distance filter come from <code>/location/config</code>.</li>
+<li>Background permission: after Start day, explain why, then open the &quot;Allow all the time&quot; settings page (Android 11+ does not show this as a dialog).</li>
+<li>After a phone restart, show a notification &quot;Tap to resume duty tracking&quot; instead of restarting silently.</li>
+<li><strong>Done when:</strong> on the emulator, points keep arriving with the app swiped away and the screen off for 30 minutes.</li>
+</ul>
+<h4>APP-4.2 Offline queue and upload — 3 days</h4>
+<ul>
+<li><strong>Files:</strong> add <code>sqflite</code>, <code>path</code>, <code>connectivity_plus</code>, <code>battery_plus</code> to <code>pubspec.yaml</code>; new <code>lib/core/location/point_queue.dart</code>, <code>point_uploader.dart</code>.</li>
+<li>Every point is saved to a local SQLite table first with a UUID <code>client_point_id</code> and battery level.</li>
+<li>Upload every 2 minutes or when 50 points are waiting, in batches of up to 500; delete after the server confirms; back off when offline (1, 2, 4… up to 15 minutes).</li>
+<li>Keep at most 7 days of unsent points (about 2,000), deleting the oldest first.</li>
+<li><strong>Done when:</strong> airplane mode for 1 hour, then reconnect, uploads every point exactly once.</li>
+</ul>
+<h4>APP-4.3 Live technician map for Staff (Screen 5) — 3 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>features/live_map/data/live_map_repository.dart</code>, <code>presentation/live_map_screen.dart</code>; <code>dashboard_screen.dart</code> (tile for Staff/Admin).</li>
+<li>Google map with a marker per technician (initials, colour by status), grey when stale; refresh every 60 seconds while the screen is open; list below the map; tap → day route (history) drawn as a polyline.</li>
+<li><strong>Done when:</strong> matches Screen 5; refresh stops when the screen is closed.</li>
+</ul>
+<h4>APP-4.4 Field test on budget phones — 3 days (QA)</h4>
+<ul>
+<li>Phones: Redmi, Realme, Vivo, Oppo, Samsung M/A series, with each brand&#39;s battery settings left at default and then fixed with the help sheet.</li>
+<li>Measure per day: gaps over 15 minutes, battery used, points uploaded, behaviour after restart and after the app is swiped away.</li>
+<li><strong>Done when:</strong> a short report is written and the brand help steps (APP-1.3) are updated.</li>
+</ul>
+<hr>
+<h2>Phase 5 — Distance and travel allowance (feature 4)</h2>
+<h3>Backend</h3>
+<h4>BE-5.1 Daily distance calculation — 3 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>feature/travel/service/DistanceCalculator.java</code>, <code>TravelDayTask</code>, <code>TravelDay</code> entity, <code>V18__travel_claims.sql</code>.</li>
+<li>For each technician day: drop points with accuracy &gt; 50 m, drop jumps (speed &gt; 120 km/h), ignore movement under 25 m between consecutive points (GPS jitter while parked), sum the haversine distance.</li>
+<li>Split into legs at each job check-in and check-out, so each leg shows &quot;Shop → RD-…&quot;, &quot;RD-… → RD-…&quot;.</li>
+<li>Optional accuracy boost: for legs with big gaps (over 15 minutes without points), use one Routes API call for that leg; counted in the daily limit.</li>
+<li>Run nightly at 23:30 India time for days that ended, and on demand when a technician opens the travel screen.</li>
+<li><strong>Done when:</strong> unit tests with recorded sample routes (a straight ride, a stop with jitter, a GPS jump, a gap) produce distances within 5% of the expected value.</li>
+</ul>
+<h4>BE-5.2 Travel days endpoint — 0.5 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>TravelController</code> (<code>GET /travel/days</code>).</li>
+</ul>
+<h4>BE-5.3 Claims: submit, approve, export — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>TravelClaim</code> entity, <code>TravelClaimService</code>, <code>TravelController</code>.</li>
+<li>Submit for a date range: amount = distance (km, 1 decimal) × rate for the technician&#39;s vehicle type, rounded to the rupee. A day can be in only one non-rejected claim.</li>
+<li>Approve, reject with a reason, bulk approve; notify the technician.</li>
+<li>Monthly CSV export for payroll: technician, days, km, rate, amount, status, approved by.</li>
+<li><strong>Done when:</strong> tests for amount calculation, overlapping claims, and permissions.</li>
+<li><strong>Depends on:</strong> BE-5.1. Rates confirmed by the business.</li>
+</ul>
+<h3>App</h3>
+<h4>APP-5.1 Travel &amp; allowance screen and Submit claim (Screen 4) — 3 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>features/travel/data/travel_repository.dart</code>, <code>presentation/travel_screen.dart</code>, <code>presentation/submit_claim_sheet.dart</code>; <code>dashboard_screen.dart</code> (tile for technicians).</li>
+<li>Week/month selector, daily km with legs, estimated amount, claim status chips; Submit claim for the selected range.</li>
+<li><strong>Done when:</strong> matches Screen 4; amounts match the backend exactly (the app only displays them, it never calculates them).</li>
+</ul>
+<h4>APP-5.2 Approve claims for Staff — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>features/travel/presentation/claims_review_screen.dart</code>.</li>
+<li>List of submitted claims with approve / reject and select-all approve.</li>
+</ul>
+<hr>
+<h2>Phase 6 — Customer live ETA (feature 5)</h2>
+<h3>Backend</h3>
+<h4>BE-6.1 On my way and ETA sessions — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>V19__eta_push.sql</code>; new <code>feature/eta/</code> — <code>EtaSession</code> entity, <code>EtaService</code>, <code>EtaController</code>, <code>EtaRefreshTask</code>.</li>
+<li><code>POST /jobs/{id}/on-my-way</code> (assigned technician, job <code>ASSIGNED</code> or <code>SCHEDULED</code>, on duty, job has a pin): create a session with a 32-character random token, record an <code>ON_MY_WAY</code> visit, calculate the first ETA.</li>
+<li>Refresh the ETA from the technician&#39;s latest point at most every 2 minutes, and only while someone is viewing (the public page or app asks); otherwise use the last value. This keeps Routes calls low.</li>
+<li>End the session on check-in, cancel, end of day, or after 3 hours.</li>
+<li><strong>Done when:</strong> tests for permissions, refresh throttling and every way a session ends.</li>
+</ul>
+<h4>BE-6.2 Push notifications (Firebase Cloud Messaging) — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> add <code>com.google.firebase:firebase-admin</code> to <code>pom.xml</code>; new <code>feature/push/</code> — <code>DeviceToken</code> entity, <code>PushService</code>, <code>DeviceTokenController</code>; Azure secret <code>firebase-service-account</code> (JSON) → env <code>FIREBASE_CREDENTIALS</code>.</li>
+<li>Send &quot;Ravi is on the way — about 18 min&quot; to the customer at On my way, and &quot;Ravi has arrived&quot; at check-in.</li>
+<li>Also used for Staff alerts from BE-2.2 and the technician auto-end notice from BE-3.3.</li>
+<li>If push is not configured, fall back to the in-app inbox only.</li>
+<li><strong>Done when:</strong> a test phone receives the push from Azure dev.</li>
+</ul>
+<h4>BE-6.3 Public tracking endpoint and SMS — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>SecurityConfig</code> (permit <code>GET /public/track/**</code>); <code>PublicTrackingController</code>; new <code>feature/sms/SmsService</code> (provider adapter, e.g. MSG91), secrets <code>sms-api-key</code>, <code>sms-sender-id</code>, <code>sms-template-id</code>.</li>
+<li>Public data only: technician first name, shop name, ETA, distance band, technician position rounded to about 100 m, status. No customer address or phone in the response. Returns 410 when the session has ended.</li>
+<li>Limit 60 requests per token per hour.</li>
+<li>SMS with the link at On my way, only if the customer has no push token. Sending is switched off until DLT registration is approved.</li>
+<li><strong>Done when:</strong> the link works without login and shows &quot;Visit finished&quot; after check-in.</li>
+</ul>
+<h3>App</h3>
+<h4>APP-6.1 Push setup in the app — 1.5 days</h4>
+<ul>
+<li><strong>Files:</strong> add <code>firebase_core</code>, <code>firebase_messaging</code>, <code>flutter_local_notifications</code>; <code>android/app/google-services.json</code> (git-ignored, like the Maps key); <code>main.dart</code>; new <code>lib/core/push/push_service.dart</code>.</li>
+<li>Ask for notification permission after login, register the token with <code>POST /devices/push-token</code>, refresh on change; tap opens the job or repair.</li>
+<li><strong>Done when:</strong> customer, technician and Staff phones receive test pushes.</li>
+</ul>
+<h4>APP-6.2 &quot;On my way&quot; button for technicians — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>job_detail_screen.dart</code>, <code>visit_section.dart</code>, <code>jobs_repository.dart</code>.</li>
+<li>Shown for assigned jobs with a pin while on duty; confirms &quot;Notify the customer that you are on the way?&quot;; then shows &quot;Customer notified · ETA 18 min&quot;.</li>
+</ul>
+<h4>APP-6.3 Customer tracking screen (Screen 7) — 2 days</h4>
+<ul>
+<li><strong>Files:</strong> <code>features/customer_home/presentation/repair_detail_screen.dart</code>, new <code>live_eta_card.dart</code>; <code>customer_home_repository.dart</code>.</li>
+<li>Map with the technician marker and the customer pin, ETA, technician name and call button; refresh every 30 seconds while open; &quot;Arrived&quot; state after check-in.</li>
+</ul>
+<h4>WEB-6.4 Public tracking web page — 2 days</h4>
+<ul>
+<li>A public route <code>/track/:token</code> in the admin site (same domain, so the existing web key restriction already covers it), mobile-first, no login, polling every 30 seconds.</li>
+</ul>
+<hr>
+<h2>Phase 7 — Privacy, release and documentation</h2>
+<h4>BE-7.1 Consent and own history — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>V20__location_consents.sql</code>; <code>LocationConsentController</code> (<code>POST /me/location-consent</code>, <code>GET /me/location-history</code>).</li>
+<li>Attendance start and point upload return 403 <code>CONSENT_REQUIRED</code> until the technician has accepted the current notice version.</li>
+</ul>
+<h4>APP-7.1 Privacy notice and acceptance — 1.5 days</h4>
+<ul>
+<li><strong>Files:</strong> new <code>features/location_onboarding/presentation/privacy_notice_screen.dart</code>; shown before Screen 1A; text in English and Hindi.</li>
+<li>Explains what is collected, why, only during duty hours, who can see it, and how long it is kept (DPDP Act 2023).</li>
+</ul>
+<h4>APP-7.2 My location history — 1 day</h4>
+<ul>
+<li><strong>Files:</strong> <code>features/account/presentation/account_screen.dart</code> (new &quot;My location history&quot; entry), <code>my_location_history_screen.dart</code> (date picker, route on a map).</li>
+</ul>
+<h4>QA-7.3 End-to-end test pass and release — 2 days</h4>
+<ul>
+<li>Full flow on Azure dev with two technician phones: start day → on my way → check-in → complete → end day → next morning distance → claim → approval → export.</li>
+<li>Release APK with the Android key from the build machine; update the Play Store background-location declaration if published there.</li>
+</ul>
+<h4>DOC-7.4 Manuals — 2 days</h4>
+<ul>
+<li>Update the Technician, Staff and Admin manuals with the new screens and regenerate the PDFs.</li>
+</ul>
+<hr>
+<h2>5. Admin website tasks (short list)</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Task</th>
+<th>Est.</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WEB-1.1</td>
+<td>Add <code>@angular/google-maps</code>; load the Maps script with <code>environment.googleMapsApiKey</code></td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>WEB-1.2</td>
+<td>Address + pin on Create Request and Request/Job detail</td>
+<td>2</td>
+</tr>
+<tr>
+<td>WEB-1.3</td>
+<td>Location settings page (Screen 8): shop pin, radius, switches, intervals, rates</td>
+<td>2</td>
+</tr>
+<tr>
+<td>WEB-2.1</td>
+<td>Visit record and far-from-address warning on job detail</td>
+<td>1</td>
+</tr>
+<tr>
+<td>WEB-3.1</td>
+<td>Attendance report with CSV export</td>
+<td>2</td>
+</tr>
+<tr>
+<td>WEB-4.1</td>
+<td>Live technician map and day route</td>
+<td>3</td>
+</tr>
+<tr>
+<td>WEB-5.1</td>
+<td>Claims review, bulk approve, monthly export</td>
+<td>2</td>
+</tr>
+<tr>
+<td>WEB-6.4</td>
+<td>Public tracking page (listed in Phase 6)</td>
+<td>2</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. Effort summary</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Backend</th>
+<th>App</th>
+<th>Web</th>
+<th>QA / Docs</th>
+<th>Total days</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1 Foundations</td>
+<td>8.5</td>
+<td>9</td>
+<td>4.5</td>
+<td>—</td>
+<td>22</td>
+</tr>
+<tr>
+<td>2 Check-in / check-out</td>
+<td>3.5</td>
+<td>5</td>
+<td>1</td>
+<td>—</td>
+<td>9.5</td>
+</tr>
+<tr>
+<td>3 Attendance</td>
+<td>5</td>
+<td>3.5</td>
+<td>2</td>
+<td>—</td>
+<td>10.5</td>
+</tr>
+<tr>
+<td>4 On-duty tracking</td>
+<td>6 (incl. optional 1)</td>
+<td>11</td>
+<td>3</td>
+<td>3</td>
+<td>23</td>
+</tr>
+<tr>
+<td>5 Travel allowance</td>
+<td>5.5</td>
+<td>4</td>
+<td>2</td>
+<td>—</td>
+<td>11.5</td>
+</tr>
+<tr>
+<td>6 Customer ETA</td>
+<td>6</td>
+<td>4.5</td>
+<td>2</td>
+<td>—</td>
+<td>12.5</td>
+</tr>
+<tr>
+<td>7 Privacy and release</td>
+<td>1</td>
+<td>2.5</td>
+<td>—</td>
+<td>4</td>
+<td>7.5</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>35.5</strong></td>
+<td><strong>39.5</strong></td>
+<td><strong>14.5</strong></td>
+<td><strong>7</strong></td>
+<td><strong>96.5</strong></td>
+</tr>
+</tbody></table>
+<p>About 19–20 working weeks for one developer, or about 10–11 weeks for two (one backend + web, one app). Phases 1–3 (check-in/out and attendance) can go live after about 8 weeks with one developer.</p>
+<h2>7. Suggested order of work</h2>
+<p>Each step ends with a release to technicians.</p>
+<ol>
+<li><strong>Step 1:</strong> BE-1.1 to BE-1.5 alongside APP-1.1 to APP-1.4, then WEB-1.x. Release: address and pin on jobs.</li>
+<li><strong>Step 2:</strong> Phase 2. Release: geotagged check-in/out.</li>
+<li><strong>Step 3:</strong> Phase 3 + BE-7.1 / APP-7.1 (consent is needed before any duty tracking). Release: attendance.</li>
+<li><strong>Step 4:</strong> Phase 4, including the field test. Release: on-duty tracking.</li>
+<li><strong>Step 5:</strong> Phase 5. Release: travel allowance.</li>
+<li><strong>Step 6:</strong> Phase 6. Start DLT registration during Step 4 so SMS is ready. Release: customer ETA.</li>
+<li><strong>Step 7:</strong> remaining Phase 7, manuals, hardening.</li>
+</ol>
+<h2>8. Still needed from the business</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Needed by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Daily quotas and ₹500 budget alert in Google Cloud</td>
+<td>Before Phase 1 goes live</td>
+</tr>
+<tr>
+<td>Shop location (exact pin) and radius</td>
+<td>Phase 3</td>
+</tr>
+<tr>
+<td>Allowance rates and who approves claims</td>
+<td>Phase 5</td>
+</tr>
+<tr>
+<td>Each technician&#39;s vehicle type</td>
+<td>Phase 5</td>
+</tr>
+<tr>
+<td>Firebase project (same Google account)</td>
+<td>Phase 6</td>
+</tr>
+<tr>
+<td>SMS provider account and DLT registration of sender ID and template (1–2 weeks)</td>
+<td>Phase 6</td>
+</tr>
+<tr>
+<td>Privacy notice text approved (English and Hindi)</td>
+<td>Phase 3</td>
+</tr>
+<tr>
+<td>Proper release signing key for the app (replaces the debug key; update the Android key&#39;s SHA-1 in Google Cloud)</td>
+<td>Before the first release to technicians</td>
+</tr>
+</tbody></table>
+
+</body>
+</html>

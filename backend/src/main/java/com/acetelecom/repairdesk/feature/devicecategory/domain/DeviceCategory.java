@@ -1,6 +1,9 @@
 package com.acetelecom.repairdesk.feature.devicecategory.domain;
 
-import com.acetelecom.repairdesk.common.domain.BaseEntity;
+import org.hibernate.annotations.Filter;
+
+import com.acetelecom.repairdesk.common.domain.TenantEntity;
+import com.acetelecom.repairdesk.feature.company.CompanyFilters;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,10 +16,11 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "device_categories")
+@Filter(name = CompanyFilters.NAME, condition = CompanyFilters.CONDITION)
 @Getter
 @Setter
 @NoArgsConstructor
-public class DeviceCategory extends BaseEntity {
+public class DeviceCategory extends TenantEntity {
 
     @Column(nullable = false, length = 100)
     private String name;

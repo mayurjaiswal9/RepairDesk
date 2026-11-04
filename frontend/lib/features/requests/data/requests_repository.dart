@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/error/app_exception.dart';
+import '../../../core/location/service_location.dart';
 import '../../../core/network/api_client.dart';
 
 part 'requests_repository.g.dart';
@@ -74,6 +75,7 @@ class RequestDetail {
   final String? submittedAt;
   final String? jobStatus;
   final String? assignedTechnicianName;
+  final ServiceLocation? serviceLocation;
 
   const RequestDetail({
     required this.id,
@@ -99,6 +101,7 @@ class RequestDetail {
     this.submittedAt,
     this.jobStatus,
     this.assignedTechnicianName,
+    this.serviceLocation,
   });
 
   factory RequestDetail.fromJson(Map<String, dynamic> json) => RequestDetail(
@@ -125,6 +128,7 @@ class RequestDetail {
         submittedAt: json['submittedAt'] as String?,
         jobStatus: json['jobStatus'] as String?,
         assignedTechnicianName: json['assignedTechnicianName'] as String?,
+        serviceLocation: ServiceLocation.fromJson(json['serviceLocation']),
       );
 }
 
@@ -197,6 +201,7 @@ class RequestsRepository {
     required String issueDescription,
     required DateTime preferredDate,
     required TimeOfDay preferredTime,
+    ServiceLocation? serviceLocation,
   }) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>('/requests', data: {
@@ -215,6 +220,8 @@ class RequestsRepository {
         'preferredTime':
             '${preferredTime.hour.toString().padLeft(2, '0')}:'
             '${preferredTime.minute.toString().padLeft(2, '0')}',
+        if (serviceLocation != null && serviceLocation.hasContent)
+          'serviceLocation': serviceLocation.toJson(),
       });
       return res.data!;
     } on DioException catch (e) {

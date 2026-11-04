@@ -21,3 +21,27 @@ flutter build apk --release \
   --dart-define=BRAND_NAME="Customer Name" \
   --dart-define=PRODUCT_NAME=RepairDesk
 ```
+
+## Company code
+
+The app has no company code field. Each customer APK is built with its own
+code, and the default is `ace`:
+
+```bash
+flutter build apk --release --dart-define=COMPANY_CODE=ace
+```
+
+## Ace Telecom production build
+
+Release builds are signed with the key named in `android/key.properties`
+(git-ignored). Without that file the build falls back to the debug key, and
+that APK must not be given to customers.
+
+```bash
+flutter build apk --release --build-name=1.1.0 --build-number=2 \
+  --dart-define=COMPANY_CODE=ace \
+  --dart-define=API_BASE_URL=https://repairdesk-api-dev.politeground-f86bf509.centralindia.azurecontainerapps.io/api/v1
+```
+
+Raise `--build-number` for every APK you hand out, or phones will not
+accept it as an update.

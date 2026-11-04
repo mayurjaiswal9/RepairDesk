@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.notification.domain.Notification;
 import com.acetelecom.repairdesk.feature.notification.dto.NotificationResponse;
 import com.acetelecom.repairdesk.feature.notification.repository.NotificationRepository;
@@ -39,6 +40,7 @@ public class NotificationService {
         User recipient = userRepo.findById(recipientId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Recipient not found"));
         Notification n = new Notification();
+        n.setCompanyId(CompanyContext.get() != null ? CompanyContext.get() : recipient.getCompanyId());
         n.setRecipient(recipient);
         n.setType(type);
         n.setMessage(message);
@@ -63,6 +65,7 @@ public class NotificationService {
     public void markRead(UUID notificationId, UUID recipientId) {
         Notification n = notifRepo.findById(notificationId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Notification not found"));
+        CompanyContext.requireSame(n.getCompanyId(), "Notification not found");
         if (!n.getRecipient().getId().equals(recipientId)) {
             throw new ApiException(ErrorCode.FORBIDDEN, "Access denied");
         }

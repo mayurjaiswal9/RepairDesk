@@ -33,6 +33,13 @@ class BrandingConfig {
     defaultValue: 'Ace Smart Care - Customer Service APP',
   );
 
+  /// Company the app signs in to. Fixed per customer build with
+  /// `--dart-define=COMPANY_CODE=...`; users never type it.
+  static const companyCode = String.fromEnvironment(
+    'COMPANY_CODE',
+    defaultValue: 'ace',
+  );
+
   /// Software partner credited at the foot of the auth screens. Set to an
   /// empty string to hide the line entirely.
   static const poweredBy = String.fromEnvironment(

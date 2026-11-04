@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
+import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 
 public record JobResponse(
@@ -35,7 +36,8 @@ public record JobResponse(
         String internalNotes,
         Instant createdAt,
         Instant updatedAt,
-        long version) {
+        long version,
+        ServiceLocationDto serviceLocation) {
 
     public static JobResponse from(Job j) {
         return new JobResponse(
@@ -65,6 +67,7 @@ public record JobResponse(
                 j.getInternalNotes(),
                 j.getCreatedAt(),
                 j.getUpdatedAt(),
-                j.getVersion());
+                j.getVersion(),
+                ServiceLocationDto.from(j.getServiceLocation()));
     }
 }

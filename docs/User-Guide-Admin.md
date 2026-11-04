@@ -5,7 +5,7 @@
 | Field    | Value        |
 |----------|--------------|
 | Username | `admin`      |
-| Password | `Admin@1234` |
+| Password | `Admin$1234` |
 | Role     | ADMIN        |
 
 > The admin account is seeded automatically the first time the backend starts against a fresh database.
@@ -18,7 +18,7 @@
 1. Launch the app on the emulator or physical device.
 2. On the **Sign In** screen enter:
    - **Username:** `admin`
-   - **Password:** `Admin@1234`
+   - **Password:** `Admin$1234`
 3. Tap **Sign In**.
 4. You will be taken to the **Dashboard** screen.
 
@@ -139,7 +139,7 @@ The backend runs on **port 8080**. The emulator address `10.0.2.2` automatically
 | Backend base path | `http://localhost:8080/api/v1` |
 | Emulator → host loopback | `http://10.0.2.2:8080/api/v1` |
 | Admin username | `admin` |
-| Admin password | `Admin@1234` |
+| Admin password | `Admin$1234` |
 | Database host | `localhost:5432` |
 | Database name | `repairdesk` |
 | DB username / password | `repairdesk / repairdesk` |

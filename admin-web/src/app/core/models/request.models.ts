@@ -9,6 +9,16 @@ export type Priority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 
 export type WarrantyStatus = 'IN_WARRANTY' | 'OUT_OF_WARRANTY' | 'UNKNOWN';
 
+export interface ServiceLocation {
+  addressLine?: string | null;
+  landmark?: string | null;
+  city?: string | null;
+  pincode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  pinSource?: 'GEOCODED' | 'MANUAL_PIN' | 'CHECK_IN' | 'CUSTOMER_LINK' | null;
+}
+
 /** Minimal shape for shared approve/reject/info dialogs. */
 export interface DecisionTarget {
   id: string;
@@ -45,6 +55,7 @@ export interface RepairRequestDetail extends DecisionTarget {
   jobId?: string | null;
   jobStatus?: string | null;
   assignedTechnicianName?: string | null;
+  serviceLocation?: ServiceLocation | null;
 }
 
 export interface AttachmentMeta {

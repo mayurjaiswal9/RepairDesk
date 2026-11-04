@@ -8,5 +8,8 @@ public record LoginRequest(
         String username,
 
         @NotBlank
-        String password) {
+        String password,
+
+        /** Blank or omitted means ACE Telecom. */
+        String companyCode) {
 }

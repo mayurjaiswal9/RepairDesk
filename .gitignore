@@ -47,3 +47,6 @@ frontend/**/GeneratedPluginRegistrant.*
 
 # ============ Logs ============
 *.log
+
+# Built APKs stay on disk, not in git
+*.apk

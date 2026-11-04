@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_controller.dart';
+import '../../../core/branding/branding_config.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/brand_backdrop.dart';
@@ -42,7 +43,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final auth = await ref
           .read(authRepositoryProvider)
-          .login(_userCtrl.text.trim(), _passCtrl.text);
+          .login(
+            _userCtrl.text.trim(),
+            _passCtrl.text,
+            companyCode: BrandingConfig.companyCode,
+          );
 
       await ref.read(sessionControllerProvider.notifier).signIn(
             token: auth.token,

@@ -26,13 +26,13 @@
       <a routerLink="/customers">Customers</a>
     }
     <span class="sep">/</span>
-    <strong>Create request</strong>
+    <strong>Request repair</strong>
   </nav>
 
   <div class="create-page" [class.solo]="!customer()">
     <div class="page-title">
       <div class="doc" aria-hidden="true">+</div>
-      <h1>Create request</h1>
+      <h1>Request repair</h1>
     </div>
     <p class="lede">
       Create a request for a walk-in or phone customer. The request is owned by them, not by you.
@@ -172,6 +172,41 @@
               <small>Please describe the issue (min 10 characters)</small>
             }
           </label>
+          <div class="field">
+            <span>Service address <span class="opt">(optional)</span></span>
+            <input formControlName="serviceAddress" placeholder="Building, street" />
+          </div>
+          <div class="form-row">
+            <label class="field">
+              <span>Landmark</span>
+              <input formControlName="serviceLandmark" placeholder="Near a known place" />
+            </label>
+            <label class="field">
+              <span>City</span>
+              <input formControlName="serviceCity" />
+            </label>
+            <label class="field">
+              <span>PIN code</span>
+              <input formControlName="servicePincode" inputmode="numeric" maxlength="6" />
+              @if (form.controls.servicePincode.touched && form.controls.servicePincode.invalid) {
+                <small>Enter a 6-digit PIN code</small>
+              }
+            </label>
+          </div>
+          <app-place-assist
+            [biasLatitude]="pinLat()"
+            [biasLongitude]="pinLng()"
+            (placePicked)="applyPickedPlace($event)"
+          />
+          <div class="field">
+            <button type="button" class="ghost-btn" [disabled]="findingPin()" (click)="findAddress()">
+              {{ findingPin() ? 'Finding…' : 'Find on map' }}
+            </button>
+            @if (pinLat() != null) {
+              <p class="muted">Pin {{ pinLat() }}, {{ pinLng() }}. Drag the pin, or click the map, to adjust it.</p>
+              <app-pin-map [pins]="addressPins()" [height]="240" [clickToSet]="true" (positionChange)="moveNewPin($event)" />
+            }
+          </div>
           <div class="field">
             <span>How did the customer contact you?</span>
             <div class="channels">

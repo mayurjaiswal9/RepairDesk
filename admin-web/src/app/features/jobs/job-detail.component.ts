@@ -24,6 +24,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { JobsApi } from '../../core/api/jobs.api';
+import { LocationApi, PickedPlace } from '../../core/api/location.api';
+import { PlaceAssistComponent } from '../location/place-assist.component';
+import { JobTravelPanelComponent } from './job-travel-panel.component';
+import { googleMapsDirectionsUrl } from '../../core/maps/directions';
+import { MapPin, PinMapComponent } from '../../core/maps/pin-map.component';
 import { RequestsApi } from '../../core/api/requests.api';
 import { UsersApi } from '../../core/api/users.api';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
@@ -41,6 +46,7 @@ import {
 } from '../../core/models/job.models';
 import {
   AttachmentMeta,
+  ServiceLocation,
   formatAbsolute,
   formatDateOnly,
   formatTimeOnly,
@@ -85,14 +91,19 @@ interface PhotoTile {
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatTooltipModule,
+    PinMapComponent,
+    PlaceAssistComponent,
+    JobTravelPanelComponent,
   ],
   templateUrl: './job-detail.component.html',
   styleUrl: './job-detail.component.scss',
 })
 export class JobDetailComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild(PlaceAssistComponent) private placeAssist?: PlaceAssistComponent;
 
   private readonly api = inject(JobsApi);
+  private readonly locationApi = inject(LocationApi);
   private readonly requestsApi = inject(RequestsApi);
   private readonly usersApi = inject(UsersApi);
   private readonly session = inject(SessionService);
@@ -110,6 +121,14 @@ export class JobDetailComponent implements OnInit, OnDestroy {
   readonly formatTimeOnly = formatTimeOnly;
 
   readonly state = signal<PageState>('loading');
+  readonly locationQuery = signal('');
+  readonly editingLocation = signal(false);
+  readonly draftLatitude = signal<number | null>(null);
+  readonly draftLongitude = signal<number | null>(null);
+  readonly draftAddress = signal('');
+  readonly draftPinSource = signal<'GEOCODED' | 'MANUAL_PIN' | 'CUSTOMER_LINK'>('MANUAL_PIN');
+  readonly locating = signal(false);
+  readonly savingLocation = signal(false);
   readonly refetching = signal(false);
   readonly busy = signal(false);
   readonly detail = signal<JobDetail | null>(null);
@@ -629,6 +648,137 @@ export class JobDetailComponent implements OnInit, OnDestroy {
         next[index] = { meta, objectUrl: null, loading: false, error: true };
         if (source === 'job') this.jobPhotos.set(next);
         else this.customerPhotos.set(next);
+      },
+    });
+  }
+
+  directionsUrl(location: ServiceLocation | null | undefined): string | null {
+    if (!location) return null;
+    const address = [location.addressLine, location.landmark, location.city, location.pincode]
+      .filter((part): part is string => !!part && part.trim().length > 0)
+      .join(', ');
+    return googleMapsDirectionsUrl({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      address,
+    });
+  }
+
+  jobPins(location: ServiceLocation | null | undefined): MapPin[] {
+    if (location?.latitude == null || location.longitude == null) return [];
+    return [{
+      id: 'job',
+      latitude: location.latitude,
+      longitude: location.longitude,
+      title: 'Service address',
+      kind: 'job',
+    }];
+  }
+
+  draftPins(): MapPin[] {
+    const latitude = this.draftLatitude();
+    const longitude = this.draftLongitude();
+    if (latitude == null || longitude == null) return [];
+    return [{
+      id: 'job-draft',
+      latitude,
+      longitude,
+      title: 'Service address',
+      kind: 'job',
+    }];
+  }
+
+  shownAddress(location: ServiceLocation | null | undefined): string {
+    return location?.addressLine?.trim() || 'No address yet';
+  }
+
+  startLocationEdit(): void {
+    const location = this.detail()?.serviceLocation;
+    this.locationQuery.set('');
+    this.draftLatitude.set(location?.latitude ?? null);
+    this.draftLongitude.set(location?.longitude ?? null);
+    this.draftAddress.set(location?.addressLine?.trim() || '');
+    const source = location?.pinSource;
+    this.draftPinSource.set(source === 'GEOCODED' || source === 'CUSTOMER_LINK' ? source : 'MANUAL_PIN');
+    this.editingLocation.set(true);
+  }
+
+  cancelLocationEdit(): void {
+    this.editingLocation.set(false);
+    this.locationQuery.set('');
+  }
+
+  /** Stages a dragged or clicked pin. It is stored only when Save is pressed. */
+  stageJobPin(point: { latitude: number; longitude: number }): void {
+    this.draftLatitude.set(point.latitude);
+    this.draftLongitude.set(point.longitude);
+    this.draftPinSource.set('MANUAL_PIN');
+    this.locationQuery.set('');
+    this.placeAssist?.clearQuery();
+  }
+
+  applyPickedPlace(place: PickedPlace): void {
+    this.draftLatitude.set(place.latitude);
+    this.draftLongitude.set(place.longitude);
+    this.draftPinSource.set(place.pinSource);
+    if (place.addressLine.trim()) this.draftAddress.set(place.addressLine.trim());
+    this.locationQuery.set('');
+  }
+
+  saveLocationEdit(): void {
+    const job = this.detail();
+    if (!job) return;
+    const query = this.locationQuery().trim();
+    if (query) {
+      this.locating.set(true);
+      this.locationApi.geocode(query).subscribe({
+        next: (hit) => {
+          this.locating.set(false);
+          this.saveJobLocation(job, {
+            addressLine: query,
+            latitude: hit.latitude,
+            longitude: hit.longitude,
+            pinSource: 'GEOCODED',
+          });
+        },
+        error: (err) => {
+          this.locating.set(false);
+          this.snack.open(mapHttpError(err).message, 'Dismiss', { duration: 5000 });
+        },
+      });
+      return;
+    }
+    const latitude = this.draftLatitude();
+    const longitude = this.draftLongitude();
+    if (latitude == null || longitude == null) {
+      this.snack.open('Search for a place, or drop the pin, before saving.', 'Dismiss', { duration: 4000 });
+      return;
+    }
+    const current = job.serviceLocation;
+    this.saveJobLocation(job, {
+      addressLine: this.draftAddress().trim() || current?.addressLine,
+      landmark: current?.landmark,
+      city: current?.city,
+      pincode: current?.pincode,
+      latitude,
+      longitude,
+      pinSource: this.draftPinSource(),
+    });
+  }
+
+  private saveJobLocation(job: JobDetail, location: ServiceLocation): void {
+    this.savingLocation.set(true);
+    this.api.updateServiceLocation(job.id, location).subscribe({
+      next: (updated) => {
+        this.detail.set(updated);
+        this.savingLocation.set(false);
+        this.editingLocation.set(false);
+        this.locationQuery.set('');
+        this.snack.open('Job location saved', 'Dismiss', { duration: 3000 });
+      },
+      error: (err) => {
+        this.savingLocation.set(false);
+        this.snack.open(mapHttpError(err).message, 'Dismiss', { duration: 5000 });
       },
     });
   }

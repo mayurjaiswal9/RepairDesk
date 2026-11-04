@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>RepairDesk Technician App — User Manual</title>
+  <style>
+    @page { size: A4; margin: 16mm 16mm 18mm 16mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: "Segoe UI", Calibri, Arial, sans-serif;
+      color: #1a1f36; background: #fff;
+      font-size: 11pt; line-height: 1.45;
+    }
+    .cover {
+      page-break-after: always; min-height: 240mm;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 28mm 8mm 16mm;
+    }
+    .cover-brand {
+      font-size: 12pt; letter-spacing: 0.12em; text-transform: uppercase;
+      color: #1e3a8a; font-weight: 700;
+    }
+    .cover h1 { font-size: 32pt; line-height: 1.15; margin: 18px 0 8px; color: #0f172a; }
+    .cover .subtitle { font-size: 14pt; color: #475569; margin: 0 0 28px; }
+    .meta-box {
+      border: 1px solid #dbe4f0; border-left: 6px solid #1d4ed8;
+      border-radius: 8px; padding: 16px 18px; background: #f8fafc; max-width: 460px;
+    }
+    .meta-box dt {
+      font-size: 9pt; text-transform: uppercase; letter-spacing: 0.06em;
+      color: #64748b; margin-top: 8px;
+    }
+    .meta-box dt:first-child { margin-top: 0; }
+    .meta-box dd { margin: 2px 0 0; font-weight: 600; }
+    .cover-foot { color: #64748b; font-size: 10pt; }
+    h2 {
+      color: #1e3a8a; font-size: 16pt; border-bottom: 2px solid #dbe4f0;
+      padding-bottom: 6px; margin: 22px 0 12px; page-break-after: avoid;
+    }
+    h3 { color: #0f172a; font-size: 12.5pt; margin: 16px 0 8px; page-break-after: avoid; }
+    p, li { orphans: 3; widows: 3; }
+    table {
+      width: 100%; border-collapse: collapse; margin: 10px 0 14px;
+      font-size: 10.5pt; page-break-inside: avoid;
+    }
+    th, td { border: 1px solid #dbe4f0; padding: 7px 10px; text-align: left; vertical-align: top; }
+    th { background: #1e3a8a; color: #fff; font-weight: 600; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 10pt;
+    }
+    .note {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+      padding: 10px 12px; margin: 12px 0; page-break-inside: avoid;
+    }
+    .warn {
+      background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px;
+      padding: 10px 12px; margin: 12px 0; page-break-inside: avoid;
+    }
+    figure { margin: 12px auto 18px; page-break-inside: avoid; text-align: center; }
+    figure img {
+      width: 62mm; border: 1px solid #cbd5e1; border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    }
+    figcaption { font-size: 9.5pt; color: #475569; margin-top: 6px; font-style: italic; }
+    .pair { display: flex; gap: 10mm; justify-content: center; page-break-inside: avoid; margin: 12px 0 18px; }
+    .pair figure { margin: 0; }
+    ol { padding-left: 22px; }
+    a { color: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div>
+      <div class="cover-brand">ACE Telecom · RepairDesk</div>
+      <h1>Technician App<br>User Manual</h1>
+      <p class="subtitle">Find your jobs on the phone, start and end the work day, read the map, tap Start Navigating, and start and finish repairs.</p>
+      <dl class="meta-box">
+        <dt>Audience</dt><dd>Field / bench technicians</dd>
+        <dt>App</dt><dd>RepairDesk for Android</dd>
+        <dt>Username and password</dt><dd>You will get these from your Administrator</dd>
+        <dt>Screenshots</dt><dd>RepairDesk Android app, signed in as Technician</dd>
+      </dl>
+    </div>
+    <p class="cover-foot">This guide is only about the RepairDesk phone app. An Administrator creates your account and gives you the app, a username, and a temporary password. Change the password from Account after your first sign-in. Allow location when the phone asks. The job still opens if GPS is off.</p>
+  </section>
+
+  <section>
+    <h2>Contents</h2>
+    <ol>
+      <li>Access and sign-in</li>
+      <li>My work and the work day</li>
+      <li>Start, pause, and complete a repair</li>
+      <li>Notes and photos</li>
+      <li>The map and Start Navigating</li>
+      <li>How the shop sees where you are</li>
+      <li>Appointments, notifications, and password</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>1. How you get access</h2>
+    <p>An <strong>Administrator</strong> creates your Technician account and gives you the RepairDesk app (APK file or install link), your <strong>username</strong>, and a <strong>temporary password</strong>.</p>
+    <p class="note">You will get these details from the Admin. Do not invent a login and do not use the <strong>Register</strong> link on the sign-in screen — that is for customers. If you cannot sign in, ask the Admin to check that your account is Active and that they sent the right username.</p>
+    <table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>App</td><td>Provided by your Administrator</td></tr>
+        <tr><td>Username</td><td>Provided by your Administrator</td></tr>
+        <tr><td>Temporary password</td><td>Provided by your Administrator</td></tr>
+        <tr><td>Role</td><td>Technician</td></tr>
+      </tbody>
+    </table>
+    <p>The first sign-in after the server has been idle can take up to a minute. If it looks stuck, wait and try once more.</p>
+    <p>Allow location when the phone asks. Opening a job then shares one position so the shop can estimate travel time. The job still opens if you deny location or the GPS fix is weak.</p>
+  </section>
+
+  <section>
+    <h2>2. Sign in</h2>
+    <ol>
+      <li>Open the <strong>RepairDesk</strong> app.</li>
+      <li>Enter the <strong>Username</strong> and <strong>Password</strong> from your Admin. Tap the eye icon to show or hide the password.</li>
+      <li>Tap <strong>Sign In</strong>.</li>
+    </ol>
+    <div class="pair">
+      <figure>
+        <img src="tech-app-assets/tapp-01-login.png" alt="Sign-in screen" />
+        <figcaption>Figure 1. Sign-in screen.</figcaption>
+      </figure>
+      <figure>
+        <img src="tech-app-assets/tapp-02-login-filled.png" alt="Sign-in with details entered" />
+        <figcaption>Figure 2. Username and password from your Admin.</figcaption>
+      </figure>
+    </div>
+    <p>After your first sign-in, change the temporary password (see section 11).</p>
+  </section>
+
+  <section>
+    <h2>3. Home — My work</h2>
+    <p>You land on <strong>My work</strong>. The line under it confirms your role: <em>Role: TECHNICIAN — jobs and appointments assigned to you.</em></p>
+    <figure>
+      <img src="tech-app-assets/tapp-03-dashboard.png" alt="Technician home" />
+      <figcaption>Figure 3. Technician home while Attendance is off. My Jobs and My Appointments only.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Item</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>My Jobs</td><td>Jobs assigned to you</td></tr>
+        <tr><td>My Appointments</td><td>Your weekly schedule</td></tr>
+        <tr><td>Bell icon (top right)</td><td>Notifications; the red badge shows how many are unread</td></tr>
+        <tr><td>Person icon (top right)</td><td>Your account, password, and Sign Out</td></tr>
+      </tbody>
+    </table>
+    <p>Your home screen has <strong>My Jobs</strong> and <strong>My Appointments</strong>. You do not see Locations, Attendance, or Office location. While Attendance is off, those two tiles are the whole home screen. While an administrator has turned Attendance on, a Work day card sits above them.</p>
+    <h3>What a Technician can and cannot do</h3>
+    <table>
+      <thead><tr><th>You can</th><th>You cannot (Staff or Admin does it)</th></tr></thead>
+      <tbody>
+        <tr><td>See jobs assigned to you</td><td>Create a walk-in / phone request</td></tr>
+        <tr><td>See the map and address on the job</td><td>Move the job pin. You do not see Edit</td></tr>
+        <tr><td>Tap Start Navigating and follow the route in Google Maps</td><td>Search for a place, paste a Maps link, or drag the pin</td></tr>
+        <tr><td>Start, pause for parts, and complete a repair</td><td>Assign or unassign a technician</td></tr>
+        <tr><td>Add internal notes and bench photos</td><td>Schedule or reschedule a visit</td></tr>
+        <tr><td>See visits booked for you</td><td>Cancel a job</td></tr>
+        <tr><td>Share one position by opening the job</td><td>See the Locations map</td></tr>
+        <tr><td>Start and end the work day when Attendance is on</td><td>See other technicians’ days, turn Attendance on, or open Office location</td></tr>
+      </tbody>
+    </table>
+    <p class="warn">If My Jobs is empty, nothing is assigned to you yet. Ask Staff or an Admin to assign the job.</p>
+  </section>
+
+  <section>
+    <h2>4. Work day</h2>
+    <p>The <strong>Work day</strong> card is on My work only while an administrator has turned <strong>Attendance</strong> on. While it is off, home stays My Jobs and My Appointments.</p>
+    <figure class="phone">
+      <img src="tech-app-assets/tapp-16-start-day.png" alt="Start day" />
+      <figcaption>Work day before you start. The line says what is stored.</figcaption>
+    </figure>
+    <p>The card says: <em>Your start time, and whether you were at the shop, are stored.</em></p>
+    <ol>
+      <li>Tap <strong>Start day</strong>. The phone checks location for up to 8 seconds.</li>
+      <li>Tap <strong>Not now</strong> to leave the day unstarted. The card then says <strong>Work day not started</strong>. Your jobs stay available.</li>
+    </ol>
+    <p>A fix is clear when its accuracy is no wider than the shop radius.</p>
+    <table>
+      <thead><tr><th>What the phone finds</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td>A clear fix at the shop</td><td>The day starts. The card says On duty since a time, and Start flag: Inside shop</td></tr>
+        <tr><td>A clear fix away from the shop</td><td>The day is not saved. The card says how many metres you are from the shop. If the shop allows a start outside the shop, the day starts and the flag is Outside shop</td></tr>
+        <tr><td>No fix, a fix too wide to trust, or no shop pin</td><td>The day still starts. The flag is Location missing or Location uncertain</td></tr>
+        <tr><td>A mocked location</td><td>The day still starts. The flag is Mocked location</td></tr>
+      </tbody>
+    </table>
+    <figure class="phone">
+      <img src="tech-app-assets/tapp-17-on-duty.png" alt="On duty" />
+      <figcaption>On duty, started inside the shop. End day is available.</figcaption>
+    </figure>
+    <p><strong>End day</strong> closes the day, including away from the shop. The card then says <strong>Ended</strong>, the start and end times, and <strong>Manual</strong>. A second Start day on the same India date shows the day already saved. It does not open a second day.</p>
+    <figure class="phone">
+      <img src="tech-app-assets/tapp-18-day-ended.png" alt="Day ended" />
+      <figcaption>After End day. The start flag from the morning is kept on the shop’s list.</figcaption>
+    </figure>
+    <p>If you are still on duty at the shop’s end-of-day time (19:00 unless the office changed it), the day closes by itself. The card says <strong>Auto-ended</strong>. You get one notification. The job stays as it is.</p>
+    <p class="note">Start Repair, opening a job, and Start Navigating do not wait for a started day.</p>
+  </section>
+
+  <section>
+    <h2>5. My Jobs</h2>
+    <p>Tap <strong>My Jobs</strong>. You see only your assignments.</p>
+    <figure>
+      <img src="tech-app-assets/tapp-04-my-jobs.png" alt="My Jobs" />
+      <figcaption>Figure 4. My Jobs. Filter by status with the chips at the top; tap a card to open it.</figcaption>
+    </figure>
+    <ul>
+      <li>Filter chips: <strong>All · New · Assigned · In Progress · Parts</strong> … (swipe left for more)</li>
+      <li>Each card shows the reference (for example <code>RD-2026000001</code>), status, customer, device category, and your name</li>
+    </ul>
+    <p>The same reference number follows the repair from the customer's request to the finished job.</p>
+  </section>
+
+  <section>
+    <h2>6. Work a job</h2>
+    <p>The <strong>Job Detail</strong> screen shows the device and customer contact, the issue, who it is assigned to, your actions, internal notes, customer photos, and attachments. Scroll down for the map (section 6).</p>
+    <figure>
+      <img src="tech-app-assets/tapp-05-job-detail.png" alt="Job detail — Assigned" />
+      <figcaption>Figure 5. A job assigned to you. The main action is Start Repair.</figcaption>
+    </figure>
+    <p class="note">Booking or moving a visit is done by Staff or Admin. If you need one, ask them.</p>
+
+    <h3>6.1 Start the repair</h3>
+    <p>When the job is <strong>Assigned</strong> or <strong>Scheduled</strong>:</p>
+    <ol>
+      <li>Tap <strong>Start Repair</strong>.</li>
+      <li>The app asks you to confirm. Tap <strong>Start Repair</strong> again to begin, or <strong>Not now</strong> to leave the job as it is.</li>
+    </ol>
+    <p>The job moves to <strong>In Progress</strong>, a short <em>Start Repair — done</em> message appears, and the customer may be notified.</p>
+    <div class="pair">
+      <figure>
+        <img src="tech-app-assets/tapp-06-start-confirm.png" alt="Start Repair confirmation" />
+        <figcaption>Figure 6. Confirm before work starts.</figcaption>
+      </figure>
+      <figure>
+        <img src="tech-app-assets/tapp-07-in-progress.png" alt="Job In Progress" />
+        <figcaption>Figure 7. In Progress — new actions appear.</figcaption>
+      </figure>
+    </div>
+
+    <h3>6.2 While you work (In Progress)</h3>
+    <table>
+      <thead><tr><th>Action</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td>Mark Awaiting Parts</td><td>You cannot finish until a part arrives</td></tr>
+        <tr><td>Resume</td><td>Shown while the job is Awaiting Parts — tap it when the part is in</td></tr>
+        <tr><td>Mark Complete</td><td>The repair is done — enter a short resolution summary</td></tr>
+      </tbody>
+    </table>
+    <p>If a job should be cancelled, tell Staff — only Staff or Admin can cancel a job.</p>
+
+    <h3>6.3 Internal notes</h3>
+    <p>Notes are for the shop only — the customer never sees them. They are permanent and attributed to you.</p>
+    <ol>
+      <li>Tap the note icon next to <strong>Internal Notes</strong>.</li>
+      <li>Type the note (parts ordered, delays, findings).</li>
+      <li>Tap <strong>Save</strong> (or <strong>Cancel</strong> to discard).</li>
+    </ol>
+    <div class="pair">
+      <figure>
+        <img src="tech-app-assets/tapp-08-add-note.png" alt="Add Note dialog" />
+        <figcaption>Figure 8. Add Note.</figcaption>
+      </figure>
+      <figure>
+        <img src="tech-app-assets/tapp-09-job-photos.png" alt="Notes, customer photos, and attachments" />
+        <figcaption>Figure 9. Notes, Customer Photos, and Attachments.</figcaption>
+      </figure>
+    </div>
+
+    <h3>6.4 Customer photos and attachments</h3>
+    <ul>
+      <li><strong>Customer Photos</strong> — anything the customer attached to the request. Tap to expand. Read-only.</li>
+      <li><strong>Attachments</strong> — your bench photos. Tap the add-photo icon to take or pick an image. Customers never see these.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>7. The map and Start Navigating</h2>
+    <p>Scroll the job until the map appears. It sits above the written address. You follow this pin. You do not type a new address on the job.</p>
+    <figure>
+      <img src="tech-app-assets/tapp-14-job-map.png" alt="Map and Start Navigating on the job" />
+      <figcaption>Figure 10. The job map, the saved address, how the pin was chosen, and Start Navigating.</figcaption>
+    </figure>
+    <p>On that part of the screen you see a map with one pin, the address Staff or an Admin saved, a short line that says how the pin was chosen, and a blue <strong>Start Navigating</strong> button.</p>
+    <table>
+      <thead><tr><th>Line under the address</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>Pin found from the address</td><td>Someone searched or used Find on map when they saved the job</td></tr>
+        <tr><td>Pin placed on the map</td><td>Someone dragged the pin</td></tr>
+        <tr><td>Pin from the customer’s location link</td><td>Someone pasted the Maps link the customer sent</td></tr>
+        <tr><td>No address yet</td><td>A visit address has not been saved. Ask the shop before you leave</td></tr>
+      </tbody>
+    </table>
+    <p class="warn">You do not see <strong>Edit</strong>. You cannot search, paste a link, or drag the pin. If the pin is the wrong door, call the shop and ask them to move it, then open the job again. A photo of a map in a chat is not a pin.</p>
+
+    <h3>How to start navigation</h3>
+    <ol>
+      <li>Open <strong>RepairDesk</strong> and sign in.</li>
+      <li>On <strong>My work</strong>, tap <strong>My Jobs</strong>.</li>
+      <li>Tap the job you are going to.</li>
+      <li>Scroll until you see the map and the blue <strong>Start Navigating</strong> button.</li>
+      <li>Tap <strong>Start Navigating</strong>.</li>
+      <li><strong>Google Maps</strong> opens. The destination is the saved pin. Driving is already selected. <strong>Your location</strong> is the start when Maps is allowed to use the phone’s location.</li>
+      <li>Check the time and distance. They change with where you are standing.</li>
+      <li>Tap <strong>Start</strong> at the bottom of Google Maps and follow the turn-by-turn route.</li>
+    </ol>
+    <figure>
+      <img src="tech-app-assets/tapp-15-navigating.png" alt="Google Maps after Start Navigating" />
+      <figcaption>Figure 11. Google Maps after Start Navigating. Driving is selected. Tap Start to follow the route. The minutes change with where you are.</figcaption>
+    </figure>
+    <p>The name in the destination box is Google’s name for that pin. It can be a nearby shop or colony name. It is still the pin saved on the job. The route runs from the blue dot (you) to the red pin (the visit).</p>
+    <p>If Google Maps is not installed, the same directions open in the phone’s browser. The destination is still the saved pin.</p>
+    <p>If Maps asks you to choose a start, location is off for Google Maps. Allow location for Maps, or pick a start yourself. RepairDesk still opens the job if its own location permission is denied.</p>
+    <p class="note">The first time Maps opens it may offer to sign in (“Take the shortcut”). You can skip that. The route works without a Google sign-in.</p>
+  </section>
+
+  <section>
+    <h2>8. How the shop sees where you are</h2>
+    <p>Opening an assigned job is what shares your position for the shop’s Locations map. That share is separate from the work day. There is no separate “share location” button.</p>
+    <ol>
+      <li>Allow location for RepairDesk when the phone asks.</li>
+      <li>Open the assigned job. That sends one position.</li>
+      <li>Leave for the visit with <strong>Start Navigating</strong>.</li>
+    </ol>
+    <p>If the fix fails or location is off, the job stays usable. The shop then estimates travel from the office instead of from you.</p>
+    <p>You only appear on jobs assigned to you. You do not see other technicians, and you do not see office settings.</p>
+  </section>
+
+  <section>
+    <h2>9. My Appointments</h2>
+    <p>From home, tap <strong>My Appointments</strong>. This is your weekly schedule; use the arrows at the top to move between weeks. You only see visits booked for you. Staff book those from the job.</p>
+    <figure>
+      <img src="tech-app-assets/tapp-10-appointments.png" alt="My Appointments" />
+      <figcaption>Figure 12. Weekly schedule. Empty means nothing is booked yet.</figcaption>
+    </figure>
+    <p><em>No appointments this week</em> means nothing is scheduled for you yet. The job can still appear under My Jobs — Staff may assign you before they book a slot.</p>
+  </section>
+
+  <section>
+    <h2>10. Notifications</h2>
+    <p>Tap the <strong>bell</strong> on the home screen. You are notified when a job is assigned to you and when something changes on your jobs. Tap a notification to open the job; tap <strong>Mark all read</strong> to clear the badge.</p>
+    <figure>
+      <img src="tech-app-assets/tapp-11-notifications.png" alt="Notifications" />
+      <figcaption>Figure 13. Notifications.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>11. Account and password</h2>
+    <p>Tap the <strong>person</strong> icon on the home screen to open <strong>Account</strong>. It shows your name, username, role, and mobile number.</p>
+    <h3>Change your password</h3>
+    <p>Do this right after your first sign-in, so only you know your password.</p>
+    <ol>
+      <li>Tap <strong>Change Password</strong>.</li>
+      <li>Enter your <strong>Current password</strong> (the temporary one from the Admin).</li>
+      <li>Enter a <strong>New password</strong> (minimum 8 characters) and confirm it.</li>
+      <li>Tap <strong>Change</strong>.</li>
+    </ol>
+    <div class="pair">
+      <figure>
+        <img src="tech-app-assets/tapp-12-account.png" alt="Account" />
+        <figcaption>Figure 14. Account.</figcaption>
+      </figure>
+      <figure>
+        <img src="tech-app-assets/tapp-13-change-password.png" alt="Change Password" />
+        <figcaption>Figure 15. Change Password.</figcaption>
+      </figure>
+    </div>
+    <p>If you forget your password, ask the Admin to reset it. <strong>Sign Out</strong> is at the bottom of the Account screen — sign out if you share the phone.</p>
+  </section>
+
+  <section>
+    <h2>12. Quick reference</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Username and password</td><td>From your Administrator</td></tr>
+        <tr><td>After first sign-in</td><td>Account → Change Password</td></tr>
+        <tr><td>Forgotten password</td><td>Ask the Admin to reset it</td></tr>
+        <tr><td>Location permission</td><td>Allow it. The job still opens if GPS is off</td></tr>
+        <tr><td>Your jobs</td><td>Home → My Jobs</td></tr>
+        <tr><td>Map and address</td><td>On the job, above Start Repair</td></tr>
+        <tr><td>Start navigation</td><td>Job → Start Navigating, then Start in Google Maps</td></tr>
+        <tr><td>Wrong door</td><td>Ask the shop to move the pin. You cannot move it</td></tr>
+        <tr><td>So the shop can see you on the map</td><td>Open the job with location allowed</td></tr>
+        <tr><td>Work day</td><td>Home, when Attendance is on → Start day, then End day</td></tr>
+        <tr><td>Start work</td><td>Job → Start Repair, then confirm</td></tr>
+        <tr><td>Waiting on parts</td><td>Job → Mark Awaiting Parts, later Resume</td></tr>
+        <tr><td>Finish</td><td>Job → Mark Complete</td></tr>
+        <tr><td>Notes</td><td>Job → note icon next to Internal Notes</td></tr>
+        <tr><td>Bench photos</td><td>Job → Attachments → add-photo icon</td></tr>
+        <tr><td>Your schedule</td><td>Home → My Appointments</td></tr>
+        <tr><td>Alerts</td><td>Home → bell icon</td></tr>
+        <tr><td>Create request / assign / schedule / cancel / move the pin</td><td>Staff or Admin — not on your app</td></tr>
+        <tr><td>Attendance list and the Attendance switch</td><td>Staff or Admin. You only see your own Work day card, and only while Attendance is on</td></tr>
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>

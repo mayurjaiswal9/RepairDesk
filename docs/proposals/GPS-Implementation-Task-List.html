@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RepairDesk Location Features - Implementation Task List</title>
+<style>
+@page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+body { font-family: "Segoe UI", Calibri, Arial, sans-serif; color: #1a1f36; font-size: 10pt; line-height: 1.45; margin: 0; }
+h1 { color: #0f172a; font-size: 20pt; margin: 0 0 10px; }
+h2 { color: #1e3a8a; font-size: 14pt; border-bottom: 2px solid #dbe4f0; padding-bottom: 5px; margin: 20px 0 8px; page-break-after: avoid; }
+p { margin: 6px 0; }
+hr { border: 0; margin: 4px 0; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 9pt; }
+tr { page-break-inside: avoid; }
+th, td { border: 1px solid #dbe4f0; padding: 5px 7px; text-align: left; vertical-align: top; }
+th { background: #1e3a8a; color: #fff; font-weight: 600; }
+tr:nth-child(even) td { background: #f8fafc; }
+td:first-child { white-space: nowrap; color: #475569; }
+code { font-family: Consolas, monospace; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 8.8pt; }
+a { color: #1d4ed8; }</style>
+</head>
+<body>
+<h1>RepairDesk Location Features — Implementation Task List (Google Maps)</h1>
+<p><strong>Related:</strong> <a href="GPS-Location-Features-Wireframes.pdf">Proposed app wireframes</a> (screen numbers below refer to that document)<br><strong>Map provider:</strong> Google Maps Platform, India pricing<br><strong>Status:</strong> Plan for review — 10 October 2026</p>
+<p><strong>Effort:</strong> S = up to 1 day · M = 2–3 days · L = about 1 week (one developer).
+<strong>Owner:</strong> <em>You</em> = business owner / account holder · <em>Dev</em> = development.</p>
+<p>The phases follow the rollout in the wireframes document. Each phase can ship on its own, and later phases build on the earlier ones.</p>
+<hr>
+<h2>Phase 0 — Google Maps account and keys</h2>
+<p>This phase needs the business owner. Google requires the account holder to accept its terms and add a payment method, so it can&#39;t be done on your behalf.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0.1</td>
+<td>Create (or choose) a <strong>company-owned Google account</strong> for Google Cloud, not a personal Gmail, so access survives staff changes</td>
+<td>You</td>
+<td>S</td>
+</tr>
+<tr>
+<td>0.2</td>
+<td>Open <a href="https://console.cloud.google.com">Google Cloud Console</a> and create a <strong>billing account</strong> with an <strong>Indian billing address</strong> and GSTIN, so India pricing and its larger free limits apply. Add a card.</td>
+<td>You</td>
+<td>S</td>
+</tr>
+<tr>
+<td>0.3</td>
+<td>Create two projects: <code>repairdesk-dev</code> and <code>repairdesk-prod</code></td>
+<td>You or Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>0.4</td>
+<td>Enable APIs in both projects: <strong>Maps SDK for Android</strong>, <strong>Maps JavaScript API</strong>, <strong>Geocoding API</strong>, <strong>Routes API</strong>. Optional later: <strong>Places API (New)</strong> for address autocomplete</td>
+<td>You or Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>Create three restricted API keys per project: an <strong>Android key</strong> (restricted to app <code>com.acetelecom.repairdesk</code> and its signing SHA-1 fingerprints), a <strong>web key</strong> (restricted to the admin site domain), and a <strong>server key</strong> (restricted to Geocoding and Routes, used only by the backend)</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>0.6</td>
+<td>Set <strong>daily quotas</strong>: Geocoding, Routes and Maps JavaScript at 2,250 requests per day each. Add a <strong>budget alert</strong> of ₹500 per month with emails at 50%, 90% and 100%</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>0.7</td>
+<td>Give the developer access: add their Google account to both projects (role <strong>Editor</strong> on dev, <strong>API Keys Admin</strong> + <strong>Viewer</strong> on prod). Never send keys by chat or email, and never commit them to the repo</td>
+<td>You</td>
+<td>S</td>
+</tr>
+<tr>
+<td>0.8</td>
+<td>Store the server key as a secret in the Azure Container App (and the dev environment); store the Android key in the CI / build machine, not in git</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 1 — Foundations</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Area</th>
+<th>Owner</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1.1</td>
+<td><strong>Service address and map pin.</strong> The backend currently stores no customer service address (only the shop address in settings). Add address line, landmark, city, PIN code, latitude, longitude and pin source to requests and jobs (Flyway migration <code>V12</code>)</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>1.2</td>
+<td><strong>Shop location and settings.</strong> Add shop latitude, longitude and geofence radius to business settings, plus a location-settings record: feature switches, ping interval, working-hours end, far-from-address threshold, allowance rates, retention days</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>1.3</td>
+<td><strong>Maps service in the backend.</strong> One class that calls Geocoding and Routes with the server key, caches results (the same address is never geocoded twice), counts calls per day, and falls back to straight-line distance when the daily limit is reached</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>1.4</td>
+<td>Admin API: <code>GET/PUT /settings/location</code></td>
+<td>Backend</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>1.5</td>
+<td>Flutter packages: <code>google_maps_flutter</code>, <code>geolocator</code>, <code>permission_handler</code>, <code>url_launcher</code>. Add location and notification permissions to <code>AndroidManifest.xml</code>; inject the Android key into the manifest at build time (Gradle placeholder), not in source</td>
+<td>App</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>1.6</td>
+<td><strong>Permission onboarding</strong>: Screen 1A explanation, Android prompts (1B), notification prompt, and the three banners (location off, approximate, only this time). Brand-specific battery help for Xiaomi, Realme, Vivo, Oppo</td>
+<td>App</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>1.7</td>
+<td>Admin site: add <code>@angular/google-maps</code>; <strong>address + pin</strong> on the Staff &quot;create request&quot; form and request detail</td>
+<td>Admin web</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>1.8</td>
+<td>Admin site: <strong>Location settings</strong> page (Screen 8) with the shop pin, radius and feature switches</td>
+<td>Admin web</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 2 — Geotagged check-in and check-out (feature 1)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Area</th>
+<th>Owner</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2.1</td>
+<td><code>job_visits</code> table: job, technician, type (On my way / Check-in / Check-out), latitude, longitude, accuracy, time, distance from customer pin, low-accuracy flag</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>2.2</td>
+<td>Accept an optional location with <strong>Start Repair</strong> and <strong>Mark Complete</strong>; calculate distance from the pin and the far-from-address flag</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>2.3</td>
+<td>App: capture the best location fix within 20 seconds in the Start Repair and Mark Complete confirmations; never block the job if GPS is weak</td>
+<td>App</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>2.4</td>
+<td>App: <strong>Visit</strong> section on Job Detail with map, distance, and <strong>Navigate</strong> (opens the Google Maps app); <strong>Visit record</strong> after completion (Screen 3)</td>
+<td>App</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>2.5</td>
+<td>Save the customer pin from the first check-in when the job has none</td>
+<td>Backend + App</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>2.6</td>
+<td>Staff and Admin: Visit record, far-from-address flag and &quot;View on map&quot; on job detail (Screen 6)</td>
+<td>App + Admin web</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>2.7</td>
+<td>Tests: distance and flag unit tests; emulator tests with simulated locations</td>
+<td>All</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 3 — Attendance by geofence (feature 2)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Area</th>
+<th>Owner</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3.1</td>
+<td><code>attendance_days</code> table and <strong>Start day / End day</strong> endpoints; record whether each was inside the shop radius</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>3.2</td>
+<td>Scheduled job: <strong>auto-end</strong> the day at the working-hours end time</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>3.3</td>
+<td>App home: duty card with inside / outside shop area and the disabled state (Screen 2)</td>
+<td>App</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>3.4</td>
+<td><strong>Attendance &amp; travel report</strong> for Staff and Admin, with Excel (CSV) export (Screen 6)</td>
+<td>App + Admin web</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 4 — On-duty tracking (feature 3)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Area</th>
+<th>Owner</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>4.1</td>
+<td>App: <strong>background tracking</strong> between Start day and End day — Android foreground service with the &quot;sharing location while on duty&quot; notification, background-location permission via Settings, ping every N minutes from settings</td>
+<td>App</td>
+<td>Dev</td>
+<td>L</td>
+</tr>
+<tr>
+<td>4.2</td>
+<td>App: <strong>offline queue</strong> — store points on the phone and upload in batches when the network returns</td>
+<td>App</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>4.3</td>
+<td><code>location_points</code> table (indexed by technician and time), batch upload endpoint, and a nightly job that deletes points older than the retention period</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>4.4</td>
+<td><strong>Live technician map</strong> for Staff (app) and Admin (web), with a warning after 15 minutes without a ping (Screen 5)</td>
+<td>App + Admin web</td>
+<td>Dev</td>
+<td>L</td>
+</tr>
+<tr>
+<td>4.5</td>
+<td>Optional: sort technicians by distance in the Assign dialog</td>
+<td>All</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>4.6</td>
+<td><strong>Field test on budget phones</strong> (Redmi, Realme, Vivo, Samsung M/A series): gaps, battery use per day, behaviour after reboot</td>
+<td>QA</td>
+<td>Dev + You</td>
+<td>M</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 5 — Distance and travel allowance (feature 4)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Area</th>
+<th>Owner</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5.1</td>
+<td>Daily distance from on-duty points: filter GPS jumps and jitter, split into legs at job check-ins</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>5.2</td>
+<td><code>travel_claims</code> table; submit, approve (single and bulk) and monthly export</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>5.3</td>
+<td>App: <strong>Travel &amp; allowance</strong> screen and Submit claim (Screen 4)</td>
+<td>App</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>5.4</td>
+<td>Staff / Admin: approve claims in the report</td>
+<td>App + Admin web</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>5.5</td>
+<td>Confirm allowance rates and approval rules (two-wheeler / four-wheeler per km)</td>
+<td>—</td>
+<td>You</td>
+<td>S</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 6 — Customer live ETA (feature 5)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Area</th>
+<th>Owner</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>6.1</td>
+<td><strong>On my way</strong> endpoint: start a tracking session with a private link; ETA from the Routes API every 2 minutes (cached); stop automatically at check-in</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>6.2</td>
+<td>Push notification to the customer app; SMS with the tracking link</td>
+<td>Backend</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>6.3</td>
+<td><strong>SMS setup</strong>: DLT registration of the sender ID and message template with an SMS provider (takes 1–2 weeks of lead time)</td>
+<td>—</td>
+<td>You</td>
+<td>S</td>
+</tr>
+<tr>
+<td>6.4</td>
+<td>Customer app tracking screen (Screen 7) and a lightweight public tracking web page for customers without the app</td>
+<td>App + Web</td>
+<td>Dev</td>
+<td>L</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phase 7 — Privacy, release and documentation</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Area</th>
+<th>Owner</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>7.1</td>
+<td>Privacy notice for technicians (DPDP Act 2023): what is collected, why, duty hours only, retention. Record each technician&#39;s acceptance with date and version</td>
+<td>App + Backend</td>
+<td>Dev + You</td>
+<td>M</td>
+</tr>
+<tr>
+<td>7.2</td>
+<td>Technicians can view and download their own location history from Account</td>
+<td>App</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+<tr>
+<td>7.3</td>
+<td>If publishing on the Play Store: background-location declaration, demo video, Data safety form</td>
+<td>—</td>
+<td>Dev + You</td>
+<td>S</td>
+</tr>
+<tr>
+<td>7.4</td>
+<td>Update the Technician, Staff and Admin manuals and regenerate the PDFs</td>
+<td>Docs</td>
+<td>Dev</td>
+<td>M</td>
+</tr>
+<tr>
+<td>7.5</td>
+<td>Monitoring: Google Cloud usage dashboard, budget alerts, backend count of map calls per day</td>
+<td>Ops</td>
+<td>Dev</td>
+<td>S</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Decisions needed before Phase 1</h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Proposed default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Shop geofence radius</td>
+<td>150 m</td>
+</tr>
+<tr>
+<td>Can technicians start the day outside the shop?</td>
+<td>No; Admin can enable per shop</td>
+</tr>
+<tr>
+<td>Tracking interval</td>
+<td>5 minutes</td>
+</tr>
+<tr>
+<td>Working hours / auto end of day</td>
+<td>9:00 AM – 7:00 PM</td>
+</tr>
+<tr>
+<td>Allowance rates</td>
+<td>₹5 / km two-wheeler, ₹10 / km four-wheeler</td>
+</tr>
+<tr>
+<td>Location history retention</td>
+<td>90 days</td>
+</tr>
+<tr>
+<td>Technician phones</td>
+<td>Personal phones (prompts) or company phones (pre-granted via <code>adb install -g</code> or device management)</td>
+</tr>
+<tr>
+<td>Distribution</td>
+<td>APK only, or Play Store (adds the background-location review)</td>
+</tr>
+</tbody></table>
+</body>
+</html>

@@ -1,0 +1,205 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Mileage</h1>
+    <p>Mileage is for administrators.</p>
+    <a routerLink="/dashboard">Back to dashboard</a>
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Mileage</h1>
+      <p class="meta">Km from job trips recorded in the technician app. Dates and times are India time.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="ghost-btn" (click)="refresh()" [disabled]="state() === 'loading' || refetching()">
+        @if (state() === 'loading' || refetching()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon aria-hidden="true">refresh</mat-icon>
+        }
+        Refresh
+      </button>
+      <button type="button" class="primary-btn" [matMenuTriggerFor]="exportMenu" [disabled]="exporting()">
+        @if (exporting()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon aria-hidden="true">download</mat-icon>
+        }
+        Export CSV
+        <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #exportMenu="matMenu" xPosition="before">
+        <button mat-menu-item type="button" (click)="exportCsv('DAY')">Daily totals</button>
+        <button mat-menu-item type="button" (click)="exportCsv('TRIP')">Every trip</button>
+      </mat-menu>
+    </div>
+  </div>
+
+  @if (!travelEnabled()) {
+    <p class="notice">
+      Job trips are off. Trips already recorded stay here. An administrator turns them on from Office location.
+    </p>
+  }
+
+  <div class="filter-bar">
+    <div class="seg" role="group" aria-label="Date range">
+      @for (p of presets; track p.key) {
+        <button type="button" [class.active]="preset() === p.key" (click)="setPreset(p.key)">{{ p.label }}</button>
+      }
+    </div>
+    <label>
+      From
+      <input type="date" [value]="from()" (change)="onFromChange($event)" />
+    </label>
+    <label>
+      To
+      <input type="date" [value]="to()" (change)="onToChange($event)" />
+    </label>
+  </div>
+
+  <div class="filter-bar">
+    <label>
+      Technician
+      <select (change)="onTechnicianChange($event)">
+        <option value="" [selected]="!technicianId()">All technicians</option>
+        @for (t of technicians(); track t.id) {
+          <option [value]="t.id" [selected]="t.id === technicianId()">{{ t.name || t.username }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Vehicle
+      <select (change)="onVehicleChange($event)">
+        <option value="" [selected]="!vehicleType()">All</option>
+        <option value="TWO_WHEELER" [selected]="vehicleType() === 'TWO_WHEELER'">Two-wheeler</option>
+        <option value="FOUR_WHEELER" [selected]="vehicleType() === 'FOUR_WHEELER'">Four-wheeler</option>
+      </select>
+    </label>
+    <label>
+      Show
+      <select (change)="onShowChange($event)">
+        <option value="ALL" [selected]="show() === 'ALL'">All</option>
+        <option value="FLAGGED" [selected]="show() === 'FLAGGED'">Flagged only</option>
+        <option value="NO_TRIP" [selected]="show() === 'NO_TRIP'">No-trip jobs</option>
+      </select>
+    </label>
+    <div class="view-field">
+      <span>View</span>
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" [class.active]="view() === 'DAY'" (click)="setView('DAY')">By day</button>
+        <button type="button" [class.active]="view() === 'MONTH'" (click)="setView('MONTH')">By month</button>
+      </div>
+    </div>
+  </div>
+
+  @if (rangeError()) {
+    <p class="range-error" role="alert">{{ rangeError() }}</p>
+  }
+
+  @if (state() === 'error') {
+    <div class="state-panel">
+      <p>{{ error()?.message }}</p>
+      @if (error()?.correlationId) {
+        <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+      }
+      <button type="button" class="ghost-btn" (click)="refresh()">Try again</button>
+    </div>
+  } @else if (state() === 'loading') {
+    <p class="meta">Loading mileage…</p>
+  } @else if (data()) {
+    @let d = data()!;
+    <app-mileage-summary class="summary" [summary]="d.summary" />
+
+    @if (rows().length === 0) {
+      <div class="empty">
+        <mat-icon aria-hidden="true">route</mat-icon>
+        <p>No trips or no-trip jobs for these dates and filters.</p>
+      </div>
+    } @else {
+      @let t = totals();
+      <div class="table-wrap" [class.dimmed]="refetching()">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ isMonth() ? 'Month' : 'Date' }}</th>
+              <th scope="col">Technician</th>
+              <th scope="col">Vehicle</th>
+              <th scope="col" class="num">Trips</th>
+              <th scope="col" class="num">Tracked km</th>
+              <th scope="col" class="num">Adjusted</th>
+              <th scope="col" class="num">Payable km</th>
+              <th scope="col" class="num">Rate</th>
+              <th scope="col" class="num">Amount</th>
+              <th scope="col" class="num">Flags</th>
+              <th scope="col" class="num">No trip</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track rowKey(row)) {
+              <tr class="clickable" (click)="openRow(row)">
+                <td>
+                  @if (row.date) {
+                    <a
+                      class="row-link"
+                      [routerLink]="['/mileage', row.technicianId, row.date]"
+                      [state]="{ returnQuery: returnQuery() }"
+                      (click)="$event.stopPropagation()"
+                    >{{ dateLabel(row.date) }}</a>
+                  } @else {
+                    <button type="button" class="row-link" title="Show the days of this month">
+                      {{ monthLabel(row.month) }}
+                    </button>
+                  }
+                </td>
+                <td>{{ row.technicianName }}</td>
+                <td>{{ vehicle(row.vehicleType) }}</td>
+                <td class="num">
+                  {{ row.trips }}
+                  @if (row.activeTrips > 0) {
+                    <span class="live" [title]="row.activeTrips + ' in progress'">+{{ row.activeTrips }} live</span>
+                  }
+                </td>
+                <td class="num">{{ km(row.trackedDistanceM) }}</td>
+                <td class="num" [class.muted]="!row.adjustmentM">{{ signedKm(row.adjustmentM) }}</td>
+                <td class="num strong">{{ km(row.payableDistanceM) }}</td>
+                <td class="num">{{ rate(row.ratePaise, row.trips) }}</td>
+                <td class="num strong">{{ money(row.amountPaise) }}</td>
+                <td class="num">
+                  @if (row.flaggedTrips > 0) {
+                    <span class="count-chip warn">{{ row.flaggedTrips }}</span>
+                  } @else {
+                    <span class="muted">0</span>
+                  }
+                </td>
+                <td class="num">
+                  @if (row.noTripJobs > 0) {
+                    <span class="count-chip">{{ row.noTripJobs }}</span>
+                  } @else {
+                    <span class="muted">0</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" colspan="3">Total · {{ rows().length }} {{ rows().length === 1 ? 'row' : 'rows' }}</th>
+              <td class="num">{{ t.trips }}</td>
+              <td class="num">{{ km(t.trackedDistanceM) }}</td>
+              <td class="num">{{ signedKm(t.adjustmentM) }}</td>
+              <td class="num">{{ km(t.payableDistanceM) }}</td>
+              <td class="num"></td>
+              <td class="num">{{ money(t.amountPaise) }}</td>
+              <td class="num">{{ t.flaggedTrips }}</td>
+              <td class="num">{{ t.noTripJobs }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="meta">
+        {{ isMonth() ? 'Select a month to see its days.' : 'Select a row to see the routes and trips for that day.' }}
+        Adjusted is the change Staff or Admin made to recorded km.
+      </p>
+    }
+  }
+}

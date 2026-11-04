@@ -5,8 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/location/maps_repository.dart';
+import '../../../core/location/pin_picker_screen.dart';
+import '../../../core/location/service_location.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/image_source_picker.dart';
+import '../../../core/error/app_exception.dart';
 import '../../attachments/data/attachments_repository.dart';
 import '../../catalog/data/catalog_repository.dart';
 import '../data/requests_repository.dart';
@@ -36,6 +40,10 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   final _customBrandCtrl = TextEditingController();
   final _deviceModelCtrl = TextEditingController();
   final _issueCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
+  final _landmarkCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _pincodeCtrl = TextEditingController();
 
   String? _selectedCategoryId;
   // A catalog brand name, [_othersSentinel], [_customSentinel], or null
@@ -47,6 +55,10 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   String? _errorMessage;
   final List<XFile> _pickedPhotos = [];
   final _picker = ImagePicker();
+  double? _pinLat;
+  double? _pinLng;
+  String? _pinSource;
+  bool _findingPin = false;
 
   @override
   void dispose() {
@@ -55,7 +67,76 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
     _customBrandCtrl.dispose();
     _deviceModelCtrl.dispose();
     _issueCtrl.dispose();
+    _addressCtrl.dispose();
+    _landmarkCtrl.dispose();
+    _cityCtrl.dispose();
+    _pincodeCtrl.dispose();
     super.dispose();
+  }
+
+  ServiceLocation? _serviceLocation() {
+    final location = ServiceLocation(
+      addressLine: _addressCtrl.text,
+      landmark: _landmarkCtrl.text,
+      city: _cityCtrl.text,
+      pincode: _pincodeCtrl.text,
+      latitude: _pinLat,
+      longitude: _pinLng,
+      pinSource: _pinLat == null ? null : _pinSource,
+    );
+    return location.hasContent ? location : null;
+  }
+
+  String _addressQuery() {
+    return [
+      _addressCtrl.text,
+      _landmarkCtrl.text,
+      _cityCtrl.text,
+      _pincodeCtrl.text,
+    ].map((s) => s.trim()).where((s) => s.isNotEmpty).join(', ');
+  }
+
+  Future<void> _findOnMap() async {
+    setState(() => _findingPin = true);
+    var lat = _pinLat ?? 19.0760;
+    var lng = _pinLng ?? 72.8777;
+    var fromGeocode = false;
+    final query = _addressQuery();
+    if (query.isNotEmpty) {
+      try {
+        final hit = await ref.read(mapsRepositoryProvider).geocode(query);
+        lat = hit.latitude;
+        lng = hit.longitude;
+        fromGeocode = true;
+      } on AppException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.userMessage)),
+          );
+        }
+      }
+    }
+    if (!mounted) return;
+    final picked = await Navigator.of(context).push<PinPick>(
+      MaterialPageRoute(
+        builder: (_) => PinPickerScreen(
+          latitude: lat,
+          longitude: lng,
+          initialIsGeocode: fromGeocode,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      _findingPin = false;
+      if (picked != null) {
+        _pinLat = picked.latitude;
+        _pinLng = picked.longitude;
+        _pinSource = picked.pinSource;
+        final address = picked.addressLine?.trim() ?? '';
+        if (address.isNotEmpty) _addressCtrl.text = address;
+      }
+    });
   }
 
   /// Resolves the brand chip/autocomplete selection to the string sent to
@@ -96,6 +177,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
             issueDescription: _issueCtrl.text.trim(),
             preferredDate: _preferredDate!,
             preferredTime: _preferredTime!,
+            serviceLocation: _serviceLocation(),
           );
 
       // Upload any picked photos
@@ -188,6 +270,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                 _SectionHeader(title: 'Device'),
                 const SizedBox(height: AppTheme.spaceS),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Device type *',
                     border: OutlineInputBorder(),
@@ -266,6 +349,77 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                   validator: (v) => (v == null || v.trim().length < 7)
                       ? 'Valid mobile required'
                       : null,
+                ),
+                const SizedBox(height: AppTheme.spaceL),
+
+                _SectionHeader(title: 'Service address'),
+                const SizedBox(height: AppTheme.spaceS),
+                Text(
+                  'Optional. Where the technician should come. You can type it, place a pin, or both.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppTheme.spaceS),
+                TextFormField(
+                  controller: _addressCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Address',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spaceM),
+                TextFormField(
+                  controller: _landmarkCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Landmark',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spaceM),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _cityCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'City',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spaceM),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _pincodeCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'PIN code',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) {
+                          final pin = v?.trim() ?? '';
+                          if (pin.isEmpty) return null;
+                          return RegExp(r'^[1-9][0-9]{5}$').hasMatch(pin)
+                              ? null
+                              : 'Enter a 6-digit PIN code';
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.spaceS),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _findingPin ? null : _findOnMap,
+                    icon: _findingPin
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.map_outlined),
+                    label: Text(_pinLat == null ? 'Find on map' : 'Pin placed — change'),
+                  ),
                 ),
                 const SizedBox(height: AppTheme.spaceL),
 

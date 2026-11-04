@@ -10,8 +10,11 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { catchError, debounceTime, distinctUntilChanged, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { CategoriesApi } from '../../core/api/categories.api';
 import { CustomersApi, CreateCustomerResponse } from '../../core/api/customers.api';
-import { RequestsApi } from '../../core/api/requests.api';
+import { RequestsApi, CreateRequestBody } from '../../core/api/requests.api';
 import { SettingsApi } from '../../core/api/settings.api';
+import { LocationApi, PickedPlace } from '../../core/api/location.api';
+import { PlaceAssistComponent } from '../location/place-assist.component';
+import { MapPin, PinMapComponent } from '../../core/maps/pin-map.component';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
 import { SessionService } from '../../core/auth/session.service';
 import { UserProfile } from '../../core/models/dashboard.models';
@@ -50,6 +53,8 @@ type PageState = 'loading' | 'ready' | 'error' | 'forbidden';
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    PinMapComponent,
+    PlaceAssistComponent,
   ],
   templateUrl: './create-request.component.html',
   styleUrl: './create-request.component.scss',
@@ -60,6 +65,7 @@ export class CreateRequestComponent implements OnInit {
   private readonly requests = inject(RequestsApi);
   private readonly categoriesApi = inject(CategoriesApi);
   private readonly settingsApi = inject(SettingsApi);
+  private readonly locationApi = inject(LocationApi);
   private readonly session = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -71,6 +77,16 @@ export class CreateRequestComponent implements OnInit {
   readonly channelLabel = CHANNEL_LABEL;
 
   readonly state = signal<PageState>('loading');
+  readonly findingPin = signal(false);
+  readonly pinLat = signal<number | null>(null);
+  readonly pinLng = signal<number | null>(null);
+  readonly pinSource = signal<'GEOCODED' | 'MANUAL_PIN' | 'CUSTOMER_LINK' | null>(null);
+  readonly addressPins = computed<MapPin[]>(() => {
+    const lat = this.pinLat();
+    const lng = this.pinLng();
+    if (lat == null || lng == null) return [];
+    return [{ id: 'new', latitude: lat, longitude: lng, title: 'Service address', kind: 'job' }];
+  });
   readonly error = signal<MappedApiError | null>(null);
   readonly submitting = signal(false);
   readonly searching = signal(false);
@@ -97,6 +113,10 @@ export class CreateRequestComponent implements OnInit {
     deviceBrand: [''],
     deviceModel: [''],
     issueDescription: ['', [Validators.required, Validators.minLength(10)]],
+    serviceAddress: [''],
+    serviceLandmark: [''],
+    serviceCity: [''],
+    servicePincode: ['', Validators.pattern(/^$|^[1-9][0-9]{5}$/)],
     intakeChannel: this.fb.nonNullable.control<(typeof CHANNELS)[number]>('PHONE'),
   });
 
@@ -111,7 +131,8 @@ export class CreateRequestComponent implements OnInit {
       c.contactMobile.valid &&
       c.deviceCategoryId.valid &&
       c.issueDescription.valid &&
-      c.contactEmail.valid
+      c.contactEmail.valid &&
+      c.servicePincode.valid
     );
   });
 
@@ -339,6 +360,72 @@ export class CreateRequestComponent implements OnInit {
     this.submit(false);
   }
 
+  private serviceLocation(v: {
+    serviceAddress: string;
+    serviceLandmark: string;
+    serviceCity: string;
+    servicePincode: string;
+  }): { serviceLocation?: CreateRequestBody['serviceLocation'] } {
+    const addressLine = v.serviceAddress.trim();
+    const landmark = v.serviceLandmark.trim();
+    const city = v.serviceCity.trim();
+    const pincode = v.servicePincode.trim();
+    const latitude = this.pinLat();
+    const longitude = this.pinLng();
+    if (!addressLine && !landmark && !city && !pincode && latitude == null) return {};
+    return {
+      serviceLocation: {
+        ...(addressLine ? { addressLine } : {}),
+        ...(landmark ? { landmark } : {}),
+        ...(city ? { city } : {}),
+        ...(pincode ? { pincode } : {}),
+        ...(latitude != null && longitude != null
+          ? { latitude, longitude, pinSource: this.pinSource() ?? 'MANUAL_PIN' }
+          : {}),
+      },
+    };
+  }
+
+  findAddress(): void {
+    const v = this.form.getRawValue();
+    const query = [v.serviceAddress, v.serviceLandmark, v.serviceCity, v.servicePincode]
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(', ');
+    if (!query) {
+      this.snack.open('Type an address, area, or PIN code first.', 'Dismiss', { duration: 4000 });
+      return;
+    }
+    this.findingPin.set(true);
+    this.locationApi.geocode(query).subscribe({
+      next: (hit) => {
+        this.pinLat.set(hit.latitude);
+        this.pinLng.set(hit.longitude);
+        this.pinSource.set('GEOCODED');
+        this.findingPin.set(false);
+      },
+      error: (err) => {
+        this.findingPin.set(false);
+        this.snack.open(mapHttpError(err).message, 'Dismiss', { duration: 5000 });
+      },
+    });
+  }
+
+  applyPickedPlace(place: PickedPlace): void {
+    this.pinLat.set(place.latitude);
+    this.pinLng.set(place.longitude);
+    this.pinSource.set(place.pinSource);
+    if (place.addressLine.trim()) {
+      this.form.controls.serviceAddress.setValue(place.addressLine.trim());
+    }
+  }
+
+  moveNewPin(point: { latitude: number; longitude: number }): void {
+    this.pinLat.set(point.latitude);
+    this.pinLng.set(point.longitude);
+    this.pinSource.set('MANUAL_PIN');
+  }
+
   createAndApprove(): void {
     const c = this.customer();
     if (!c || !this.canSubmit()) return;
@@ -386,6 +473,7 @@ export class CreateRequestComponent implements OnInit {
         priority: approve ? priority : undefined,
         note: approve ? note : undefined,
         intakeChannel: v.intakeChannel,
+        ...this.serviceLocation(v),
       })
       .pipe(
         switchMap((created) => {

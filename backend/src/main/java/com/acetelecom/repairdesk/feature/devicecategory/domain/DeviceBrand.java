@@ -1,6 +1,9 @@
 package com.acetelecom.repairdesk.feature.devicecategory.domain;
 
-import com.acetelecom.repairdesk.common.domain.BaseEntity;
+import org.hibernate.annotations.Filter;
+
+import com.acetelecom.repairdesk.common.domain.TenantEntity;
+import com.acetelecom.repairdesk.feature.company.CompanyFilters;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,10 +18,11 @@ import lombok.Setter;
 /** A brand curated by an admin under a specific {@link DeviceCategory} (PROD-004). */
 @Entity
 @Table(name = "device_brands")
+@Filter(name = CompanyFilters.NAME, condition = CompanyFilters.CONDITION)
 @Getter
 @Setter
 @NoArgsConstructor
-public class DeviceBrand extends BaseEntity {
+public class DeviceBrand extends TenantEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "device_category_id", nullable = false)

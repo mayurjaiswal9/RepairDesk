@@ -21,6 +21,7 @@ public class AppProperties {
     private final Storage storage = new Storage();
     private final Security security = new Security();
     private final Admin admin = new Admin();
+    private final Maps maps = new Maps();
 
     @Getter
     @Setter
@@ -52,5 +53,15 @@ public class AppProperties {
         private String defaultUsername;
         private String defaultPassword;
         private String defaultMobile;
+    }
+
+    @Getter
+    @Setter
+    public static class Maps {
+        /** Empty in local development: geocoding falls back and does not call Google. */
+        private String serverKey = "";
+        private int dailyLimitGeocode = 2000;
+        private int dailyLimitRoutes = 2000;
+        private int dailyLimitSuggestions = 2000;
     }
 }

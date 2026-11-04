@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -106,5 +107,28 @@ class SecurityIntegrationTest {
     void attachmentUpload_noToken_returns401() throws Exception {
         mockMvc.perform(post("/requests/00000000-0000-0000-0000-000000000000/attachments"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void locationSettings_customer_isForbidden() throws Exception {
+        mockMvc.perform(get("/settings/location"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "TECHNICIAN")
+    void geocode_technician_isForbidden() throws Exception {
+        mockMvc.perform(post("/geocode")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"address\":\"Mumbai\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void requestQueue_staff_isNotForbidden() throws Exception {
+        mockMvc.perform(get("/requests"))
+                .andExpect(status().isOk());
     }
 }

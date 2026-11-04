@@ -3,1069 +3,850 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TEZVO TECH — Web, Apps & AI Automation</title>
-<link rel="icon" href="logo-mark.svg" type="image/svg+xml" />
+<title>TEZVO TECH — Websites, Apps &amp; AI Automation · Hyderabad</title>
+<meta name="description" content="TEZVO TECH is a Hyderabad based technology company building websites, mobile apps, AI solutions and automations for Indian businesses." />
+<script>
+(function () {
+  var h = location.hostname;
+  if (h === "tezvo-tech.com" || /\.azurestaticapps\.net$/i.test(h)) {
+    location.replace("https://www.tezvo-tech.com" + location.pathname + location.search + location.hash);
+  }
+})();
+/* Scale the desktop layout to the window width on arrival (reference design: 1920px),
+   so it looks the same at any initial browser zoom; later zooming still works. */
+(function () {
+  var DESIGN = 1920, MIN_DESKTOP = 1100, MIN_FIT = 0.8;
+  var root = document.documentElement;
+  var baseDpr = window.devicePixelRatio || 1;
+  function fit() {
+    var dpr = window.devicePixelRatio || 1;
+    var baseWidth = root.clientWidth * dpr / baseDpr;
+    var f = baseWidth >= MIN_DESKTOP ? Math.max(MIN_FIT, baseWidth / DESIGN) : 1;
+    root.style.setProperty("--fit", f.toFixed(4));
+  }
+  fit();
+  window.addEventListener("resize", fit);
+})();
+</script>
+<link rel="icon" href="logo-mark-blue.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Nunito:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --white: #ffffff;
-    --peach: #ffeadd;
-    --peach-2: #fff5ee;
-    --peach-3: #fff1e7;
-    --ink: #17130f;
-    --ink-soft: #5a4f45;
-    --muted: #948a80;
-    --orange: #ff6a2b;
-    --orange-deep: #ec5313;
-    --orange-soft: #ffeade;
-    --line: #f1e7dd;
-    --shadow: 0 20px 48px -24px rgba(28,22,16,.16);
-    --radius: 18px;
+    --navy: #050d1b;
+    --navy-2: #071427;
+    --ink: #0b1628;
+    --text: #1d2a3d;
+    --muted: #5f6d80;
+    --muted-d: #9fb0c6;
+    --blue: #2563eb;
+    --blue-h: #1d4ed8;
+    --blue-l: #5b9bff;
+    --line: #e6eaf1;
+    --line-d: rgba(255,255,255,.1);
+    --light: #f5f7fa;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; background: #fff8f3; }
-  body {
-    font-family: "Inter", system-ui, sans-serif;
-    background: #fff8f3; color: var(--ink);
-    -webkit-font-smoothing: antialiased; overflow-x: hidden;
-  }
-  h1,h2,h3,h4,h5,h6 { font-family: "Sora", sans-serif; letter-spacing: -0.03em; }
+  html { scroll-behavior: smooth; }
+  body { font-family: Inter, system-ui, sans-serif; color: var(--text); background: #fff; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4 { font-family: "Plus Jakarta Sans", Inter, sans-serif; letter-spacing: -0.025em; color: var(--ink); }
   a { color: inherit; text-decoration: none; }
-  .wrap { width: 100%; max-width: 1780px; margin: 0 auto; padding: 0 clamp(24px, 2.6vw, 48px); }
-  ::selection { background: var(--orange); color: #fff; }
+  img { display: block; max-width: 100%; }
+  button { font: inherit; }
+  .wrap { margin: 0 5%; }
 
-  /* ============ PRELOADER / PROGRESS / CURSOR ============ */
-  #loader {
-    position: fixed; inset: 0; z-index: 200; background: var(--peach-2);
-    display: flex; align-items: center; justify-content: center;
-    transition: opacity .5s ease, visibility .5s;
-  }
-  #loader.done { opacity: 0; visibility: hidden; }
-  #loader .mark { font-family: "Sora"; font-weight: 800; font-size: clamp(24px, 3.6vw, 36px); overflow: hidden; display: flex; }
-  #loader .mark span { display: inline-block; transform: translateY(120%); animation: loadup .55s cubic-bezier(.2,.7,.3,1) forwards; }
-  #loader .mark span.o { color: var(--orange); animation-delay: .14s; }
-  #loader .mark span:last-child { animation-delay: .26s; }
-  @keyframes loadup { to { transform: translateY(0); } }
-
-  #progress { position: fixed; top: 0; left: 0; height: 3px; width: 0%; background: var(--orange); z-index: 150; }
-  #cursor-dot, #cursor-ring { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 160; border-radius: 50%; }
-  #cursor-dot { width: 7px; height: 7px; background: var(--orange); }
-  #cursor-ring { width: 34px; height: 34px; border: 1.5px solid rgba(255,106,43,.45); transition: width .25s, height .25s, background .25s; }
-  #cursor-ring.hovered { width: 58px; height: 58px; background: rgba(255,106,43,.07); }
-  @media (hover: none), (max-width: 900px) { #cursor-dot, #cursor-ring { display: none; } }
-
-  /* ============ NAV ============ */
-  header.top {
-    position: sticky; top: 0; z-index: 100;
-    background: #fff8f3; border-bottom: 1px solid transparent;
-    transition: background .3s, border-color .3s;
-  }
-  header.top.scrolled { background: rgba(255,245,238,.94); backdrop-filter: blur(14px); border-color: var(--line); }
-  nav.site { display: flex; align-items: center; padding: 17px 0 22px; }
-  .logo { display: flex; align-items: center; gap: 12px; }
-  .logo .logo-mark { width: 42px; height: 42px; display: block; flex-shrink: 0; }
-  .logo .logo-type { display: flex; flex-direction: column; justify-content: center; gap: 4px; line-height: 1; width: fit-content; }
-  .logo .logo-name {
-    font-family: "Nunito", "Sora", sans-serif; font-weight: 800; font-size: 19px;
-    letter-spacing: .2em; word-spacing: .26em; color: var(--ink); white-space: nowrap;
-  }
-  .logo .logo-name em { font-style: normal; color: var(--orange); }
-  /* width:0 / min-width:100% locks this row to the wordmark width so the
-     tagline + rules cannot grow wider than "TEZVO TECH". */
-  .logo .logo-tag {
-    display: flex; align-items: center; gap: 5px;
-    width: 0; min-width: 100%; overflow: hidden;
-    font-family: "Nunito", "Sora", sans-serif; font-weight: 700; font-size: 7px; letter-spacing: .05em;
-    text-transform: uppercase; color: var(--muted); white-space: nowrap;
-  }
-  .logo .logo-tag::before, .logo .logo-tag::after {
-    content: ""; flex: 1 1 0; height: 1px; background: #c9c2ba; min-width: 0;
-  }
-  .logo .logo-tag i { color: var(--orange); font-style: normal; }
-  footer .logo .logo-mark { width: 34px; height: 34px; }
-  footer .logo .logo-name { font-size: 16px; }
-  footer .logo .logo-tag { font-size: 7.5px; }
-  nav.site .links { display: flex; gap: 34px; margin: 0 auto; }
-  nav.site .links a { font-size: 14.5px; font-weight: 500; color: var(--ink-soft); position: relative; padding: 4px 0; display: inline-flex; align-items: center; gap: 5px; }
-  nav.site .links a svg { width: 13px; height: 13px; opacity: .7; }
-  nav.site .links a::after {
-    content: ""; position: absolute; left: 0; bottom: 0; width: 0; height: 2px;
-    background: var(--orange); border-radius: 2px; transition: width .3s cubic-bezier(.2,.7,.3,1);
-  }
-  nav.site .links a:hover { color: var(--ink); }
-  nav.site .links a:hover::after { width: 100%; }
-
+  .kick { font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; }
+  .dark .kick { color: var(--blue-l); }
   .btn {
-    display: inline-flex; align-items: center; gap: 9px;
-    font-family: "Inter"; font-weight: 600; font-size: 14.5px;
-    padding: 14px 28px; border-radius: 999px; cursor: pointer;
-    border: none; position: relative; overflow: hidden; isolation: isolate;
-    transition: transform .25s cubic-bezier(.2,.7,.3,1), box-shadow .25s, color .3s, border-color .3s;
-    will-change: transform;
+    display: inline-flex; align-items: center; gap: 10px; border-radius: 999px;
+    padding: 13px 22px; font-weight: 600; font-size: 14.5px; cursor: pointer;
+    background: var(--blue); color: #fff; border: 1px solid var(--blue); transition: background .2s, border-color .2s;
   }
-  .btn::before {
-    content: ""; position: absolute; inset: 0; z-index: -1; background: var(--orange-deep);
-    border-radius: inherit; transform: scaleX(0); transform-origin: right;
-    transition: transform .38s cubic-bezier(.76,0,.24,1);
-  }
-  .btn:hover::before { transform: scaleX(1); transform-origin: left; }
-  .btn-primary { background: var(--orange); color: #fff; box-shadow: 0 14px 30px -12px rgba(255,106,43,.6); }
-  .btn-ghost { background: #fff; color: var(--ink); border: 1.5px solid #f0d9c8; }
-  .btn-ghost svg { width: 15px; height: 15px; color: var(--orange); }
-  .btn-ghost::before { background: var(--ink); }
-  .btn-ghost:hover { color: #fff; border-color: var(--ink); }
-  .btn-sm { padding: 12px 24px; }
-  .btn .arr { display: inline-block; transition: transform .3s cubic-bezier(.2,.7,.3,1); }
-  .btn:hover .arr { transform: translateX(5px); }
+  .btn:hover { background: var(--blue-h); border-color: var(--blue-h); }
+  .btn.line { background: transparent; border-color: rgba(255,255,255,.35); color: #fff; }
+  .btn.line:hover { background: rgba(255,255,255,.08); }
+  .more { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; color: var(--blue); font-weight: 600; font-size: 14.5px; }
+  .more:hover { color: var(--blue-h); }
+  .arrow { display: inline-block; transition: transform .2s; }
+  a:hover .arrow, button:hover .arrow { transform: translateX(3px); }
 
-  /* ============ HERO ============ */
-  .hero {
-    position: relative; overflow: hidden; margin-top: -96px; padding: 124px 0 48px;
-    background:
-      radial-gradient(820px 420px at 82% 12%, #ffd9c4, transparent 58%),
-      radial-gradient(640px 400px at 8% 70%, #fff1e6, transparent 60%),
-      linear-gradient(170deg, #fff8f3 0%, #ffe9d8 55%, #ffe3d0 100%);
+  /* NAV */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(5,13,27,.92); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line-d); }
+  .nav .wrap { display: flex; align-items: center; height: 76px; }
+  .brand { display: flex; align-items: center; gap: 11px; color: #fff; }
+  .brand img { width: 34px; height: 34px; }
+  .brand b { display: block; font-family: "Plus Jakarta Sans"; font-size: 16px; letter-spacing: .06em; line-height: 1.1; }
+  .brand small { display: block; font-size: 10.5px; color: var(--muted-d); letter-spacing: .02em; margin-top: 2px; }
+  .nav .links { display: flex; gap: 34px; margin: 0 auto; }
+  .nav .links a { color: #d7e0ec; font-size: 14.5px; font-weight: 500; }
+  .nav .links a:hover { color: #fff; }
+  .dd { position: relative; }
+  .dd::after { content: ""; position: absolute; left: -20px; right: -20px; top: 100%; height: 22px; }
+  .dd-btn { background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #d7e0ec; font-size: 14.5px; font-weight: 500; }
+  .dd-btn:hover, .dd.open .dd-btn, .dd-btn.on { color: #fff; }
+  .dd-btn svg { width: 12px; height: 12px; transition: transform .2s; }
+  .dd:hover .dd-btn svg, .dd.open .dd-btn svg { transform: rotate(180deg); }
+  .dd-menu {
+    position: absolute; top: calc(100% + 20px); left: 50%; min-width: 320px; z-index: 70;
+    background: #fff; border-radius: 14px; padding: 8px; box-shadow: 0 30px 60px -20px rgba(5,13,27,.55), 0 0 0 1px rgba(11,22,40,.06);
+    opacity: 0; visibility: hidden; transform: translate(-50%, 8px); transition: opacity .18s, transform .18s, visibility .18s;
   }
-  .hero-grid {
-    display: grid; grid-template-columns: minmax(320px, 460px) minmax(0, 1fr);
-    gap: 48px; align-items: center; position: relative;
-  }
+  .dd:hover .dd-menu, .dd.open .dd-menu { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+  .dd-menu::before { content: ""; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; background: #fff; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
+  .nav .links .dd-menu a { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; color: var(--ink); position: relative; }
+  .nav .links .dd-menu a:hover { background: #f1f5ff; color: var(--ink); }
+  .dd-ic { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, #6aa8ff, #1d4ed8); color: #fff; display: grid; place-items: center; font-family: "Plus Jakarta Sans"; font-weight: 700; font-size: 16px; }
+  .dd-menu b { display: block; font-size: 14.5px; font-weight: 600; font-family: "Plus Jakarta Sans"; }
+  .dd-menu small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; font-weight: 400; }
 
-  /* pill kicker */
-  .pill-kicker {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: #fff; border: 1px solid #ffd4b8; border-radius: 999px;
-    padding: 7px 16px 7px 12px; margin-bottom: 22px;
-    font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--orange);
-    box-shadow: 0 6px 16px -10px rgba(255,106,43,.35);
+  /* HERO */
+  .hero { position: relative; background: var(--navy); color: #fff; overflow: hidden; }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: url("img/tezvo-hero-abstract.png") 78% center / cover no-repeat;
   }
-  .pill-kicker svg { width: 13px; height: 13px; }
-
-  .hero h1 { font-size: clamp(38px, 4.2vw, 54px); line-height: 1.04; font-weight: 800; margin-bottom: 18px; }
-  .hero h1 .line { display: block; overflow: hidden; }
-  .hero h1 .line span { display: inline-block; transform: translateY(112%); animation: rise .8s cubic-bezier(.2,.7,.3,1) forwards; }
-  .hero h1 .line:nth-child(1) span { animation-delay: .7s; }
-  .hero h1 .line:nth-child(2) span { animation-delay: .84s; }
-  .hero h1 .accent { color: var(--orange); }
-  @keyframes rise { to { transform: translateY(0); } }
-
-  .fadein { opacity: 0; transform: translateY(20px); animation: fady .75s cubic-bezier(.2,.7,.3,1) forwards; }
-  .fd-1 { animation-delay: 1.05s; } .fd-2 { animation-delay: 1.2s; }
-  .fd-3 { animation-delay: 1.35s; } .fd-4 { animation-delay: 1.5s; }
-  @keyframes fady { to { opacity: 1; transform: none; } }
-
-  .hero p.lede { font-size: 15px; line-height: 1.7; color: var(--ink-soft); max-width: 380px; margin-bottom: 28px; }
-  .cta-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-
-  /* trusted-by strip */
-  .trusted { margin-top: 40px; }
-  .trusted .lbl { font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #a99c90; margin-bottom: 14px; }
-  .trusted .logos { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
-  .trusted .lg { display: inline-flex; align-items: center; gap: 6px; font-family: "Sora"; font-weight: 700; font-size: 13px; color: #8d8177; transition: color .25s; }
-  .trusted .lg:hover { color: var(--ink); }
-  .trusted .lg .lgi { width: 18px; height: 18px; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
-  .trusted .lg .lgi svg { width: 11px; height: 11px; }
-  .lg1 .lgi { background: #ffe4d6; color: #ff6a2b; }
-  .lg2 .lgi { background: #ddf5e6; color: #2fa363; }
-  .lg3 .lgi { background: #e2e6ff; color: #5468e8; }
-  .lg4 .lgi { background: #ffeacb; color: #e39412; }
-
-  /* decorative accents between text and mockups */
-  .dots {
-    position: absolute; width: 70px; height: 70px; top: 6%; left: 40%; opacity: .45; pointer-events: none; z-index: 1;
-    background-image: radial-gradient(#ffb590 1.5px, transparent 1.5px);
-    background-size: 12px 12px;
-  }
-  .curve-arrow {
-    position: absolute; left: 34%; top: 58%; width: 86px; color: #ffa376;
-    pointer-events: none; opacity: 0; animation: fady .8s 1.7s forwards; z-index: 1;
-  }
-  .curve-arrow svg { width: 100%; height: auto; }
-  .curve-arrow path {
-    fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round;
-    stroke-dasharray: 200; stroke-dashoffset: 200;
-    animation: draw 1.2s 1.8s cubic-bezier(.5,0,.3,1) forwards;
-  }
-  @keyframes draw { to { stroke-dashoffset: 0; } }
-
-  /* ============ DEVICE MOCKUPS ============
-     Two tracks: browser | phone, side by side with a clear gutter so the
-     devices never collide. Soft peach oval sits behind both. */
-  .hero-visual {
-    position: relative;
-    display: grid; grid-template-columns: minmax(0, 1fr) 258px;
-    gap: 28px; align-items: center;
-  }
-  .stage {
-    position: absolute; left: 4%; right: -2%; top: 12%; height: 82%;
-    background: radial-gradient(ellipse at center, #ffd8c0 0%, #ffe8d8 44%, transparent 72%);
-    border-radius: 50%; filter: blur(3px); z-index: 0; pointer-events: none;
-  }
-  .dv { opacity: 0; will-change: transform; }
-  .dv.show { animation: devin .9s cubic-bezier(.2,.7,.3,1) forwards; }
-  @keyframes devin { from { opacity: 0; transform: translateY(48px) scale(.97); } to { opacity: 1; transform: none; } }
-
-  /* --- browser: sample client website --- */
-  .browser {
-    grid-column: 1; position: relative; z-index: 2; width: 100%;
-    background: #fff; border: 1px solid #fff; border-radius: 20px;
-    box-shadow: 0 36px 70px -30px rgba(28,22,16,.28); overflow: hidden;
-  }
-  .bchrome { display: flex; align-items: center; gap: 7px; padding: 12px 16px; background: #fff; border-bottom: 1px solid #f6efe8; }
-  .bchrome i { width: 10px; height: 10px; border-radius: 50%; }
-  .bchrome i:nth-child(1) { background: #ff6057; }
-  .bchrome i:nth-child(2) { background: #ffbd2e; }
-  .bchrome i:nth-child(3) { background: #28ca42; }
-  .bchrome .url {
-    flex: 1; margin-left: 12px; background: #faf6f2; border-radius: 8px;
-    font-size: 11px; color: #a2988e; padding: 6px 14px; text-align: center;
-  }
-  .bbody { padding: 22px 24px 24px; }
-  .mini-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
-  .mini-nav .mdot { width: 24px; height: 24px; border-radius: 7px; background: var(--orange); }
-  .mini-nav b { font-family: "Sora"; font-size: 13.5px; }
-  .mini-nav .mlinks { display: flex; gap: 10px; margin-left: auto; margin-right: 14px; }
-  .mini-nav .mlinks i { width: 28px; height: 5px; border-radius: 3px; background: #f0e7de; }
-  .mini-nav .mbtn {
-    background: #fff; color: var(--orange); border: 1.5px solid var(--orange);
-    font-size: 11px; font-weight: 600; border-radius: 999px; padding: 6px 14px;
-  }
-  .mini-hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 20px; align-items: center; margin-bottom: 18px; }
-  .mini-hero h6 { font-family: "Sora"; font-size: 22px; line-height: 1.18; margin-bottom: 10px; font-weight: 700; }
-  .mini-hero h6 em { color: var(--orange); font-style: normal; }
-  .mini-hero p { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 16px; }
-  .mini-hero .mcta {
-    display: inline-block; background: var(--orange); color: #fff;
-    font-size: 12px; font-weight: 600; border-radius: 999px; padding: 9px 18px;
-  }
-  .mini-img {
-    border-radius: 14px; height: 148px; position: relative; overflow: hidden;
-    background: linear-gradient(150deg, #ffe0cd, #ffcdb2);
-    display: flex; align-items: center; justify-content: center; color: rgba(236,83,19,.5);
-  }
-  .mini-img svg { width: 48px; height: 48px; }
-  .mini-img::after {
+  .hero-bg::after {
     content: ""; position: absolute; inset: 0;
-    background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,.55) 50%, transparent 58%);
-    transform: translateX(-110%); animation: shine 3.8s 2.6s ease-in-out infinite;
+    background: linear-gradient(90deg, var(--navy) 0%, rgba(5,13,27,.92) 38%, rgba(5,13,27,.25) 70%, rgba(5,13,27,.1) 100%);
   }
-  @keyframes shine { 0% { transform: translateX(-110%); } 45%, 100% { transform: translateX(110%); } }
-  .mini-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .mini-card { background: #fdfaf7; border: 1px solid #f6efe8; border-radius: 12px; padding: 14px 12px; transition: transform .3s, border-color .3s; }
-  .mini-card:hover { transform: translateY(-4px); border-color: #ffd2b8; }
-  .mini-card .mi {
-    width: 24px; height: 24px; border-radius: 7px; background: var(--orange-soft); color: var(--orange);
-    display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
-  }
-  .mini-card .mi svg { width: 13px; height: 13px; }
-  .mini-card b { font-family: "Sora"; font-size: 12px; display: block; margin-bottom: 3px; }
-  .mini-card span { font-size: 10px; color: var(--muted); }
+  .hero-inner { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; min-height: 540px; padding: 56px 0 32px; }
+  .hslides { display: grid; }
+  .hslide { grid-area: 1 / 1; opacity: 0; transform: translateY(12px); transition: opacity .6s, transform .6s; pointer-events: none; max-width: 680px; }
+  .hslide.on { opacity: 1; transform: none; pointer-events: auto; }
+  .hero .kick { color: #9ec2ff; }
+  .hero h1 { color: #fff; font-size: clamp(42px, 5vw, 66px); line-height: 1.06; font-weight: 600; }
+  .hero h1 em { font-style: normal; color: #4f8cff; }
+  .hero p.lede { margin-top: 18px; max-width: 520px; color: #c5d3e6; font-size: 17px; line-height: 1.65; }
+  .hero .ctas { display: flex; gap: 14px; margin-top: 26px; flex-wrap: wrap; }
+  .vlabels { list-style: none; border-left: 1px solid rgba(255,255,255,.35); padding-left: 16px; display: grid; gap: 10px; }
+  .vlabels li { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #d6e2f3; }
+  .hero-foot { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 26px; }
+  .feats { display: grid; grid-template-columns: repeat(4, auto); gap: 0; border-top: 1px solid var(--line-d); padding-top: 18px; }
+  .feats div { display: flex; gap: 12px; align-items: center; padding: 0 28px; border-left: 1px solid var(--line-d); color: #d8e2ef; font-size: 13.5px; line-height: 1.35; }
+  .feats div:first-child { padding-left: 0; border-left: 0; }
+  .feats svg { width: 22px; height: 22px; color: #7fb0ff; flex-shrink: 0; }
+  .pager { text-align: right; }
+  .pager .count { font-size: 13px; letter-spacing: .1em; color: #cdd9ea; margin-bottom: 12px; }
+  .pager .count b { color: #fff; font-weight: 600; }
+  .pager .ctrls { display: flex; gap: 10px; justify-content: flex-end; }
+  .pager button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; cursor: pointer; display: grid; place-items: center; }
+  .pager button:hover { background: rgba(255,255,255,.1); }
+  .pager svg { width: 16px; height: 16px; }
 
-  /* --- phone sits in its own column, slightly raised --- */
-  .phone-wrap {
-    grid-column: 2; position: relative; z-index: 4; width: 100%;
-    display: flex; justify-content: center; align-items: center;
-  }
-  .phone-glow {
-    position: absolute; width: 260px; height: 260px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,150,95,.32), transparent 66%);
-    z-index: 0; pointer-events: none;
-  }
-  .phone {
-    position: relative; z-index: 2; width: 226px; background: #16151a;
-    border-radius: 38px; padding: 9px; transform-origin: center center;
-    transform-style: flat;
-    box-shadow: 0 40px 70px -28px rgba(28,22,16,.48), inset 0 0 0 2px #2c2a31;
-  }
-  .phone.show {
-    animation: phonein 1s .22s cubic-bezier(.2,.7,.3,1) forwards,
-               floatphone 6.5s 1.4s ease-in-out infinite alternate;
-  }
-  @keyframes phonein {
-    from { opacity: 0; transform: translateY(46px) scale(.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  @keyframes floatphone {
-    from { transform: translateY(0); }
-    to { transform: translateY(-14px); }
-  }
-  .phone .side { position: absolute; width: 3px; border-radius: 3px; background: #2c2a31; }
-  .phone .side.s1 { left: -3px; top: 100px; height: 28px; }
-  .phone .side.s2 { left: -3px; top: 138px; height: 28px; }
-  .phone .side.s3 { right: -3px; top: 116px; height: 48px; }
-  .screen {
-    background: #fbf8f5; border-radius: 30px; overflow: hidden; isolation: isolate;
-    display: flex; flex-direction: column; height: 396px; position: relative;
-  }
-  .status {
-    position: absolute; top: 0; left: 0; right: 0; height: 28px;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 16px; font-size: 9px; color: #fff; z-index: 3; font-weight: 600;
-  }
-  .status .bars { display: flex; gap: 3px; align-items: flex-end; }
-  .status .bars i { width: 2.5px; background: rgba(255,255,255,.85); border-radius: 1px; }
-  .notch {
-    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-    width: 78px; height: 20px; background: #16151a; border-radius: 11px; z-index: 4;
-  }
-  .app-head { background: var(--orange); color: #fff; padding: 34px 14px 13px; }
-  .app-head h6 { font-size: 13px; }
-  .app-head p { font-size: 9.5px; opacity: .92; margin-top: 2px; }
-  .app-body { flex: 1; padding: 12px 11px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-  .bubble { font-size: 10.5px; line-height: 1.5; padding: 9px 11px; border-radius: 13px; max-width: 92%; opacity: 0; animation: fady .5s forwards; }
-  .bubble.in { background: #fff; border: 1px solid #f2eae2; color: var(--ink-soft); border-bottom-left-radius: 4px; }
-  .bubble.out { background: var(--orange); color: #fff; margin-left: auto; border-bottom-right-radius: 4px; }
-  .appt {
-    display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid #f2eae2;
-    border-left: 3px solid #2fa363; border-radius: 11px; padding: 9px 10px; opacity: 0; animation: fady .5s forwards;
-  }
-  .appt .ok {
-    width: 20px; height: 20px; border-radius: 50%; background: #e6f8ed; color: #2fa363;
-    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0;
-  }
-  .appt b { font-family: "Sora"; font-size: 10.5px; display: block; }
-  .appt span { font-size: 9px; color: var(--muted); }
-  .typing { display: flex; gap: 4px; padding: 2px 0 0 5px; }
-  .typing i { width: 5px; height: 5px; border-radius: 50%; background: #dccfc2; animation: blink 1.2s infinite; }
-  .typing i:nth-child(2) { animation-delay: .2s; }
-  .typing i:nth-child(3) { animation-delay: .4s; }
-  @keyframes blink { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
-  .app-tab { display: flex; justify-content: space-around; padding: 9px 4px 12px; background: #fff; border-top: 1px solid #f2eae2; }
-  .app-tab .tb { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #c3b8ad; font-size: 7px; font-weight: 600; }
-  .app-tab .tb svg { width: 14px; height: 14px; }
-  .app-tab .tb.on { color: var(--orange); }
-  .ticks { position: absolute; top: 2%; right: -4px; display: grid; gap: 4px; z-index: 1; }
-  .ticks i { display: block; height: 2.5px; border-radius: 2px; background: #ffa376; }
-  .ticks i:nth-child(1) { width: 14px; }
-  .ticks i:nth-child(2) { width: 22px; }
-  .ticks i:nth-child(3) { width: 12px; }
+  /* LIGHT SECTIONS */
+  section { padding: 60px 0; }
+  .light { background: var(--light); }
+  .white { background: #fff; }
+  .head2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 28px; }
+  .head2 > div:last-child { justify-self: end; max-width: 460px; }
+  .head2 h2, .why h2 { font-size: clamp(30px, 3.2vw, 42px); line-height: 1.12; font-weight: 600; }
+  h2 em { font-style: normal; color: var(--blue); }
+  .head2 p, .why p.body { color: var(--muted); font-size: 16px; line-height: 1.7; max-width: 440px; }
 
-  /* ============ FEATURE CHIPS ============ */
-  .chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 24px; }
-  .chip {
-    background: #fff; border: 1px solid #fff; border-radius: 16px; padding: 17px 20px;
-    display: flex; align-items: center; gap: 14px; box-shadow: 0 14px 30px -22px rgba(28,22,16,.28);
-    transition: transform .3s cubic-bezier(.2,.7,.3,1), box-shadow .3s;
+  .svc4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .svc { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform .25s, box-shadow .25s; }
+  .svc:hover { transform: translateY(-4px); box-shadow: 0 24px 44px -26px rgba(11,22,40,.35); }
+  .svc .img { position: relative; aspect-ratio: 16 / 10; background: var(--navy); }
+  .svc .img img { width: 100%; height: 100%; object-fit: cover; }
+  .svc .no { position: absolute; left: 18px; bottom: 14px; color: #fff; font-family: "Plus Jakarta Sans"; font-weight: 600; font-size: 22px; }
+  .svc .b { padding: 18px 20px 16px; display: flex; flex-direction: column; flex: 1; }
+  .svc h3 { font-size: 19px; font-weight: 600; margin-bottom: 10px; }
+  .svc p { color: var(--muted); font-size: 14.5px; line-height: 1.6; flex: 1; }
+  .svc .go { margin-top: 10px; color: var(--ink); font-size: 18px; }
+
+  /* CASE STUDY (dark) */
+  .dark { background: radial-gradient(900px 500px at 80% 40%, #0d2a5e 0%, transparent 60%), var(--navy); color: #fff; }
+  .dark h2, .dark h3 { color: #fff; }
+  .case { display: grid; grid-template-columns: .8fr 1.2fr; gap: 40px; align-items: center; }
+  .case h2 { font-size: clamp(36px, 4vw, 50px); line-height: 1.08; font-weight: 600; }
+  .pill { display: inline-block; margin: 14px 0 12px; padding: 6px 14px; border: 1px solid rgba(91,155,255,.55); border-radius: 999px; color: #9ec2ff; font-size: 13px; }
+  .case p.body { color: #c2cfe2; font-size: 16px; line-height: 1.7; max-width: 440px; }
+  .case .btn { margin-top: 20px; }
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 28px; border-top: 1px solid var(--line-d); padding-top: 22px; }
+  .metrics div { padding-right: 16px; }
+  .metrics div + div { padding-left: 20px; border-left: 1px solid var(--line-d); }
+  .metrics small { display: block; color: #9fb0c6; font-size: 13px; line-height: 1.35; }
+  .metrics b { display: block; font-family: "Plus Jakarta Sans"; font-size: 28px; font-weight: 600; margin-top: 6px; color: #7fb0ff; white-space: nowrap; }
+
+  .devices { position: relative; padding-right: 150px; }
+  .laptop .screen { background: #0f1115; border-radius: 16px 16px 0 0; padding: 12px 12px 14px; box-shadow: 0 40px 80px -30px rgba(0,0,0,.7); }
+  .laptop .base { height: 16px; background: linear-gradient(#cfd5dd, #9aa3ae); border-radius: 0 0 14px 14px; margin: 0 -26px; position: relative; }
+  .laptop .base::after { content: ""; position: absolute; left: 50%; top: 0; width: 90px; height: 6px; transform: translateX(-50%); background: #7f8894; border-radius: 0 0 8px 8px; }
+  .fa { display: grid; grid-template-columns: 112px 1fr; background: #f4f6fb; border-radius: 6px; overflow: hidden; color: #0b1628; font-size: 10px; height: 372px; }
+  .fa-side { background: #0b1628; color: #9fb0c6; padding: 14px 10px; display: flex; flex-direction: column; gap: 3px; }
+  .fa-logo { display: flex; align-items: center; gap: 7px; color: #fff; font-family: "Plus Jakarta Sans"; font-weight: 700; font-size: 12px; margin: 0 4px 14px; }
+  .fa-logo i { width: 18px; height: 18px; border-radius: 6px; background: linear-gradient(135deg, #6aa8ff, #1d4ed8); display: grid; place-items: center; font-style: normal; font-size: 10px; color: #fff; }
+  .fa-side span { display: flex; align-items: center; gap: 7px; padding: 7px 8px; white-space: nowrap; border-radius: 7px; }
+  .fa-side span::before { content: ""; flex-shrink: 0; width: 7px; height: 7px; border-radius: 2px; background: currentColor; opacity: .6; }
+  .fa-side span.on { background: rgba(79,140,255,.16); color: #fff; }
+  .fa-side span.on::before { background: #4f8cff; opacity: 1; }
+  .fa-side em { margin-left: auto; font-style: normal; background: #25d366; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 9px; line-height: 15px; }
+  .fa-main { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .fa-top { display: flex; align-items: center; gap: 8px; }
+  .fa-top b { font-family: "Plus Jakarta Sans"; font-size: 14px; }
+  .fa-top small { color: #5f6d80; margin-right: auto; }
+  .fa-top .srch { width: 110px; height: 22px; border-radius: 6px; background: #fff; border: 1px solid #e3e8f0; }
+  .fa-top .new { background: #2563eb; color: #fff; font-weight: 600; border-radius: 6px; padding: 5px 9px; }
+  .fa-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .fa-kpi div { background: #fff; border: 1px solid #e6eaf1; border-radius: 8px; padding: 8px 9px; }
+  .fa-kpi small { color: #5f6d80; font-size: 9px; display: block; }
+  .fa-kpi b { font-family: "Plus Jakarta Sans"; font-size: 17px; display: block; margin-top: 2px; }
+  .fa-kpi b i { font-style: normal; font-size: 9px; font-weight: 600; color: #16a34a; margin-left: 4px; }
+  .fa-plan { background: #fff; border: 1px solid #e6eaf1; border-radius: 8px; padding: 8px 10px 10px; flex: 1; position: relative; }
+  .fa-hours, .fa-row { display: grid; grid-template-columns: 64px 1fr; align-items: center; }
+  .fa-hours div { display: flex; justify-content: space-between; color: #8a97a8; font-size: 8.5px; padding-bottom: 6px; border-bottom: 1px solid #eef1f5; }
+  .fa-row { height: 36px; border-bottom: 1px dashed #eef1f5; }
+  .fa-row:last-child { border-bottom: 0; }
+  .fa-row > span { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .fa-row > span i { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-style: normal; font-size: 8px; }
+  .fa-track { position: relative; height: 26px; }
+  .job { position: absolute; top: 0; height: 26px; border-radius: 6px; padding: 3px 6px; font-size: 8.5px; line-height: 1.25; overflow: hidden; white-space: nowrap; border-left: 3px solid; }
+  .job b { display: block; font-size: 9px; }
+  .job.b { background: #e8f0ff; border-color: #2563eb; color: #1e3a8a; }
+  .job.g { background: #e7f8ee; border-color: #16a34a; color: #14532d; }
+  .job.o { background: #fff3e2; border-color: #f59e0b; color: #7c4a03; }
+  .job.w { background: #e9fbf0; border-color: #25d366; color: #14532d; box-shadow: 0 0 0 2px rgba(37,211,102,.25); }
+  .fa-now { position: absolute; top: 22px; bottom: 8px; left: calc(74px + (100% - 84px) * .34); width: 2px; background: #ef4444; border-radius: 2px; }
+  .fa-now::before { content: ""; position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+
+  .wa-toast { position: absolute; left: -40px; bottom: -34px; width: 238px; background: #fff; color: #0b1628; border-radius: 14px; padding: 12px 14px; box-shadow: 0 26px 50px -18px rgba(0,0,0,.6); font-size: 11px; line-height: 1.45; display: grid; grid-template-columns: 30px 1fr; gap: 10px; }
+  .wa-toast .ic { width: 30px; height: 30px; border-radius: 50%; background: #25d366; color: #fff; display: grid; place-items: center; }
+  .wa-toast .ic svg { width: 17px; height: 17px; }
+  .wa-toast b { display: block; font-size: 11.5px; }
+  .wa-toast span { color: #5f6d80; }
+  .wa-toast .ok { display: inline-block; margin-top: 5px; background: #e7f8ee; color: #15803d; font-weight: 600; border-radius: 999px; padding: 2px 8px; font-size: 10px; }
+
+  .phone { position: absolute; right: 0; bottom: -26px; width: 206px; background: #0f1115; border-radius: 32px; padding: 8px; box-shadow: 0 40px 70px -24px rgba(0,0,0,.75); }
+  .phone .scr { background: #f4f6fb; border-radius: 25px; overflow: hidden; height: 404px; color: #0b1628; font-size: 10px; position: relative; }
+  .ft-head { background: linear-gradient(135deg, #2f6fed, #1745b8); color: #fff; padding: 8px 14px 34px; }
+  .ft-head .notch { width: 70px; height: 16px; background: #0f1115; border-radius: 0 0 12px 12px; margin: -8px auto 10px; }
+  .ft-head small { opacity: .8; font-size: 9.5px; }
+  .ft-head h5 { font-family: "Plus Jakarta Sans"; font-size: 15px; margin-top: 2px; color: #fff; }
+  .ft-next { margin: -26px 10px 0; background: #fff; border-radius: 14px; padding: 11px 12px; box-shadow: 0 14px 26px -16px rgba(11,22,40,.45); position: relative; }
+  .ft-next .tag { font-size: 8.5px; font-weight: 700; letter-spacing: .08em; color: #2563eb; }
+  .ft-next b { display: block; font-size: 12px; margin: 3px 0 1px; }
+  .ft-next span { color: #5f6d80; font-size: 9.5px; }
+  .ft-next .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 9px; }
+  .ft-next .acts i { font-style: normal; text-align: center; border-radius: 8px; padding: 6px 0; font-weight: 600; font-size: 9.5px; border: 1px solid #dbe4f3; color: #1d4ed8; }
+  .ft-next .acts i.go { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .ft-list { padding: 10px 10px 0; display: grid; gap: 7px; }
+  .ft-list h6 { font-size: 10px; color: #5f6d80; font-weight: 600; margin: 0 2px; font-family: Inter, sans-serif; letter-spacing: 0; }
+  .ft-job { background: #fff; border: 1px solid #e6eaf1; border-radius: 10px; padding: 8px 10px; display: grid; grid-template-columns: 34px 1fr; gap: 6px; align-items: center; }
+  .ft-job time { font-weight: 700; font-size: 10px; color: #0b1628; }
+  .ft-job b { display: block; font-size: 10px; }
+  .ft-job span { color: #5f6d80; font-size: 9px; }
+  .ft-job em { display: inline-block; margin-top: 4px; font-style: normal; font-size: 8.5px; font-weight: 600; border-radius: 999px; padding: 2px 6px; }
+  .ft-job em.s { background: #e8f0ff; color: #1d4ed8; }
+  .ft-job em.w { background: #e7f8ee; color: #15803d; }
+  .ft-tabs { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; border-top: 1px solid #e6eaf1; padding: 8px 0 10px; text-align: center; font-size: 8.5px; color: #8a97a8; }
+  .ft-tabs span::before { content: ""; display: block; width: 14px; height: 14px; border-radius: 4px; background: currentColor; opacity: .35; margin: 0 auto 3px; }
+  .ft-tabs span.on { color: #2563eb; font-weight: 600; }
+  .ft-tabs span.on::before { opacity: 1; }
+
+  /* INDUSTRIES */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .tile { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 1.2 / 1; display: block; }
+  .tile img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+  .tile:hover img { transform: scale(1.04); }
+  .tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(5,13,27,.78) 100%); }
+  .tile span { position: absolute; left: 20px; right: 20px; bottom: 18px; z-index: 1; color: #fff; font-family: "Plus Jakarta Sans"; font-size: 19px; font-weight: 600; line-height: 1.25; }
+
+  /* WHY */
+  .why { display: grid; grid-template-columns: 1.08fr 1fr; background: var(--light); }
+  .why .pic { position: relative; min-height: 440px; }
+  .why .pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .why .txt { padding: 48px 4.5vw 48px 48px; align-self: center; max-width: 720px; }
+  .why p.body { margin-top: 12px; max-width: 480px; }
+  .points { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px; }
+  .points div { font-size: 13.5px; color: var(--text); line-height: 1.4; }
+  .points svg { width: 24px; height: 24px; color: var(--blue); display: block; margin-bottom: 8px; }
+
+  /* PROCESS */
+  .tline { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 8px; }
+  .tline::before { content: ""; position: absolute; left: 24px; right: 24px; top: 24px; height: 1px; background: #cfd8e6; }
+  .tstep { position: relative; }
+  .tstep .node { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .tstep .num {
+    width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+    background: #fff; border: 1px solid #cddcf6; color: var(--blue); font-weight: 700; font-size: 14px; position: relative; z-index: 1;
+    box-shadow: 0 0 0 6px var(--light);
   }
-  .chip:hover { transform: translateY(-5px); box-shadow: 0 22px 40px -22px rgba(28,22,16,.3); }
-  .chip .ic { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; background: var(--orange-soft); color: var(--orange); display: flex; align-items: center; justify-content: center; }
-  .chip .ic svg { width: 18px; height: 18px; }
-  .chip h5 { font-size: 13.5px; margin-bottom: 3px; }
-  .chip p { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+  .tstep .ic { width: 34px; height: 34px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; position: relative; z-index: 1; box-shadow: 0 0 0 6px var(--light); }
+  .tstep .ic svg { width: 16px; height: 16px; }
+  .tstep h3 { font-size: 19px; font-weight: 600; margin-bottom: 8px; }
+  .tstep p { color: var(--muted); font-size: 14.5px; line-height: 1.6; max-width: 240px; }
 
-  /* ============ SECTIONS ============ */
-  section { padding: 54px 0; }
-  /* Negative margin must stay smaller than the hero's bottom padding, or the
-     white panel rides up over the feature chips. */
-  .white-top { position: relative; background: #fff; border-radius: 34px 34px 0 0; margin-top: -24px; z-index: 5; }
-  /* Wide enough to keep the longest heading on one line; the paragraph below
-     is re-capped so its line length stays readable. */
-  .sec-head { text-align: center; max-width: 980px; margin: 0 auto 26px; }
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 10px; justify-content: center;
-    font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--orange); margin-bottom: 11px;
+  /* CTA BAND */
+  .band { position: relative; background: var(--navy) url("img/tezvo-cta-skyline.png") center 70% / cover no-repeat; color: #fff; }
+  .band::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,13,27,.9) 0%, rgba(5,13,27,.55) 55%, rgba(5,13,27,.35) 100%); }
+  .band .wrap { position: relative; display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 40px; align-items: center; padding: 48px 0; }
+  .band h2 { color: #fff; font-size: clamp(30px, 3.2vw, 42px); line-height: 1.15; font-weight: 600; }
+  .band p { color: #c7d4e6; font-size: 16px; line-height: 1.6; max-width: 320px; }
+
+  /* FOOTER */
+  footer { background: var(--navy); color: #c2cfe0; padding: 44px 0 22px; }
+  .fgrid { display: grid; grid-template-columns: 1.5fr .9fr .9fr .8fr 1.1fr; gap: 32px; }
+  footer p.about { color: #9fb0c6; font-size: 14px; line-height: 1.7; margin-top: 18px; max-width: 300px; }
+  footer h5 { color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 16px; font-family: "Plus Jakarta Sans"; }
+  footer .col a { display: block; color: #9fb0c6; font-size: 14px; line-height: 2.1; }
+  footer .col a:hover { color: #fff; }
+  .fcontact div { display: flex; gap: 12px; margin-bottom: 16px; font-size: 14px; line-height: 1.5; color: #c2cfe0; }
+  .fcontact small { display: block; color: #8395ad; font-size: 12.5px; }
+  .fcontact svg { width: 18px; height: 18px; color: #7fb0ff; flex-shrink: 0; margin-top: 2px; }
+  .flegal { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid var(--line-d); margin-top: 32px; padding-top: 18px; color: #7f91a9; font-size: 13px; }
+  .flegal a:hover { color: #fff; }
+
+  /* CONTACT DIALOG */
+  dialog.talk { margin: auto; border: 0; border-radius: 20px; padding: 0; width: min(560px, calc(100% - 32px)); box-shadow: 0 40px 90px -30px rgba(5,13,27,.6); }
+  dialog.talk::backdrop { background: rgba(5,13,27,.6); backdrop-filter: blur(4px); }
+  .talk .in { padding: 30px 30px 26px; }
+  .talk h3 { font-size: 24px; font-weight: 600; }
+  .talk .sub { color: var(--muted); font-size: 14.5px; margin: 6px 0 20px; line-height: 1.6; }
+  .talk form { display: grid; gap: 14px; }
+  .talk .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .talk label { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text); }
+  .talk input, .talk select, .talk textarea { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; font: 400 14.5px Inter, sans-serif; color: var(--ink); background: #fff; }
+  .talk input:focus, .talk select:focus, .talk textarea:focus { outline: 2px solid rgba(37,99,235,.25); border-color: var(--blue); }
+  .talk textarea { min-height: 100px; resize: vertical; }
+  .talk .hp { position: absolute; left: -9999px; }
+  .talk .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .talk .mail { color: var(--muted); font-size: 13px; }
+  .talk .mail a { color: var(--blue); font-weight: 600; }
+  .talk .x { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 18px; color: var(--muted); }
+  .form-note { font-size: 13.5px; color: var(--muted); }
+  .form-note.ok { color: #15803d; }
+  .form-note.err { color: #b91c1c; }
+
+  /* WhatsApp */
+  .btn.wa { background: #25d366; border-color: #25d366; color: #fff; }
+  .btn.wa:hover { background: #1ebe5b; border-color: #1ebe5b; }
+  .btn.wa svg, .wa-float svg { width: 18px; height: 18px; }
+  .wa-float {
+    position: fixed; right: 24px; bottom: 24px; z-index: 60; display: flex; align-items: center; gap: 10px;
+    background: #25d366; color: #fff; border-radius: 999px; padding: 12px 18px 12px 14px; font-weight: 600; font-size: 14.5px;
+    box-shadow: 0 14px 30px -10px rgba(0,0,0,.45); transition: transform .2s;
   }
-  .eyebrow::before, .eyebrow::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--orange); opacity: .6; }
-  .sec-head h2 { font-size: clamp(26px, 3.1vw, 36px); line-height: 1.16; font-weight: 700; }
-  .sec-head h2 em { font-style: normal; color: var(--orange); }
-  .sec-head .rule { width: 62px; height: 3px; border-radius: 3px; background: var(--orange); margin: 13px auto 0; }
-  .sec-head p { color: var(--ink-soft); font-size: 15.5px; line-height: 1.7; margin: 16px auto 0; max-width: 660px; }
+  .wa-float:hover { transform: translateY(-2px); }
+  .wa-float svg { width: 24px; height: 24px; }
 
-  .rv { opacity: 0; transform: translateY(30px); transition: opacity .8s cubic-bezier(.2,.7,.3,1), transform .8s cubic-bezier(.2,.7,.3,1); }
-  .rv.in { opacity: 1; transform: none; }
-  .rv-d1 { transition-delay: .08s; } .rv-d2 { transition-delay: .16s; }
-  .rv-d3 { transition-delay: .24s; } .rv-d4 { transition-delay: .32s; }
-
-  /* what-we-do row */
-  .wwd { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; }
-  .wwd .item { display: flex; gap: 14px; align-items: flex-start; transition: transform .3s cubic-bezier(.2,.7,.3,1); }
-  .wwd .item:hover { transform: translateY(-5px); }
-  .wwd .ic { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; background: var(--orange-soft); color: var(--orange); display: flex; align-items: center; justify-content: center; transition: background .3s, color .3s, transform .3s; }
-  .wwd .ic svg { width: 19px; height: 19px; }
-  .wwd .item:hover .ic { background: var(--orange); color: #fff; transform: rotate(-6deg) scale(1.06); }
-  .wwd h4 { font-size: 14.5px; margin-bottom: 5px; }
-  .wwd p { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
-
-  .prod-promo {
-    margin-top: 28px; border-radius: 24px; border: 1px solid var(--line); overflow: hidden;
-    display: grid; grid-template-columns: 1.15fr .85fr; background:
-      radial-gradient(500px 240px at 92% 0%, #ffe2d0, transparent 60%), var(--peach-2);
-  }
-  .prod-promo .copy { padding: 42px 44px; }
-  .prod-promo h3 { font-size: clamp(22px, 2.4vw, 30px); margin: 8px 0 12px; }
-  .prod-promo h3 em { font-style: normal; color: var(--orange); }
-  .prod-promo p { color: var(--ink-soft); font-size: 15px; line-height: 1.7; max-width: 460px; margin-bottom: 22px; }
-  .prod-promo .shot { padding: 28px 28px 0 0; display: flex; align-items: flex-end; justify-content: flex-end; }
-  .mini-board {
-    width: 100%; max-width: 420px; background: #fff; border-radius: 16px 16px 0 0;
-    box-shadow: 0 20px 40px -24px rgba(28,22,16,.3); overflow: hidden;
-  }
-  .mini-board .mh { padding: 12px 14px; border-bottom: 1px solid #f2eae2; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; }
-  .mini-board .mh span { color: var(--orange); font-weight: 600; font-size: 11px; }
-  .mini-board .row { display: flex; justify-content: space-between; padding: 10px 14px; font-size: 12px; border-bottom: 1px solid #f6efe8; }
-  .mini-board .row em { font-style: normal; font-size: 10px; font-weight: 700; color: #2fa363; background: #e6f8ed; padding: 2px 7px; border-radius: 999px; }
-
-  /* premium panel */
-  .premium {
-    border-radius: 26px; border: 1px solid var(--line); overflow: hidden;
-    background: radial-gradient(700px 380px at 88% 8%, #ffe2d0, transparent 62%), linear-gradient(150deg, var(--peach-2), var(--peach));
-    display: grid; grid-template-columns: 1.05fr .95fr; gap: 42px; padding: 58px; align-items: center;
-  }
-  .premium h2 { font-size: clamp(25px, 3vw, 34px); line-height: 1.16; margin-bottom: 14px; font-weight: 700; }
-  .premium h2 em { font-style: normal; color: var(--orange); }
-  .premium > div > p { color: var(--ink-soft); font-size: 15px; line-height: 1.7; margin-bottom: 28px; max-width: 430px; }
-  .check-list { display: grid; gap: 18px; }
-  .check { display: flex; gap: 15px; align-items: flex-start; transition: transform .3s cubic-bezier(.2,.7,.3,1); }
-  .check:hover { transform: translateX(8px); }
-  .check .ic { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; background: #fff; border: 1px solid var(--line); color: var(--orange); display: flex; align-items: center; justify-content: center; }
-  .check .ic svg { width: 18px; height: 18px; }
-  .check h4 { font-size: 14.5px; margin-bottom: 4px; }
-  .check p { font-size: 12.5px; color: var(--muted); line-height: 1.6; max-width: 370px; }
-  .premium .visual { position: relative; min-height: 340px; }
-  .premium .visual .wave {
-    position: absolute; inset: 0; border-radius: 20px; overflow: hidden; background: #fff;
-    border: 1px solid #fff; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center;
-  }
-  .premium .visual svg.lines { width: 86%; height: auto; }
-  .premium .visual svg.lines path { fill: none; stroke: var(--orange); stroke-width: 2; opacity: .55; stroke-dasharray: 900; stroke-dashoffset: 900; }
-  .premium.in .visual svg.lines path { animation: drawline 2.4s ease forwards; }
-  .premium .visual svg.lines path:nth-child(2) { stroke: #ffb98f; animation-delay: .3s !important; }
-  .premium .visual svg.lines path:nth-child(3) { stroke: #ffd9c2; animation-delay: .6s !important; }
-  @keyframes drawline { to { stroke-dashoffset: 0; } }
-  .premium .visual .float-note {
-    position: absolute; bottom: 22px; left: -14px; background: #fff; border-radius: 14px;
-    box-shadow: var(--shadow); border: 1px solid #fff; padding: 12px 16px; display: flex; gap: 11px; align-items: center;
-    animation: bob 4.6s ease-in-out infinite alternate;
-  }
-  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-12px); } }
-  .premium .visual .float-note .ic { width: 30px; height: 30px; border-radius: 9px; background: var(--orange-soft); color: var(--orange); display: flex; align-items: center; justify-content: center; }
-  .premium .visual .float-note .ic svg { width: 15px; height: 15px; }
-  .premium .visual .float-note b { font-family: "Sora"; font-size: 12px; display: block; }
-  .premium .visual .float-note span { font-size: 10.5px; color: var(--muted); }
-
-  /* stats */
-  .band { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-  .band .cell { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 24px; text-align: center; transition: transform .3s, box-shadow .3s; }
-  .band .cell:hover { transform: translateY(-6px); box-shadow: var(--shadow); }
-  .band .cell h4 { font-size: 34px; font-weight: 800; color: var(--orange); margin-bottom: 6px; }
-  .band .cell p { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
-
-  /* trio */
-  .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .tcard {
-    border-radius: var(--radius); padding: 32px 28px; min-height: 210px; display: flex; flex-direction: column; justify-content: flex-end;
-    background: var(--peach-3); border: 1px solid var(--line); position: relative; overflow: hidden;
-    transition: transform .35s cubic-bezier(.2,.7,.3,1), box-shadow .35s;
-  }
-  .tcard:hover { transform: translateY(-8px); box-shadow: var(--shadow); }
-  .tcard::before { content: ""; position: absolute; top: -60px; right: -60px; width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle, rgba(255,106,43,.14), transparent 70%); transition: transform .5s; }
-  .tcard:hover::before { transform: scale(1.5); }
-  .tcard.dark { background: var(--ink); border-color: var(--ink); color: #fff; }
-  .tcard.dark p { color: #c9beb4; }
-  .tcard h3 { font-size: 19px; line-height: 1.26; margin-bottom: 10px; }
-  .tcard h3 em { font-style: normal; color: var(--orange); }
-  .tcard p { font-size: 13px; color: var(--ink-soft); line-height: 1.65; }
-
-  /* steps */
-  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; counter-reset: step; }
-  .step { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 28px 24px; transition: transform .35s cubic-bezier(.2,.7,.3,1), box-shadow .35s; }
-  .step:hover { transform: translateY(-8px); box-shadow: var(--shadow); }
-  .step::before { counter-increment: step; content: "0" counter(step); font-family: "Sora"; font-weight: 800; font-size: 12.5px; color: var(--orange); background: var(--orange-soft); border-radius: 9px; padding: 6px 12px; display: inline-block; }
-  .step h3 { font-size: 16px; margin: 15px 0 7px; }
-  .step p { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
-
-  /* CTA */
-  .cta-banner { border-radius: 26px; background: var(--ink); color: #fff; padding: 64px 56px; text-align: center; position: relative; overflow: hidden; }
-  .cta-banner .orb { position: absolute; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(255,106,43,.4), transparent 65%); top: -150px; right: -110px; animation: drift 9s ease-in-out infinite alternate; }
-  .cta-banner .orb.two { top: auto; right: auto; bottom: -170px; left: -110px; animation-delay: 3s; }
-  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(-34px, 24px) scale(1.1); } }
-  .cta-banner h2 { font-size: clamp(26px, 3.4vw, 40px); line-height: 1.1; margin-bottom: 14px; position: relative; }
-  .cta-banner h2 em { font-style: normal; color: var(--orange); }
-  .cta-banner p { color: #c9beb4; font-size: 15.5px; max-width: 470px; margin: 0 auto 30px; position: relative; }
-  .cta-banner .btn { position: relative; }
-
-  /* contact */
-  .contact-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: 46px; }
-  form.contact { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 34px; display: grid; gap: 16px; box-shadow: var(--shadow); }
-  form.contact .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); display: grid; gap: 7px; }
-  input, select, textarea {
-    font-family: "Inter"; font-size: 14px; color: var(--ink); background: #fbf7f3;
-    border: 1.5px solid transparent; border-radius: 12px; padding: 13px 15px; outline: none;
-    transition: border-color .25s, background .25s, transform .2s; width: 100%;
-  }
-  input:focus, select:focus, textarea:focus { border-color: var(--orange); background: #fff; transform: translateY(-2px); }
-  .form-note { font-size: 13.5px; line-height: 1.5; min-height: 1.4em; }
-  .form-note.ok { color: #1f7a4d; }
-  .form-note.err { color: #b42318; }
-  .hp { position: absolute; left: -9999px; opacity: 0; height: 0; width: 0; overflow: hidden; }
-  .contact-side h3 { font-size: 19px; margin-bottom: 14px; }
-  .contact-side > p { color: var(--ink-soft); font-size: 14.5px; line-height: 1.75; margin-bottom: 24px; }
-  .contact-side .fact { display: flex; gap: 15px; padding: 14px 0; border-top: 1px solid var(--line); font-size: 14px; }
-  .contact-side .fact b { min-width: 100px; color: var(--muted); font-weight: 500; }
-
-  footer { padding: 40px 0 56px; border-top: 1px solid var(--line); background: #fff; }
-  footer .wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
-  footer p, footer a { font-size: 13px; color: var(--muted); }
-  footer a:hover { color: var(--orange); }
-  footer .right { margin-left: auto; display: flex; gap: 22px; }
+  .nav, main, footer, .wa-float { zoom: var(--fit, 1); }
+  .nav-cta { display: flex; align-items: center; gap: 10px; }
+  .wa-icon { width: 44px; height: 44px; border-radius: 50%; background: #25d366; color: #fff; display: grid; place-items: center; transition: background .2s, transform .2s; }
+  .wa-icon:hover { background: #1ebe5b; transform: translateY(-1px); }
+  .wa-icon svg { width: 22px; height: 22px; }
 
   @media (max-width: 1080px) {
-    .hero-grid { grid-template-columns: 1fr; gap: 36px; }
-    .dots, .curve-arrow { display: none; }
-    .hero p.lede { max-width: none; }
-    .hero-visual { max-width: 780px; margin: 0 auto; }
-    .prod-promo { grid-template-columns: 1fr; }
-    .prod-promo .shot { padding: 0 28px 0 44px; }
+    .nav .links { display: none; }
+    .nav .wrap { justify-content: space-between; }
+    .head2, .case, .why, .band .wrap { grid-template-columns: 1fr; }
+    .svc4, .tiles, .tline, .points { grid-template-columns: 1fr 1fr; }
+    .tline::before { display: none; }
+    .feats { grid-template-columns: 1fr 1fr; row-gap: 16px; }
+    .feats div:nth-child(3) { padding-left: 0; border-left: 0; }
+    .vlabels { display: none; }
+    .why .txt { padding: 56px 32px; }
+    .why .pic { min-height: 300px; }
+    .fgrid { grid-template-columns: 1fr 1fr; }
+    .devices { padding-right: 90px; }
   }
-  @media (max-width: 940px) {
-    .hero { padding: 110px 0 52px; }
-      .premium, .contact-grid, .prod-promo { grid-template-columns: 1fr; }
-    .chips, .band, .steps, .wwd { grid-template-columns: 1fr 1fr; }
-    .trio { grid-template-columns: 1fr; }
-    nav.site .links { display: none; }
-    .premium { padding: 36px 26px; }
-  }
-  @media (max-width: 720px) {
-    /* stack devices: browser on top, phone beneath aligned right */
-    .hero-visual { grid-template-columns: 1fr; gap: 22px; }
-    .browser, .phone-wrap { grid-column: 1; }
-    .phone-wrap { width: 100%; justify-content: flex-end; }
-    .phone { width: 190px; }
-    .screen { height: 360px; }
-    .chips, .band, .steps, .wwd, form.contact .two { grid-template-columns: 1fr; }
-    .mini-hero { grid-template-columns: 1fr; }
-    .mini-img { height: 120px; }
-    .mini-cards { grid-template-columns: 1fr 1fr; }
-    .bbody { padding: 16px 16px 18px; }
-    .mini-hero h6 { font-size: 18px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: .01s !important; transition-duration: .01s !important; }
+  @media (max-width: 640px) {
+    .wrap { margin: 0 18px; }
+    .brand small { display: none; }
+    .nav .btn { padding: 10px 16px; white-space: nowrap; }
+    .nav-cta { gap: 8px; }
+    .wa-icon { width: 40px; height: 40px; }
+    .wa-float span { display: none; }
+    .wa-float { padding: 14px; right: 16px; bottom: 16px; }
+    section { padding: 64px 0; }
+    .svc4, .tiles, .tline, .points, .metrics, .fgrid, .feats, .talk .two { grid-template-columns: 1fr; }
+    .feats div { padding: 0; border-left: 0; }
+    .metrics div + div { padding-left: 0; border-left: 0; margin-top: 14px; }
+    .hero-foot { flex-direction: column; align-items: stretch; }
+    .devices { padding-right: 0; }
+    .phone, .wa-toast { display: none; }
+    .site .shero { grid-template-columns: 1fr; }
+    .flegal { flex-direction: column; }
   }
 </style>
 </head>
 <body>
 
-<div id="loader"><div class="mark"><span>TEZVO</span><span class="o">·</span><span>TECH</span></div></div>
-<div id="progress"></div>
-<div id="cursor-dot"></div>
-<div id="cursor-ring"></div>
-
-<header class="top" id="topbar">
+<header class="nav">
   <div class="wrap">
-    <nav class="site">
-      <a href="#home" class="logo" aria-label="TEZVO TECH">
-        <img class="logo-mark" src="logo-mark.svg" alt="" />
-        <span class="logo-type">
-          <span class="logo-name">TEZVO <em>TECH</em></span>
-          <span class="logo-tag">Smart Digital. Real Growth<i>.</i></span>
-        </span>
-      </a>
-      <div class="links">
-        <a href="products-v2.html">Products</a>
-        <a href="#services">Services
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
-        </a>
-        <a href="#why">Why Us</a>
-        <a href="#process">Process</a>
-        <a href="#contact">Contact</a>
+    <a class="brand" href="#top" aria-label="TEZVO TECH home">
+      <img src="logo-mark-blue.svg" alt="" />
+      <span><b>TEZVO TECH</b><small>Smart Digital. Real Growth.</small></span>
+    </a>
+    <nav class="links" aria-label="Primary">
+      <a href="#services">What we do</a>
+      <a href="#industries">Industries</a>
+      <div class="dd">
+        <button class="dd-btn" type="button" aria-haspopup="true" aria-expanded="false">Products <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="dd-menu" role="menu">
+          <a href="tezvoflow.html" role="menuitem"><span class="dd-ic">T</span><span><b>TEZVOFlow (FSM)</b><small>Field service management with WhatsApp booking</small></span></a>
+        </div>
       </div>
-      <a class="btn btn-primary magnetic" href="#contact">Book a call <span class="arr">→</span></a>
+      <a href="#why">About</a>
     </nav>
+    <div class="nav-cta">
+      <a class="wa-icon" href="https://wa.me/919072306065?text=Hi%20TEZVO%20TECH%2C%20I%27d%20like%20to%20discuss%20a%20project." target="_blank" rel="noopener" aria-label="Chat on WhatsApp" title="Chat on WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg>
+      </a>
+      <button class="btn" type="button" data-talk>Let's talk <span class="arrow">→</span></button>
+    </div>
   </div>
 </header>
 
-<!-- ================= HERO ================= -->
-<section class="hero" id="home">
+<main id="top">
+
+<!-- HERO -->
+<section class="hero" style="padding:0">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="wrap hero-inner">
+    <div class="hslides" id="hslides">
+      <div class="hslide on">
+        <p class="kick">Technology for real businesses</p>
+        <h1>We turn ambitious ideas into <em>digital products.</em></h1>
+        <p class="lede">We design and build websites, mobile apps, AI solutions and automations that help Indian businesses work smarter, serve better and grow faster.</p>
+        <div class="ctas">
+          <button class="btn" type="button" data-talk>Let's build together <span class="arrow">→</span></button>
+          <a class="btn line" href="#tezvoflow">See our work</a>
+        </div>
+      </div>
+      <div class="hslide">
+        <p class="kick">AI &amp; automation</p>
+        <h1>Automate the work that <em>slows you down.</em></h1>
+        <p class="lede">AI assistants, WhatsApp flows and workflow automation that answer customers, book appointments and remove repetitive admin — around the clock.</p>
+        <div class="ctas">
+          <button class="btn" type="button" data-talk>Plan an automation <span class="arrow">→</span></button>
+          <a class="btn line" href="#services">What we do</a>
+        </div>
+      </div>
+      <div class="hslide">
+        <p class="kick">Our product · TEZVOFlow</p>
+        <h1>Field service, <em>finally in flow.</em></h1>
+        <p class="lede">TEZVOFlow brings appointment planning, work orders, technician tracking and WhatsApp booking into one web app for service teams.</p>
+        <div class="ctas">
+          <a class="btn" href="tezvoflow.html">Explore TEZVOFlow <span class="arrow">→</span></a>
+          <button class="btn line" type="button" data-talk>Book a walkthrough</button>
+        </div>
+      </div>
+    </div>
+    <ul class="vlabels" aria-hidden="true">
+      <li>Ideas</li>
+      <li>Technology</li>
+      <li>Real impact</li>
+    </ul>
+  </div>
+  <div class="wrap hero-foot">
+    <div class="feats">
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-4.4 7-10a7 7 0 10-14 0c0 5.6 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>Hyderabad based<br>company</div>
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>Clear and transparent<br>pricing</div>
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 0116 0v4a2 2 0 01-2 2h-1v-6h3M4 12v4a2 2 0 002 2h1v-6H4"/></svg>End-to-end<br>support</div>
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V10l8-6 8 6v10"/><path d="M9 20v-6h6v6"/></svg>Built for Indian<br>businesses</div>
+    </div>
+    <div class="pager">
+      <div class="count"><b id="hcur">01</b> / 03</div>
+      <div class="ctrls">
+        <button type="button" id="hprev" aria-label="Previous slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button type="button" id="hnext" aria-label="Next slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT WE DO -->
+<section class="light" id="services">
   <div class="wrap">
-    <div class="hero-grid">
+    <div class="head2">
       <div>
-        <span class="pill-kicker fadein" style="animation-delay:.6s">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.1 6.1 20.2l1.2-6.6L2.5 9l6.6-.9L12 2z"/></svg>
-          Smart Digital. Real Growth.
-        </span>
-        <h1>
-          <span class="line"><span>Build Every</span></span>
-          <span class="line"><span class="accent">Advantage.</span></span>
-        </h1>
-        <p class="lede fadein fd-1">Premium websites, custom apps, and practical AI automation — crafted for businesses that want digital done right, without the jargon.</p>
-        <div class="cta-row fadein fd-2">
-          <a class="btn btn-primary magnetic" href="#contact">Book a free call <span class="arr">→</span></a>
-          <a class="btn btn-ghost magnetic" href="#services">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>
-            Explore services
-          </a>
-        </div>
-
-        <div class="trusted fadein fd-4">
-          <div class="lbl">Trusted by growing businesses</div>
-          <div class="logos">
-            <span class="lg lg1"><span class="lgi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.4C.6 9.3 2.6 5.5 6.2 5.5c2 0 3.3 1.1 4 2.1.7-1 2-2.1 4-2.1 3.6 0 5.6 3.8 3.5 7.1C19 16.4 12 21 12 21z"/></svg></span>smilecare</span>
-            <span class="lg lg2"><span class="lgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h7"/></svg></span>Plexora</span>
-            <span class="lg lg3"><span class="lgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 16.8 6.6 19.6l1.2-6L3.3 9.4l6.1-.8L12 3z"/></svg></span>BrightPath</span>
-            <span class="lg lg4"><span class="lgi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V5l14 14V5"/></svg></span>Nexora</span>
-          </div>
-        </div>
+        <p class="kick">What we do</p>
+        <h2>Digital solutions<br>for <em>real business growth.</em></h2>
       </div>
-
-      <!-- decorative accents -->
-      <div class="dots"></div>
-      <div class="curve-arrow">
-        <svg viewBox="0 0 100 70"><path d="M2 66 C 18 62, 42 54, 60 30 M60 30 l -4 15 M60 30 l 14 6"/></svg>
-      </div>
-
-      <div class="hero-visual" id="parallax">
-        <div class="stage"></div>
-        <!-- browser: sample client website -->
-        <div class="browser dv" data-depth="5">
-          <div class="bchrome">
-            <i></i><i></i><i></i>
-            <span class="url">smilecaredental.in — built by TEZVO TECH</span>
-          </div>
-          <div class="bbody">
-            <div class="mini-nav">
-              <span class="mdot"></span><b>SmileCare Dental</b>
-              <span class="mlinks"><i></i><i></i></span>
-              <span class="mbtn">Book visit</span>
-            </div>
-            <div class="mini-hero">
-              <div>
-                <h6>Book your dental visit in <em>30 seconds.</em></h6>
-                <p>Pick a slot, pay online, and get automatic reminders — no phone calls, no waiting.</p>
-                <span class="mcta">Book appointment →</span>
-              </div>
-              <div class="mini-img">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.8 5.2 9.4 4.5 8 4.5c-2.5 0-4 2-4 4.7 0 3.4 1.4 5.6 2.2 8.1.5 1.5.8 2.7 1.9 2.7 1.2 0 1.4-1.6 1.7-3.2.3-1.5.7-2.8 2.2-2.8s1.9 1.3 2.2 2.8c.3 1.6.5 3.2 1.7 3.2 1.1 0 1.4-1.2 1.9-2.7.8-2.5 2.2-4.7 2.2-8.1 0-2.7-1.5-4.7-4-4.7-1.4 0-2.8.7-4 2z"/></svg>
-              </div>
-            </div>
-            <div class="mini-cards">
-              <div class="mini-card">
-                <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
-                <b>Cleaning</b><span>Professional cleaning</span>
-              </div>
-              <div class="mini-card">
-                <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-6-4.2-6-9a6 6 0 1112 0c0 4.8-6 9-6 9z"/><circle cx="12" cy="12" r="2"/></svg></div>
-                <b>Implants</b><span>Nobel Biocare implants</span>
-              </div>
-              <div class="mini-card">
-                <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="12" r="3"/><path d="M9 12h6"/></svg></div>
-                <b>Braces</b><span>Clear &amp; metal braces</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- phone: same clinic's patient app -->
-        <div class="phone-wrap">
-          <div class="phone-glow"></div>
-          <div class="ticks"><i></i><i></i><i></i></div>
-          <div class="phone dv" data-depth="8">
-            <span class="side s1"></span><span class="side s2"></span><span class="side s3"></span>
-            <div class="notch"></div>
-            <div class="screen">
-              <div class="status">
-                <span>9:41</span>
-                <span class="bars"><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i><i style="height:11px"></i></span>
-              </div>
-              <div class="app-head">
-                <h6>SmileCare Patient App</h6>
-                <p>AI assistant · online 24/7</p>
-              </div>
-              <div class="app-body">
-                <div class="bubble in" style="animation-delay:1.6s">Any slot for a cleaning this Saturday?</div>
-                <div class="bubble out" style="animation-delay:2.5s">Yes — 11:30 AM or 4:00 PM with Dr. Rao. Shall I book 11:30?</div>
-                <div class="bubble in" style="animation-delay:3.4s">11:30 works.</div>
-                <div class="appt" style="animation-delay:4.2s">
-                  <span class="ok">✓</span>
-                  <div><b>Confirmed · Sat 11:30 AM</b><span>Dr. Rao · Reminder set</span></div>
-                </div>
-                <div class="typing"><i></i><i></i><i></i></div>
-              </div>
-              <div class="app-tab">
-                <span class="tb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>Home</span>
-                <span class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Appointments</span>
-                <span class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>Payments</span>
-                <span class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>Profile</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- feature chips -->
-    <div class="chips">
-      <div class="chip fadein fd-2">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c3 5 3 9 0 14-3-5-3-9 0-14z"/><path d="M9 12H5l-3 3M15 12h4l3 3M9 20l3-3 3 3"/></svg></div>
-        <div><h5>Fast Websites</h5><p>Speed, SEO &amp; conversion built-in</p></div>
-      </div>
-      <div class="chip fadein fd-2">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2.6"/><path d="M11 18h2"/></svg></div>
-        <div><h5>Cross-Platform Apps</h5><p>iOS, Android &amp; internal tools</p></div>
-      </div>
-      <div class="chip fadein fd-3">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5 9.8 12.2 3.5 10l6.3-1.7L12 2z"/></svg></div>
-        <div><h5>AI Automation</h5><p>Assistants working 24/7</p></div>
-      </div>
-      <div class="chip fadein fd-3">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3.5v5c0 5-3.5 8.2-8 9.5-4.5-1.3-8-4.5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg></div>
-        <div><h5>Honest Scope</h5><p>Clear pricing, no surprises</p></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= WHAT WE DO ================= -->
-<div class="white-top">
-<section id="services" style="padding-top: 40px; padding-bottom: 70px;">
-  <div class="wrap">
-    <div class="sec-head rv">
-      <span class="eyebrow">What we do</span>
-      <h2>Digital solutions that move your business forward</h2>
-      <div class="rule"></div>
-    </div>
-    <div class="wwd">
-      <div class="item rv rv-d1">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="15" rx="2.6"/><path d="M2 9h20M8 22h8"/></svg></div>
-        <div><h4>Web Development</h4><p>Modern, fast &amp; SEO-ready websites</p></div>
-      </div>
-      <div class="item rv rv-d2">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2.6"/><path d="M11 18h2"/></svg></div>
-        <div><h4>Mobile Apps</h4><p>Native &amp; cross-platform apps</p></div>
-      </div>
-      <div class="item rv rv-d3">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M19.1 4.9l-2.8 2.8M7.7 16.3l-2.8 2.8"/></svg></div>
-        <div><h4>AI &amp; Automation</h4><p>Smarter workflows, less manual work</p></div>
-      </div>
-      <div class="item rv rv-d4">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6h7M6 8.5v7M18 8.5v7M8.5 18h7"/></svg></div>
-        <div><h4>Integration</h4><p>APIs, systems &amp; third-party tools</p></div>
-      </div>
-    </div>
-    <div class="prod-promo rv">
-      <div class="copy">
-        <span class="eyebrow" style="justify-content:flex-start">Products</span>
-        <h3>Meet TEZVO<em>Flow</em></h3>
-        <p>Field service management for teams that work on the road — dispatch, live GPS, technician app, and same-day invoicing.</p>
-        <a class="btn btn-primary magnetic" href="products-v2.html">See TEZVOFlow wireframes <span class="arr">→</span></a>
-      </div>
-      <div class="shot">
-        <div class="mini-board">
-          <div class="mh">Dispatch · today <span>Live</span></div>
-          <div class="row"><span>AC-1842 · Split AC leak</span><em>On site</em></div>
-          <div class="row"><span>PL-0901 · Blocked drain</span><em>En route</em></div>
-          <div class="row"><span>EL-2210 · Panel trip</span><em style="color:#d97706;background:#fff4e5">Queued</em></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= WHY US ================= -->
-<section id="why" style="padding-top: 30px;">
-  <div class="wrap">
-    <div class="premium rv" id="premiumPanel">
       <div>
-        <span class="eyebrow">Why TEZVO</span>
-        <h2>Engineered for <em>growth.</em></h2>
-        <p>Sleek builds. Powerful automation. Made to elevate every customer moment.</p>
-        <div class="check-list">
-          <div class="check">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
-            <div><h4>Discovery-First</h4><p>We map your goals and bottlenecks before proposing anything — strategy is included, not extra.</p></div>
+        <p>From customer-facing websites to AI-powered automations, we build practical solutions around your business goals — simple, scalable and effective.</p>
+        <a class="more" href="#services-grid">Explore our services <span class="arrow">→</span></a>
+      </div>
+    </div>
+    <div class="svc4" id="services-grid">
+      <a class="svc" href="#" data-talk data-need="Website">
+        <div class="img"><img src="img/tezvo-svc-digital.png" alt="" /><span class="no">01</span></div>
+        <div class="b"><h3>Digital Products</h3><p>Modern websites and platforms that bring customers and businesses together.</p><span class="go">→</span></div>
+      </a>
+      <a class="svc" href="#" data-talk data-need="AI / Automation">
+        <div class="img"><img src="img/tezvo-svc-ai.png" alt="" /><span class="no">02</span></div>
+        <div class="b"><h3>AI &amp; Automation</h3><p>Automate repetitive work with AI assistants and smarter workflows.</p><span class="go">→</span></div>
+      </a>
+      <a class="svc" href="#" data-talk data-need="Mobile app">
+        <div class="img"><img src="img/tezvo-svc-mobile.png" alt="" /><span class="no">03</span></div>
+        <div class="b"><h3>Mobile &amp; Web Apps</h3><p>Customer and internal apps tailored to how your business works.</p><span class="go">→</span></div>
+      </a>
+      <a class="svc" href="#" data-talk data-need="Not sure yet">
+        <div class="img"><img src="img/tezvo-svc-data.png" alt="" /><span class="no">04</span></div>
+        <div class="b"><h3>Data &amp; Integrations</h3><p>Connect your tools, payments and WhatsApp for seamless operations.</p><span class="go">→</span></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- TEZVOFLOW SHOWCASE -->
+<section class="dark" id="tezvoflow">
+  <div class="wrap case">
+    <div>
+      <p class="kick">Our product</p>
+      <h2>TEZVOFlow<br>Field Service Platform</h2>
+      <span class="pill">Admin web app + Technician app</span>
+      <p class="body">Plan appointments, manage work orders and take bookings on WhatsApp from one admin dashboard — while technicians get their day, directions and job closeout on their phone.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a class="btn" href="tezvoflow.html">Explore TEZVOFlow <span class="arrow">→</span></a>
+        <button class="btn line" type="button" data-talk data-need="TEZVOFlow / Field service">Book a walkthrough</button>
+      </div>
+      <div class="metrics">
+        <div><small>Bookings<br>straight from</small><b>WhatsApp</b></div>
+        <div><small>Appointment<br>planner</small><b>Live</b></div>
+        <div><small>Works on<br>any device</small><b>Web + App</b></div>
+      </div>
+    </div>
+    <div class="devices" aria-label="TEZVOFlow admin web app and technician mobile app">
+      <div class="laptop">
+        <div class="screen">
+          <div class="fa">
+            <div class="fa-side">
+              <div class="fa-logo"><i>T</i>TEZVOFlow</div>
+              <span>Dashboard</span>
+              <span class="on">Planner</span>
+              <span>Work orders</span>
+              <span>WhatsApp <em>3</em></span>
+              <span>Technicians</span>
+              <span>Customers</span>
+              <span>Invoices</span>
+            </div>
+            <div class="fa-main">
+              <div class="fa-top"><b>Planner</b><small>Tue, 22 Sep</small><span class="srch"></span><span class="new">+ New job</span></div>
+              <div class="fa-kpi">
+                <div><small>Jobs today</small><b>18</b></div>
+                <div><small>In progress</small><b>6</b></div>
+                <div><small>Completed</small><b>9 <i>50%</i></b></div>
+                <div><small>WhatsApp bookings</small><b>5</b></div>
+              </div>
+              <div class="fa-plan">
+                <div class="fa-hours"><span></span><div><span>9</span><span>10</span><span>11</span><span>12</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div></div>
+                <div class="fa-row"><span><i style="background:#2563eb">AK</i>Anika</span><div class="fa-track">
+                  <div class="job g" style="left:0;width:24%"><b>AC service</b>Banjara Hills</div>
+                  <div class="job b" style="left:30%;width:26%"><b>Leak check</b>Jubilee Hills</div>
+                  <div class="job w" style="left:64%;width:24%"><b>AMC visit</b>via WhatsApp</div>
+                </div></div>
+                <div class="fa-row"><span><i style="background:#16a34a">RV</i>Ravi</span><div class="fa-track">
+                  <div class="job g" style="left:6%;width:30%"><b>Geyser install</b>Madhapur</div>
+                  <div class="job o" style="left:44%;width:22%"><b>Wiring fault</b>Kondapur</div>
+                </div></div>
+                <div class="fa-row"><span><i style="background:#f59e0b">SM</i>Sameer</span><div class="fa-track">
+                  <div class="job b" style="left:14%;width:28%"><b>RO service</b>Gachibowli</div>
+                  <div class="job w" style="left:50%;width:22%"><b>Fan repair</b>via WhatsApp</div>
+                  <div class="job b" style="left:78%;width:20%"><b>Inspection</b>Kukatpally</div>
+                </div></div>
+                <div class="fa-row"><span><i style="background:#7c3aed">PR</i>Priya</span><div class="fa-track">
+                  <div class="job o" style="left:2%;width:22%"><b>Fridge repair</b>Ameerpet</div>
+                  <div class="job b" style="left:36%;width:30%"><b>AC install</b>Hitech City</div>
+                </div></div>
+                <div class="fa-row"><span><i style="background:#0891b2">KR</i>Kiran</span><div class="fa-track">
+                  <div class="job g" style="left:10%;width:24%"><b>Chimney clean</b>Manikonda</div>
+                  <div class="job w" style="left:58%;width:26%"><b>Washer repair</b>via WhatsApp</div>
+                </div></div>
+                <div class="fa-now"></div>
+              </div>
+            </div>
           </div>
-          <div class="check">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
-            <div><h4>Honest Scope</h4><p>We'll tell you what not to build. Clear pricing, clear timeline, no surprise invoices.</p></div>
+        </div>
+        <div class="base"></div>
+      </div>
+      <div class="wa-toast">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg></span>
+        <div><b>New WhatsApp booking</b><span>“Can you schedule our AMC visit at 3pm today?”</span><br><span class="ok">✓ Booked · Anika · 3:00 PM</span></div>
+      </div>
+      <div class="phone">
+        <div class="scr">
+          <div class="ft-head"><div class="notch"></div><small>Good morning,</small><h5>Anika · 4 jobs today</h5></div>
+          <div class="ft-next">
+            <span class="tag">NEXT JOB · 12:00 PM</span>
+            <b>Leak check — Mr. Varma</b>
+            <span>Road No. 36, Jubilee Hills</span>
+            <div class="acts"><i>Navigate</i><i class="go">Start job</i></div>
           </div>
-          <div class="check">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M23 21v-2a4 4 0 00-3-3.87"/></svg></div>
-            <div><h4>Ongoing Partnership</h4><p>Launch is the beginning — we stay to measure, improve, and automate further as you grow.</p></div>
+          <div class="ft-list">
+            <h6>Later today</h6>
+            <div class="ft-job"><time>3:00</time><div><b>AMC visit · Mrs. Reddy</b><span>Film Nagar</span><br><em class="w">Booked on WhatsApp</em></div></div>
+            <div class="ft-job"><time>5:00</time><div><b>AC service · Mr. Khan</b><span>Banjara Hills</span><br><em class="s">Scheduled</em></div></div>
           </div>
-        </div>
-      </div>
-      <div class="visual">
-        <div class="wave">
-          <svg class="lines" viewBox="0 0 400 220">
-            <path d="M10 180 C 80 170, 120 60, 200 80 S 330 30, 390 40" />
-            <path d="M10 195 C 90 190, 130 100, 210 115 S 340 70, 390 80" />
-            <path d="M10 208 C 100 205, 140 140, 220 150 S 350 110, 390 118" />
-          </svg>
-        </div>
-        <div class="float-note">
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
-          <div><b>Revenue trending up</b><span>90 days after launch</span></div>
+          <div class="ft-tabs"><span class="on">Jobs</span><span>Map</span><span>Chat</span><span>Profile</span></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= STATS ================= -->
-<section style="padding-top: 20px;">
+<!-- INDUSTRIES -->
+<section class="white" id="industries">
   <div class="wrap">
-    <div class="band">
-      <div class="cell rv rv-d1"><h4 data-count="3.2" data-prefix="+" data-suffix="×">+0×</h4><p>average lead growth after a conversion-focused relaunch</p></div>
-      <div class="cell rv rv-d2"><h4 data-count="14" data-prefix="−" data-suffix="h">−0h</h4><p>manual admin removed per week with automation</p></div>
-      <div class="cell rv rv-d3"><h4 data-count="6" data-suffix="wk">0wk</h4><p>typical time from discovery to first launch</p></div>
-      <div class="cell rv rv-d4"><h4 data-count="24" data-suffix="/7">0/7</h4><p>AI assistants responding while you sleep</p></div>
+    <div class="head2">
+      <div>
+        <p class="kick">Industries</p>
+        <h2>Built for businesses<br>across India.</h2>
+      </div>
+      <div>
+        <p>We work with small and medium businesses across industries, helping them digitise operations and grow with the right technology.</p>
+        <a class="more" href="#" data-talk>Talk to us about your industry <span class="arrow">→</span></a>
+      </div>
+    </div>
+    <div class="tiles">
+      <a class="tile" href="#" data-talk><img src="img/tezvo-ind-health.png" alt="" /><span>Healthcare<br>&amp; Clinics <span class="arrow" style="position:static">→</span></span></a>
+      <a class="tile" href="#" data-talk><img src="img/tezvo-ind-food.png" alt="" /><span>Restaurants<br>&amp; Food Services <span class="arrow" style="position:static">→</span></span></a>
+      <a class="tile" href="#" data-talk><img src="img/tezvo-ind-retail.png" alt="" /><span>Retail<br>&amp; E-commerce <span class="arrow" style="position:static">→</span></span></a>
+      <a class="tile" href="#" data-talk><img src="img/tezvo-ind-edu.png" alt="" /><span>Education<br>&amp; Training <span class="arrow" style="position:static">→</span></span></a>
     </div>
   </div>
 </section>
 
-<!-- ================= TRIO ================= -->
-<section style="padding-top: 26px;">
+<!-- WHY TEZVO -->
+<section class="why" id="why" style="padding:0">
+  <div class="pic"><img src="img/tezvo-why-team.png" alt="Team meeting in a glass-walled office" /></div>
+  <div class="txt">
+    <p class="kick">Why TEZVO</p>
+    <h2>Built around your business, not our technology.</h2>
+    <p class="body">We combine business understanding, technology expertise and a practical approach to deliver solutions that create real value.</p>
+    <div class="points">
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Business-first<br>approach</div>
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Clear pricing<br>&amp; communication</div>
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 0116 0v4a2 2 0 01-2 2h-1v-6h3M4 12v4a2 2 0 002 2h1v-6H4"/></svg>Dedicated<br>support</div>
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-4.4 7-10a7 7 0 10-14 0c0 5.6 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>Hyderabad<br>based team</div>
+    </div>
+    <button class="more" type="button" data-talk style="background:none;border:0;cursor:pointer;padding:0">Talk to our team <span class="arrow">→</span></button>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="light" id="process">
   <div class="wrap">
-    <div class="trio">
-      <div class="tcard rv rv-d1">
-        <h3>Websites that <em>convert.</em></h3>
-        <p>Powerful first impressions — fast, clean, and designed to turn visitors into enquiries.</p>
+    <div class="head2">
+      <div>
+        <p class="kick">Our process</p>
+        <h2>A simple path<br>from idea to impact.</h2>
       </div>
-      <div class="tcard dark rv rv-d2">
-        <h3>Smart &amp; seamless <em>automation.</em></h3>
-        <p>Modern AI that handles leads, follow-ups, and admin — quietly, around the clock.</p>
+      <div>
+        <p>We keep it collaborative, transparent and focused on real business outcomes.</p>
+        <a class="more" href="#process-steps">How we work <span class="arrow">→</span></a>
       </div>
-      <div class="tcard rv rv-d3">
-        <h3>Sleek. Minimal. <em>Premium.</em></h3>
-        <p>Apps and portals your customers actually enjoy using — on any device.</p>
+    </div>
+    <div class="tline" id="process-steps">
+      <div class="tstep">
+        <div class="node"><span class="num">01</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span></div>
+        <h3>Discover</h3><p>Understand your business goals and challenges.</p>
+      </div>
+      <div class="tstep">
+        <div class="node"><span class="num">02</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span></div>
+        <h3>Plan</h3><p>Recommend the right solution with clear estimates.</p>
+      </div>
+      <div class="tstep">
+        <div class="node"><span class="num">03</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></span></div>
+        <h3>Build</h3><p>Develop and launch with regular updates.</p>
+      </div>
+      <div class="tstep">
+        <div class="node"><span class="num">04</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span></div>
+        <h3>Grow</h3><p>Ongoing support and continuous improvements.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= PROCESS ================= -->
-<section id="process">
+<!-- CTA BAND -->
+<section class="band" style="padding:0">
   <div class="wrap">
-    <div class="sec-head rv">
-      <span class="eyebrow">How we work</span>
-      <h2>Start with clarity, <em>not a big build.</em></h2>
-      <div class="rule"></div>
-      <p>You'll always know what's being built, why it matters, and what comes next.</p>
+    <div>
+      <p class="kick" style="color:#9ec2ff">Let's build what's next</p>
+      <h2>Ready to grow your business with technology?</h2>
     </div>
-    <div class="steps">
-      <div class="step rv rv-d1"><h3>Discover</h3><p>Goals, customers, and bottlenecks — one focused call.</p></div>
-      <div class="step rv rv-d2"><h3>Recommend</h3><p>What to build, what to skip, and why.</p></div>
-      <div class="step rv rv-d3"><h3>Build</h3><p>Design → develop → demo, in short iterations.</p></div>
-      <div class="step rv rv-d4"><h3>Grow</h3><p>Launch, measure, and automate further.</p></div>
-    </div>
+    <p>Get a free consultation and a clear plan for your business.</p>
+    <button class="btn" type="button" data-talk>Let's talk <span class="arrow">→</span></button>
   </div>
 </section>
 
-<!-- ================= CTA ================= -->
-<section style="padding-top: 10px;">
-  <div class="wrap">
-    <div class="cta-banner rv">
-      <div class="orb"></div><div class="orb two"></div>
-      <h2>Ready to build with <em>TEZVO?</em></h2>
-      <p>Tell us where your business is today. We'll show you the smartest next step — in plain language.</p>
-      <a class="btn btn-primary magnetic" href="#contact">Book a free discovery call <span class="arr">→</span></a>
-    </div>
-  </div>
-</section>
-
-<!-- ================= CONTACT ================= -->
-<section id="contact" style="padding-top: 40px;">
-  <div class="wrap">
-    <div class="sec-head rv">
-      <span class="eyebrow">Contact</span>
-      <h2>Let's map your <em>next digital step.</em></h2>
-      <div class="rule"></div>
-    </div>
-    <div class="contact-grid">
-      <form class="contact rv" id="inquiry-form">
-        <div class="two">
-          <label>Name <input name="name" type="text" placeholder="Your name" required autocomplete="name" /></label>
-          <label>Email <input name="email" type="email" placeholder="you@company.com" required autocomplete="email" /></label>
-        </div>
-        <div class="two">
-          <label>Company <input name="company" type="text" placeholder="Company name" autocomplete="organization" /></label>
-          <label>What do you need?
-            <select name="need">
-              <option>Website</option><option>Mobile app</option>
-              <option>TEZVOFlow / Field service</option>
-              <option>AI / Automation</option><option>Digital strategy</option>
-              <option>Not sure yet</option>
-            </select>
-          </label>
-        </div>
-        <label>Message <textarea name="message" placeholder="Tell us about your business and your biggest bottleneck…" required></textarea></label>
-        <label class="hp" aria-hidden="true">Leave blank <input name="company_website" tabindex="-1" autocomplete="off" /></label>
-        <div><button class="btn btn-primary magnetic" type="submit" id="inquiry-submit">Book my discovery call <span class="arr">→</span></button></div>
-        <p class="form-note" id="inquiry-note" role="status"></p>
-      </form>
-      <div class="contact-side rv rv-d2">
-        <h3>What happens next</h3>
-        <p>We review your message, schedule a short call, and send a clear recommendation — usually within one business day.</p>
-        <div class="fact"><b>Email</b><span>support@tezvo-tech.com</span></div>
-        <div class="fact"><b>Location</b><span>Hyderabad, India</span></div>
-        <div class="fact"><b>Response</b><span>Within 1 business day</span></div>
-      </div>
-    </div>
-  </div>
-</section>
+</main>
 
 <footer>
   <div class="wrap">
-    <a href="#home" class="logo" aria-label="TEZVO TECH">
-      <img class="logo-mark" src="logo-mark.svg" alt="" />
-      <span class="logo-type">
-        <span class="logo-name">TEZVO <em>TECH</em></span>
-        <span class="logo-tag">Smart Digital. Real Growth<i>.</i></span>
-      </span>
-    </a>
-    <p>© 2026 TEZVO TECH PRIVATE LIMITED · Hyderabad, India</p>
-    <div class="right">
-      <a href="products-v2.html">Products</a>
-      <a href="#services">Services</a>
-      <a href="#why">Why Us</a>
-      <a href="#process">Process</a>
-      <a href="#contact">Contact</a>
+    <div class="fgrid">
+      <div>
+        <a class="brand" href="#top">
+          <img src="logo-mark-blue.svg" alt="" />
+          <span><b>TEZVO TECH</b><small>Smart Digital. Real Growth.</small></span>
+        </a>
+        <p class="about">A Hyderabad based technology company building digital products, AI solutions and automations for real businesses.</p>
+      </div>
+      <div class="col">
+        <h5>What we do</h5>
+        <a href="#services">Websites &amp; Platforms</a>
+        <a href="#services">Mobile Apps</a>
+        <a href="#services">AI &amp; Automation</a>
+        <a href="#services">Integrations &amp; Data</a>
+      </div>
+      <div class="col">
+        <h5>Industries</h5>
+        <a href="#industries">Healthcare</a>
+        <a href="#industries">Restaurants</a>
+        <a href="#industries">Retail &amp; E-commerce</a>
+        <a href="#industries">Education &amp; Training</a>
+      </div>
+      <div class="col">
+        <h5>Company</h5>
+        <a href="#why">About</a>
+        <a href="tezvoflow.html">TEZVOFlow</a>
+        <a href="#" data-talk>Contact</a>
+      </div>
+      <div class="fcontact">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-4.4 7-10a7 7 0 10-14 0c0 5.6 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg><span>Hyderabad, India<small>Serving businesses across India</small></span></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><a href="mailto:support@tezvo-tech.com">support@tezvo-tech.com</a></div>
+        <div><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg><a href="https://wa.me/919072306065" target="_blank" rel="noopener">WhatsApp +91 90723 06065</a></div>
+      </div>
+    </div>
+    <div class="flegal">
+      <span>© 2026 TEZVO TECH. All rights reserved.</span>
+      <a href="#top">Back to top ↑</a>
     </div>
   </div>
 </footer>
-</div>
+
+<dialog class="talk" id="talk" aria-labelledby="talk-title">
+  <div class="in">
+    <button class="x" type="button" id="talk-close" aria-label="Close">×</button>
+    <h3 id="talk-title">Let's talk</h3>
+    <p class="sub">Tell us about your business. We reply within one business day with a clear next step.</p>
+    <form id="inquiry-form">
+      <div class="two">
+        <label>Name <input name="name" type="text" required autocomplete="name" placeholder="Your name" /></label>
+        <label>Email <input name="email" type="email" required autocomplete="email" placeholder="you@company.com" /></label>
+      </div>
+      <div class="two">
+        <label>Company <input name="company" type="text" autocomplete="organization" placeholder="Company name" /></label>
+        <label>What do you need?
+          <select name="need">
+            <option>Website</option>
+            <option>Mobile app</option>
+            <option>AI / Automation</option>
+            <option>TEZVOFlow / Field service</option>
+            <option>Not sure yet</option>
+          </select>
+        </label>
+      </div>
+      <label>Message <textarea name="message" required placeholder="What do you want to build or fix?"></textarea></label>
+      <label class="hp" aria-hidden="true">Leave blank <input name="company_website" tabindex="-1" autocomplete="off" /></label>
+      <div class="row">
+        <button class="btn wa" type="submit" id="inquiry-submit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg>Send on WhatsApp</button>
+        <span class="mail">or email <a href="mailto:support@tezvo-tech.com">support@tezvo-tech.com</a></span>
+      </div>
+      <p class="form-note" id="inquiry-note" role="status"></p>
+    </form>
+  </div>
+</dialog>
+
+<a class="wa-float" href="https://wa.me/919072306065?text=Hi%20TEZVO%20TECH%2C%20I%27d%20like%20to%20discuss%20a%20project." target="_blank" rel="noopener" aria-label="Chat with TEZVO TECH on WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.7 11.8 11.8 0 004.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 001.8-1.2 2.2 2.2 0 00.1-1.2c0-.1-.2-.2-.5-.3z"/></svg>
+  <span>Chat on WhatsApp</span>
+</a>
 
 <script>
 (function () {
-  /* Preloader */
-  function finishLoad() {
-    document.getElementById("loader").classList.add("done");
-    document.querySelectorAll(".dv").forEach(function (c) { c.classList.add("show"); });
+  /* Hero slider */
+  var slides = document.querySelectorAll(".hslide");
+  if (slides.length) {
+    var cur = document.getElementById("hcur");
+    var i = 0, timer;
+    var show = function (n) {
+      i = (n + slides.length) % slides.length;
+      slides.forEach(function (s, k) { s.classList.toggle("on", k === i); });
+      cur.textContent = "0" + (i + 1);
+    };
+    var restart = function () { clearInterval(timer); timer = setInterval(function () { show(i + 1); }, 7000); };
+    document.getElementById("hnext").addEventListener("click", function () { show(i + 1); restart(); });
+    document.getElementById("hprev").addEventListener("click", function () { show(i - 1); restart(); });
+    restart();
   }
-  window.addEventListener("load", function () { setTimeout(finishLoad, 650); });
-  setTimeout(finishLoad, 2200);
 
-  /* Scroll progress + nav */
-  var progress = document.getElementById("progress");
-  var topbar = document.getElementById("topbar");
-  window.addEventListener("scroll", function () {
-    var h = document.documentElement;
-    progress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + "%";
-    topbar.classList.toggle("scrolled", h.scrollTop > 10);
-  }, { passive: true });
-
-  /* Custom cursor */
-  var dot = document.getElementById("cursor-dot"), ring = document.getElementById("cursor-ring");
-  var mx = -100, my = -100, rx = -100, ry = -100;
-  document.addEventListener("mousemove", function (e) { mx = e.clientX; my = e.clientY; });
-  (function loop() {
-    rx += (mx - rx) * .16; ry += (my - ry) * .16;
-    dot.style.transform = "translate(" + (mx - 3.5) + "px," + (my - 3.5) + "px)";
-    ring.style.transform = "translate(" + (rx - 17) + "px," + (ry - 17) + "px)";
-    requestAnimationFrame(loop);
-  })();
-  document.querySelectorAll("a, button, .chip, .tcard, .check, .wwd .item, .mini-card").forEach(function (el) {
-    el.addEventListener("mouseenter", function () { ring.classList.add("hovered"); });
-    el.addEventListener("mouseleave", function () { ring.classList.remove("hovered"); });
+  /* Products dropdown (hover on desktop, click/tap anywhere) */
+  document.querySelectorAll(".dd").forEach(function (dd) {
+    var btn = dd.querySelector(".dd-btn");
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var open = dd.classList.toggle("open");
+      btn.setAttribute("aria-expanded", open);
+    });
   });
-
-  /* Mouse parallax (uses `translate`, independent of transform animations) */
-  var parallax = document.getElementById("parallax");
-  if (parallax && matchMedia("(hover:hover)").matches) {
-    document.querySelector(".hero").addEventListener("mousemove", function (e) {
-      var r = parallax.getBoundingClientRect();
-      var cx = (e.clientX - r.left - r.width / 2) / r.width;
-      var cy = (e.clientY - r.top - r.height / 2) / r.height;
-      parallax.querySelectorAll("[data-depth]").forEach(function (el) {
-        var d = parseFloat(el.dataset.depth || 10);
-        el.style.translate = (-cx * d) + "px " + (-cy * d) + "px";
-      });
+  function closeDropdowns() {
+    document.querySelectorAll(".dd.open").forEach(function (dd) {
+      dd.classList.remove("open");
+      dd.querySelector(".dd-btn").setAttribute("aria-expanded", "false");
     });
   }
+  document.addEventListener("click", function (e) { if (!e.target.closest(".dd")) closeDropdowns(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeDropdowns(); });
 
-  /* Reveal on scroll + counters */
-  var reveals = document.querySelectorAll(".rv");
-  function activate(el) {
-    el.classList.add("in");
-    el.querySelectorAll("[data-count]").forEach(runCounter);
-    if (el.hasAttribute("data-count")) runCounter(el);
-  }
-  if ("IntersectionObserver" in window) {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) { if (en.isIntersecting) { activate(en.target); io.unobserve(en.target); } });
-    }, { threshold: .15 });
-    reveals.forEach(function (el) { io.observe(el); });
-  }
-  setTimeout(function () {
-    reveals.forEach(function (el) {
-      if (!el.classList.contains("in") && el.getBoundingClientRect().top < window.innerHeight) activate(el);
-    });
-  }, 2200);
-
-  function runCounter(el) {
-    if (el.dataset.done) return;
-    el.dataset.done = "1";
-    var target = parseFloat(el.dataset.count);
-    var suffix = el.dataset.suffix || "", prefix = el.dataset.prefix || "";
-    var decimals = String(el.dataset.count).indexOf(".") >= 0 ? 1 : 0;
-    var dur = 1400, start = performance.now();
-    (function tick(now) {
-      var t = Math.min((now - start) / dur, 1);
-      var eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = prefix + (target * eased).toFixed(decimals) + suffix;
-      if (t < 1) requestAnimationFrame(tick);
-    })(start);
-  }
-
-  /* Magnetic buttons */
-  if (matchMedia("(hover:hover)").matches) {
-    document.querySelectorAll(".magnetic").forEach(function (btn) {
-      btn.addEventListener("mousemove", function (e) {
-        var r = btn.getBoundingClientRect();
-        btn.style.transform = "translate(" + ((e.clientX - r.left - r.width / 2) * .2) + "px," + ((e.clientY - r.top - r.height / 2) * .3) + "px)";
-      });
-      btn.addEventListener("mouseleave", function () { btn.style.transform = ""; });
-    });
-  }
-
-  /* Replay the app conversation */
-  var msgs = document.querySelectorAll(".app-body .bubble, .app-body .appt");
-  setInterval(function () {
-    msgs.forEach(function (m) { m.style.animation = "none"; void m.offsetWidth; m.style.animation = ""; });
-  }, 10000);
-
-  /* Inquiry form → Azure Function emails support@tezvo-tech.com */
+  /* Contact dialog */
+  var dlg = document.getElementById("talk");
   var form = document.getElementById("inquiry-form");
-  if (form) {
-    form.addEventListener("submit", function (e) {
+  document.querySelectorAll("[data-talk]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
       e.preventDefault();
-      var btn = document.getElementById("inquiry-submit");
-      var note = document.getElementById("inquiry-note");
-      var data = {
-        name: form.name.value.trim(),
-        email: form.email.value.trim(),
-        company: form.company.value.trim(),
-        need: form.need.value,
-        message: form.message.value.trim(),
-        company_website: form.company_website.value
-      };
-      btn.disabled = true;
-      note.className = "form-note";
-      note.textContent = "Sending…";
-      fetch("/api/inquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      }).then(function (res) { return res.json().then(function (body) { return { ok: res.ok && body.ok, body: body }; }); })
-        .then(function (result) {
-          if (result.ok) {
-            note.className = "form-note ok";
-            note.textContent = "Thanks — we received your message and will reply to " + data.email + " within one business day.";
-            form.reset();
-          } else {
-            throw new Error((result.body && result.body.message) || "Could not send.");
-          }
-        })
-        .catch(function (err) {
-          note.className = "form-note err";
-          note.textContent = err.message || "Could not send. Please email support@tezvo-tech.com.";
-        })
-        .finally(function () { btn.disabled = false; });
+      if (el.dataset.need) form.need.value = el.dataset.need;
+      if (typeof dlg.showModal === "function") dlg.showModal();
+      else location.href = "mailto:support@tezvo-tech.com";
     });
-  }
+  });
+  document.getElementById("talk-close").addEventListener("click", function () { dlg.close(); });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+
+  /* Inquiry form → WhatsApp +91 90723 06065, with an email copy via the Azure Function */
+  var WA_NUMBER = "919072306065";
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var note = document.getElementById("inquiry-note");
+    var data = {
+      name: form.name.value.trim(),
+      email: form.email.value.trim(),
+      company: form.company.value.trim(),
+      need: form.need.value,
+      message: form.message.value.trim(),
+      company_website: form.company_website.value
+    };
+    if (data.company_website) return;
+
+    var text = [
+      "*New enquiry — TEZVO TECH website*",
+      "Name: " + data.name,
+      "Email: " + data.email,
+      data.company ? "Company: " + data.company : null,
+      "Need: " + data.need,
+      "",
+      data.message
+    ].filter(function (l) { return l !== null; }).join("\n");
+    var waUrl = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(text);
+    var win = window.open(waUrl, "_blank");
+    if (win) win.opener = null;
+    else location.href = waUrl;
+
+    note.className = "form-note ok";
+    note.textContent = "WhatsApp opened with your message — press Send in WhatsApp to deliver it.";
+
+    fetch("/api/inquiry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    }).then(function (res) { return res.json().then(function (body) { return res.ok && body.ok; }); })
+      .then(function (ok) {
+        if (ok) note.textContent += " A copy was also emailed to our team.";
+      })
+      .catch(function () {});
+    form.reset();
+  });
 })();
 </script>
 </body>

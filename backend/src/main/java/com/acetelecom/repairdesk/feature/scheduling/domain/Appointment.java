@@ -4,11 +4,17 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.Filter;
+
+import com.acetelecom.repairdesk.feature.company.CompanyAssignListener;
+import com.acetelecom.repairdesk.feature.company.CompanyFilters;
+import com.acetelecom.repairdesk.feature.company.CompanyScoped;
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.user.domain.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
@@ -27,14 +33,19 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "appointments")
+@EntityListeners(CompanyAssignListener.class)
+@Filter(name = CompanyFilters.NAME, condition = CompanyFilters.CONDITION)
 @Getter
 @Setter
 @NoArgsConstructor
-public class Appointment {
+public class Appointment implements CompanyScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "company_id", nullable = false)
+    private UUID companyId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "job_id", nullable = false)

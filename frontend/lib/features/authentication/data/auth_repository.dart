@@ -17,11 +17,16 @@ class AuthRepository {
 
   final Dio _dio;
 
-  Future<AuthResponse> login(String username, String password) async {
+  Future<AuthResponse> login(String username, String password, {String? companyCode}) async {
+    final code = companyCode?.trim() ?? '';
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/auth/login',
-        data: {'username': username, 'password': password},
+        data: {
+          'username': username,
+          'password': password,
+          if (code.isNotEmpty) 'companyCode': code,
+        },
       );
       return AuthResponse.fromJson(res.data!);
     } on DioException catch (e) {

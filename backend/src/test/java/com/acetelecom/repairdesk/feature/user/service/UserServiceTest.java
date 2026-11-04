@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.user.domain.AccountStatus;
 import com.acetelecom.repairdesk.feature.user.domain.Role;
 import com.acetelecom.repairdesk.feature.user.domain.User;
@@ -40,6 +42,12 @@ class UserServiceTest {
         passwordEncoder = new BCryptPasswordEncoder();
         userService = new UserService(userRepo, passwordEncoder);
         adminActor = new AuthenticatedUser(UUID.randomUUID(), "admin", "ADMIN");
+        CompanyContext.set(UUID.randomUUID());
+    }
+
+    @AfterEach
+    void clearCompany() {
+        CompanyContext.clear();
     }
 
     // ── create ────────────────────────────────────────────────────────────────

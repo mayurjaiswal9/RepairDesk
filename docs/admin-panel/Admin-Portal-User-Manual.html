@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>RepairDesk Admin Portal — User Manual</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 16mm 18mm 16mm;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Calibri, Arial, sans-serif;
+      color: #1a1f36;
+      background: #fff;
+      font-size: 11pt;
+      line-height: 1.45;
+    }
+    .cover {
+      page-break-after: always;
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28mm 8mm 16mm;
+    }
+    .cover-brand {
+      font-size: 12pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    .cover h1 {
+      font-size: 32pt;
+      line-height: 1.15;
+      margin: 18px 0 8px;
+      color: #0f172a;
+    }
+    .cover .subtitle {
+      font-size: 14pt;
+      color: #475569;
+      margin: 0 0 28px;
+    }
+    .meta-box {
+      border: 1px solid #dbe4f0;
+      border-left: 6px solid #1d4ed8;
+      border-radius: 8px;
+      padding: 16px 18px;
+      background: #f8fafc;
+      max-width: 420px;
+    }
+    .meta-box dt {
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-top: 8px;
+    }
+    .meta-box dt:first-child { margin-top: 0; }
+    .meta-box dd {
+      margin: 2px 0 0;
+      font-weight: 600;
+    }
+    .cover-foot {
+      color: #64748b;
+      font-size: 10pt;
+    }
+    h2 {
+      color: #1e3a8a;
+      font-size: 16pt;
+      border-bottom: 2px solid #dbe4f0;
+      padding-bottom: 6px;
+      margin: 22px 0 12px;
+      page-break-after: avoid;
+    }
+    h3 {
+      color: #0f172a;
+      font-size: 12.5pt;
+      margin: 16px 0 8px;
+      page-break-after: avoid;
+    }
+    p, li { orphans: 3; widows: 3; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px;
+      font-size: 10.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #dbe4f0;
+      padding: 7px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #1e3a8a;
+      color: #fff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td { background: #f8fafc; }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f1f5f9;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 10pt;
+    }
+    .note {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      page-break-inside: avoid;
+    }
+    .warn {
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      page-break-inside: avoid;
+    }
+    figure {
+      margin: 12px 0 18px;
+      page-break-inside: avoid;
+    }
+    figure img {
+      width: 100%;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+    figcaption {
+      font-size: 9.5pt;
+      color: #475569;
+      margin-top: 6px;
+      font-style: italic;
+    }
+    ol { padding-left: 22px; }
+    .section { page-break-inside: auto; }
+    a { color: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div>
+      <div class="cover-brand">ACE Telecom · RepairDesk</div>
+      <h1>Admin Portal<br>User Manual</h1>
+      <p class="subtitle">Sign in, create Staff and Technician accounts, and manage internal users.</p>
+      <dl class="meta-box">
+        <dt>Audience</dt>
+        <dd>Shop administrators</dd>
+        <dt>Portal</dt>
+        <dd>https://repairdesk-admin-portal.azurewebsites.net<br>Same screens: https://black-cliff-0c84a7c00.7.azurestaticapps.net</dd>
+        <dt>Admin username</dt>
+        <dd>admin</dd>
+        <dt>Admin password</dt>
+        <dd>Admin$1234</dd>
+        <dt>Screenshots</dt>
+        <dd>Live Azure Admin Portal</dd>
+      </dl>
+    </div>
+    <p class="cover-foot">Keep these credentials private. Only an Administrator can create and manage Staff and Technician accounts. The full index is in Admin-Portal-User-Manual.md beside this file.</p>
+  </section>
+
+  <section class="section">
+    <h2>Contents</h2>
+    <ol>
+      <li>Sign in and who an administrator sees</li>
+      <li>Create and manage Staff, Technicians, and other administrators</li>
+      <li>Repair requests — approve, reject, request info</li>
+      <li>Office location, the Attendance switch, and the attendance list</li>
+      <li>Technician locations and customer ETA</li>
+      <li>Jobs and pins (same work as Staff)</li>
+      <li>Device catalog and business settings</li>
+    </ol>
+  </section>
+
+  <section class="section">
+    <h2>1. Admin credentials</h2>
+    <p>Use these to open the Admin Portal.</p>
+    <table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Portal URL</td><td>https://black-cliff-0c84a7c00.7.azurestaticapps.net</td></tr>
+        <tr><td>Username</td><td><code>admin</code></td></tr>
+        <tr><td>Password</td><td><code>Admin$1234</code></td></tr>
+        <tr><td>Role</td><td>Administrator</td></tr>
+        <tr><td>Local (optional)</td><td>http://localhost:4200</td></tr>
+      </tbody>
+    </table>
+    <p class="note">The first API call after the site has been idle can take up to a minute (cold start). If sign-in looks stuck, wait and try once more.</p>
+  </section>
+
+  <section class="section">
+    <h2>2. Sign in</h2>
+    <ol>
+      <li>Open the portal URL above.</li>
+      <li>Enter username <code>admin</code> and password <code>Admin$1234</code>.</li>
+      <li>Click <strong>Sign in</strong>.</li>
+      <li>You land on the <strong>Dashboard</strong>.</li>
+    </ol>
+    <figure>
+      <img src="manual-assets/01-sign-in.png" alt="Sign in page" />
+      <figcaption>Figure 1. Sign-in page for the ACE Telecom RepairDesk Admin Portal.</figcaption>
+    </figure>
+    <p>Only an <strong>Administrator</strong> can create and manage Staff and Technician accounts. Staff and Technicians cannot open the Staff page.</p>
+    <figure>
+      <img src="manual-assets/02-dashboard.png" alt="Dashboard after sign-in" />
+      <figcaption>Figure 2. Dashboard after a successful sign-in. Use People → Staff in the left sidebar to manage users.</figcaption>
+    </figure>
+  </section>
+
+  <section class="section">
+    <h2>3. Who lives where</h2>
+    <table>
+      <thead><tr><th>People</th><th>Page</th><th>Sidebar</th></tr></thead>
+      <tbody>
+        <tr><td>Staff, Technicians, other Admins</td><td>Staff</td><td>People → Staff</td></tr>
+        <tr><td>Customers (walk-in / phone / app users)</td><td>Customers</td><td>People → Customers</td></tr>
+      </tbody>
+    </table>
+    <p class="warn">Do <strong>not</strong> create customers from Staff. Customer accounts are created from <strong>Create request</strong> (walk-in / phone) or they register in the mobile app.</p>
+  </section>
+
+  <section class="section">
+    <h2>4. Create a Staff user</h2>
+    <ol>
+      <li>In the left sidebar, open <strong>People → Staff</strong>.</li>
+      <li>Click <strong>Add user</strong> (top right).</li>
+      <li>Fill the <strong>Add user</strong> dialog, then click <strong>Create user</strong>.</li>
+      <li>Give the person their username and temporary password so they can sign in.</li>
+    </ol>
+    <figure>
+      <img src="manual-assets/03-staff-list.png" alt="Staff list" />
+      <figcaption>Figure 3. Staff page. Filter by role or status, search by name / username / mobile, then use Add user.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Field</th><th>What to enter</th></tr></thead>
+      <tbody>
+        <tr><td>Full name</td><td>Required. Example: Anita Kumar</td></tr>
+        <tr><td>Username</td><td>Required, at least 3 characters. Cannot be changed later. Example: anita</td></tr>
+        <tr><td>Mobile</td><td>Required, unique. Example: 9876543210</td></tr>
+        <tr><td>Temporary password</td><td>Required, at least 8 characters. Share it with the person yourself — RepairDesk does not email it.</td></tr>
+        <tr><td>Role</td><td>Choose <strong>Staff</strong> (this is the default).</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="manual-assets/05-add-user-filled.png" alt="Add user dialog filled for a Staff account" />
+      <figcaption>Figure 4. Add user dialog filled for a Staff account. Role defaults to Staff.</figcaption>
+    </figure>
+    <p>A Staff user can work requests, jobs, customers, and appointments. They cannot open Staff management or business settings.</p>
+  </section>
+
+  <section class="section">
+    <h2>5. Create a Technician</h2>
+    <p>Same flow as Staff, with one change:</p>
+    <ol>
+      <li><strong>People → Staff → Add user</strong>.</li>
+      <li>Fill name, username, mobile, and a temporary password.</li>
+      <li>Set <strong>Role</strong> to <strong>Technician</strong>.</li>
+      <li>Click <strong>Create user</strong>.</li>
+    </ol>
+    <figure>
+      <img src="manual-assets/06-add-user-role.png" alt="Role dropdown showing Staff, Technician, and Admin" />
+      <figcaption>Figure 5. Role list in Add user: Staff, Technician, or Admin.</figcaption>
+    </figure>
+    <p>Only <strong>Active Technicians</strong> appear in the assignable roster when you assign a job or book an appointment.</p>
+    <p>If you later change a Technician to Staff or Admin, existing jobs stay assigned to them, but they will not be selectable for new assignments.</p>
+  </section>
+
+  <section class="section">
+    <h2>6. Manage users</h2>
+    <p>Open <strong>People → Staff</strong>. The table lists internal accounts only. Your own row is marked <strong>(you)</strong>.</p>
+    <h3>6.1 Find someone</h3>
+    <ul>
+      <li><strong>Role tabs:</strong> All internal · Admin · Staff · Technician</li>
+      <li><strong>Status:</strong> All statuses · Active · Disabled</li>
+      <li><strong>Search:</strong> name, username, or mobile</li>
+    </ul>
+    <h3>6.2 Edit name, mobile, or role</h3>
+    <ol>
+      <li>Click the row, or open the ⋮ menu → <strong>Edit</strong>.</li>
+      <li>Update Full name, Mobile, and/or Role. Username is shown but cannot be edited.</li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+    <figure>
+      <img src="manual-assets/08-edit-user.png" alt="Edit user dialog" />
+      <figcaption>Figure 6. Edit dialog. Username is read-only. You cannot change your own role.</figcaption>
+    </figure>
+    <h3>6.3 Disable or enable</h3>
+    <ul>
+      <li><strong>⋮ → Disable</strong> — they are signed out immediately and cannot sign in. Jobs and history are kept.</li>
+      <li><strong>⋮ → Enable</strong> — they can sign in again.</li>
+    </ul>
+    <p>Use Disable for leave or a temporary stop. Use Delete only when the account should not come back.</p>
+    <h3>6.4 Reset a password</h3>
+    <ol>
+      <li>⋮ → <strong>Reset password</strong>.</li>
+      <li>Enter a new password (minimum 8 characters).</li>
+      <li>Click <strong>Reset password</strong>.</li>
+      <li>Tell the person the new password yourself. It is never shown again in the portal.</li>
+    </ol>
+    <figure>
+      <img src="manual-assets/09-reset-password.png" alt="Reset password dialog" />
+      <figcaption>Figure 7. Reset password dialog. Share the new password with the person directly.</figcaption>
+    </figure>
+    <h3>6.5 Delete an account</h3>
+    <ol>
+      <li>⋮ → <strong>Delete</strong>.</li>
+      <li>Confirm. Access is revoked immediately. Username and mobile become available for a new account.</li>
+    </ol>
+    <p class="warn">There is no undo. You cannot delete your own account.</p>
+    <h3>6.6 Rules that protect the shop</h3>
+    <ul>
+      <li>There must always be <strong>at least one active Administrator</strong>. You cannot disable, delete, or demote the last admin.</li>
+      <li>You cannot delete yourself or change your own role.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>7. Create another Administrator (optional)</h2>
+    <p>Use <strong>Add user</strong> and set Role to <strong>Admin</strong>. Create a second admin before you disable or delete anyone who is currently the only admin.</p>
+  </section>
+
+  <section class="section">
+    <h2>8. After you create people</h2>
+    <table>
+      <thead><tr><th>Next step</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Take a walk-in or phone repair</td><td>Work → Repair Requests → Create request</td></tr>
+        <tr><td>Assign a job to a technician</td><td>Work → Jobs → open the job → assign</td></tr>
+        <tr><td>Book a visit</td><td>Work → Appointments or from the job</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>Office location, the map, and the repair queue</h2>
+    <p><strong>Work → Repair Requests</strong> is administrator-only. <strong>Approve &amp; create job</strong> copies the service pin onto a job with the same reference. <strong>Reject</strong> and <strong>Request info</strong> are on the same page. <strong>Create and approve</strong> on the create form does both steps at once.</p>
+    <p><strong>Configuration → Office location</strong> is the shop pin. Drag the pin or click <strong>Find</strong>, check the radius, then <strong>Save office location</strong>. Check-in, On-duty tracking, Travel allowance, and Customer ETA stay off until you mean to use them. <strong>Attendance</strong> shows <strong>Start day</strong> and <strong>End day</strong> on the technician’s phone. <strong>Allow start outside the office geofence</strong> lets a clear fix outside the shop circle start the day and flags it Outside shop. <strong>Auto end of day</strong> (19:00) closes a day that is still open. Opening a job, Start Repair, and Start Navigating do not check the work day.</p>
+    <figure>
+      <img src="location-manual-assets/02-office-location-live.png" alt="Office location settings" />
+      <figcaption>Office pin at Infinity Mall, Andheri. The switches in this picture are off.</figcaption>
+    </figure>
+    <p><strong>Work → Attendance</strong> is one row per active technician per India date, including Not started. Columns are name, date, status, start flag, end time, Manual or Auto, and hours. Coordinates are not shown. From and To cover at most 31 days. <strong>Download CSV</strong> saves the same columns. While Attendance is off, the list still opens and says an administrator turns it on from Office location. Staff see this page and cannot change the switch.</p>
+    <figure>
+      <img src="location-manual-assets/06-attendance-list.png" alt="Attendance list" />
+      <figcaption>Attendance for 19-10-2026. One day has ended inside the shop. The others are not started.</figcaption>
+    </figure>
+    <p><strong>Work → Locations</strong> shows <strong>O</strong> (shop), <strong>T</strong> (technician), and job pins. Click <strong>Refresh</strong>. Travel time says <strong>from the technician</strong> or <strong>from the office</strong>. Staff see this page and cannot change the office pin.</p>
+    <figure>
+      <img src="location-manual-assets/01-technician-locations.png" alt="Technician locations" />
+      <figcaption>Technician locations and job travel times.</figcaption>
+    </figure>
+    <p>On a job, click <strong>Edit</strong> before the search box appears. Search at least 5 letters, paste the customer’s Maps link, or drag the pin, then <strong>Save</strong>. <strong>Start Navigating</strong> opens Google Maps. Device categories, brands, business name, booking horizon, and working hours are under Catalog and Business Settings.</p>
+    <figure>
+      <img src="location-manual-assets/04-job-address-edit.png" alt="Editing a job pin" />
+      <figcaption>Job pin edit: search, customer’s location, Save, and Cancel.</figcaption>
+    </figure>
+  </section>
+
+  <section class="section">
+    <h2>9. Quick reference</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Admin portal</td><td>https://repairdesk-admin-portal.azurewebsites.net</td></tr>
+        <tr><td>Admin username</td><td><code>admin</code></td></tr>
+        <tr><td>Admin password</td><td><code>Admin$1234</code></td></tr>
+        <tr><td>Create Staff / Technician</td><td>People → Staff → Add user</td></tr>
+        <tr><td>Repair queue</td><td>Work → Repair Requests</td></tr>
+        <tr><td>Office pin and the Attendance switch</td><td>Configuration → Office location</td></tr>
+        <tr><td>Technician work days</td><td>Work → Attendance</td></tr>
+        <tr><td>Where technicians are</td><td>Work → Locations</td></tr>
+        <tr><td>Manage customers</td><td>People → Customers</td></tr>
+        <tr><td>Password minimum</td><td>8 characters</td></tr>
+        <tr><td>Username</td><td>Permanent after create</td></tr>
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>

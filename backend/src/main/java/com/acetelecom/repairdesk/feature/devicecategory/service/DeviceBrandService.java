@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceBrand;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.devicecategory.dto.DeviceBrandRequest;
@@ -77,13 +78,16 @@ public class DeviceBrandService {
     }
 
     private DeviceCategory requireCategory(UUID categoryId) {
-        return categoryRepo.findById(categoryId)
+        DeviceCategory category = categoryRepo.findById(categoryId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Device category not found"));
+        CompanyContext.requireSame(category.getCompanyId(), "Device category not found");
+        return category;
     }
 
     private DeviceBrand require(UUID categoryId, UUID brandId) {
         DeviceBrand brand = brandRepo.findById(brandId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Brand not found"));
+        CompanyContext.requireSame(brand.getCompanyId(), "Brand not found");
         if (!brand.getDeviceCategory().getId().equals(categoryId)) {
             throw new ApiException(ErrorCode.NOT_FOUND, "Brand not found");
         }

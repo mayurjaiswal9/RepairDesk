@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
@@ -67,6 +68,7 @@ public class AppointmentService {
 
         User technician = userRepo.findById(technicianId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Technician not found"));
+        CompanyContext.requireSame(technician.getCompanyId(), "Technician not found");
         if (technician.getRole() != Role.TECHNICIAN || !technician.isActive()) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR,
                     "User is not an active technician");
@@ -124,6 +126,7 @@ public class AppointmentService {
 
         Appointment old = appointmentRepo.findById(appointmentId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Appointment not found"));
+        CompanyContext.requireSame(old.getCompanyId(), "Appointment not found");
         if (!old.getJob().getId().equals(jobId)) {
             throw new ApiException(ErrorCode.NOT_FOUND, "Appointment does not belong to this job");
         }
@@ -181,6 +184,7 @@ public class AppointmentService {
 
         Appointment appt = appointmentRepo.findById(appointmentId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Appointment not found"));
+        CompanyContext.requireSame(appt.getCompanyId(), "Appointment not found");
         if (!appt.getJob().getId().equals(jobId)) {
             throw new ApiException(ErrorCode.NOT_FOUND, "Appointment does not belong to this job");
         }
@@ -237,8 +241,10 @@ public class AppointmentService {
     // ── Helpers ────────────────────────────────────────────────────────────
 
     private Job requireJob(UUID jobId) {
-        return jobRepo.findById(jobId)
+        Job job = jobRepo.findById(jobId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Job not found"));
+        CompanyContext.requireSame(job.getCompanyId(), "Job not found");
+        return job;
     }
 
     private void assertStaffOrAdmin(AuthenticatedUser actor) {

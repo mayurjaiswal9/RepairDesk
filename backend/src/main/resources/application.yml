@@ -77,10 +77,17 @@ app:
     default-username: admin
     default-password: "Admin$1234"
     default-mobile: "0000000000"
+  maps:
+    server-key: ${GOOGLE_MAPS_SERVER_KEY:}
+    daily-limit-geocode: ${MAPS_DAILY_LIMIT_GEOCODE:2000}
+    daily-limit-routes: ${MAPS_DAILY_LIMIT_ROUTES:2000}
+    daily-limit-suggestions: ${MAPS_DAILY_LIMIT_SUGGESTIONS:2000}
 
 logging:
   level:
     org.flywaydb: info
+    # RestClient can log full request URIs. Geocoding puts the key in the query string.
+    org.springframework.web.client: warn
 
 ---
 spring:

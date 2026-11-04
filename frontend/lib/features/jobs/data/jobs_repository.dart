@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/error/app_exception.dart';
+import '../../../core/location/service_location.dart';
 import '../../../core/network/api_client.dart';
 
 part 'jobs_repository.g.dart';
@@ -82,6 +83,7 @@ class JobDetail {
   final String? internalNotes;
   final String? createdAt;
   final int version;
+  final ServiceLocation? serviceLocation;
 
   const JobDetail({
     required this.id,
@@ -106,6 +108,7 @@ class JobDetail {
     this.internalNotes,
     this.createdAt,
     required this.version,
+    this.serviceLocation,
   });
 
   String get customerDisplayName {
@@ -137,6 +140,7 @@ class JobDetail {
         internalNotes: json['internalNotes'] as String?,
         createdAt: json['createdAt'] as String?,
         version: (json['version'] as num).toInt(),
+        serviceLocation: ServiceLocation.fromJson(json['serviceLocation']),
       );
 }
 
@@ -203,12 +207,18 @@ class JobsRepository {
     }
   }
 
+  /// [noTripReason] / [noTripNote] go with `start` when strict trip mode asks why no trip was recorded.
   Future<JobDetail> transition(String jobId, String action,
-      {String? resolution, String? reason}) async {
+      {String? resolution,
+      String? reason,
+      String? noTripReason,
+      String? noTripNote}) async {
     try {
       final data = <String, dynamic>{};
       if (resolution != null) data['resolutionSummary'] = resolution;
       if (reason != null) data['reason'] = reason;
+      if (noTripReason != null) data['noTripReason'] = noTripReason;
+      if (noTripNote != null) data['noTripNote'] = noTripNote;
       final res = await _dio.post<Map<String, dynamic>>(
           '/jobs/$jobId/$action', data: data.isEmpty ? null : data);
       return JobDetail.fromJson(res.data!);
@@ -223,6 +233,20 @@ class JobsRepository {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
           '/jobs/$jobId/notes', data: {'note': note});
+      return JobDetail.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDioError(e);
+    }
+  }
+
+  Future<JobDetail> updateServiceLocation(String jobId, ServiceLocation location) async {
+    try {
+      final res = await _dio.put<Map<String, dynamic>>(
+        '/jobs/$jobId/service-location',
+        data: location.toJson(),
+      );
       return JobDetail.fromJson(res.data!);
     } on DioException catch (e) {
       throw e.error is AppException

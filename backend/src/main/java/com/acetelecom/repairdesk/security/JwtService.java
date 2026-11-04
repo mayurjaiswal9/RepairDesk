@@ -18,7 +18,7 @@ import io.jsonwebtoken.security.Keys;
 /**
  * Mints and validates non-expiring JWTs (ADR-003).
  *
- * <p>Tokens carry only {@code sub} (userId) and {@code role} — no sensitive data.
+ * <p>Tokens carry {@code sub} (userId), {@code role}, and {@code companyId}.
  * Revocation is handled by the per-request account-status check in
  * {@link JwtAuthFilter}, not by expiry.
  */
@@ -26,6 +26,7 @@ import io.jsonwebtoken.security.Keys;
 public class JwtService {
 
     private static final String CLAIM_ROLE = "role";
+    private static final String CLAIM_COMPANY = "companyId";
 
     private final SecretKey signingKey;
 
@@ -35,9 +36,13 @@ public class JwtService {
     }
 
     public String mintToken(User user) {
+        if (user.getCompanyId() == null) {
+            throw new IllegalStateException("User has no company");
+        }
         return Jwts.builder()
                 .subject(user.getId().toString())
                 .claim(CLAIM_ROLE, user.getRole().name())
+                .claim(CLAIM_COMPANY, user.getCompanyId().toString())
                 .signWith(signingKey)
                 .compact();
     }
@@ -62,5 +67,14 @@ public class JwtService {
 
     public String extractRole(Claims claims) {
         return claims.get(CLAIM_ROLE, String.class);
+    }
+
+    /** Null when the token was issued before a company was stored on the token. */
+    public UUID extractCompanyId(Claims claims) {
+        String value = claims.get(CLAIM_COMPANY, String.class);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return UUID.fromString(value);
     }
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
+import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestOrigin;
@@ -43,7 +44,8 @@ public record RepairRequestResponse(
         long version,
         UUID jobId,
         JobStatus jobStatus,
-        String assignedTechnicianName) {
+        String assignedTechnicianName,
+        ServiceLocationDto serviceLocation) {
 
     /** @param job the Job created on approval (1:1), or null if not yet approved. */
     public static RepairRequestResponse from(RepairRequest r, Job job) {
@@ -78,6 +80,7 @@ public record RepairRequestResponse(
                 job != null ? job.getId() : null,
                 job != null ? job.getStatus() : null,
                 job != null && job.getAssignedTechnician() != null
-                        ? job.getAssignedTechnician().getName() : null);
+                        ? job.getAssignedTechnician().getName() : null,
+                ServiceLocationDto.from(r.getServiceLocation()));
     }
 }

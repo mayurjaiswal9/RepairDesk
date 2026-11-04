@@ -10,4 +10,6 @@ import com.acetelecom.repairdesk.feature.settings.domain.WorkingHours;
 public interface WorkingHoursRepository extends JpaRepository<WorkingHours, UUID> {
 
     List<WorkingHours> findAllByOrderByDayOfWeekAsc();
+
+    List<WorkingHours> findByCompanyIdOrderByDayOfWeekAsc(UUID companyId);
 }

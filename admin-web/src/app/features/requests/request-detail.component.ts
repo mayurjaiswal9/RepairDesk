@@ -20,12 +20,15 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { RequestsApi } from '../../core/api/requests.api';
+import { googleMapsDirectionsUrl } from '../../core/maps/directions';
+import { MapPin, PinMapComponent } from '../../core/maps/pin-map.component';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
 import { objectUrlForPhoto } from '../../core/api/photo-blob';
 import { SessionService } from '../../core/auth/session.service';
 import {
   AttachmentMeta,
   RepairRequestDetail,
+  ServiceLocation,
   formatAbsolute,
   formatDateOnly,
   formatTimeOnly,
@@ -58,6 +61,7 @@ interface PhotoTile {
     MatProgressBarModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    PinMapComponent,
   ],
   templateUrl: './request-detail.component.html',
   styleUrl: './request-detail.component.scss',
@@ -78,6 +82,42 @@ export class RequestDetailComponent implements OnInit, OnDestroy {
   readonly formatAbsolute = formatAbsolute;
   readonly formatDateOnly = formatDateOnly;
   readonly formatTimeOnly = formatTimeOnly;
+
+  requestPins(location: ServiceLocation): MapPin[] {
+    if (location.latitude == null || location.longitude == null) return [];
+    return [{
+      id: 'request',
+      latitude: location.latitude,
+      longitude: location.longitude,
+      title: 'Service address',
+      kind: 'job',
+    }];
+  }
+
+  directionsUrl(location: ServiceLocation | null | undefined): string | null {
+    if (!location) return null;
+    return googleMapsDirectionsUrl({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      address: [location.addressLine, location.landmark, location.city, location.pincode]
+        .filter((part): part is string => !!part && part.trim().length > 0)
+        .join(', '),
+    });
+  }
+
+  serviceAddress(location: ServiceLocation): string {
+    const parts = [location.addressLine, location.landmark, location.city, location.pincode]
+      .map((part) => part?.trim())
+      .filter((part): part is string => !!part);
+    const text = parts.join(', ');
+    if (location.latitude == null || location.longitude == null) return text || 'Address saved';
+    const pin = location.pinSource === 'MANUAL_PIN'
+      ? 'Pin placed on the map'
+      : location.pinSource === 'CUSTOMER_LINK'
+        ? 'Pin from the customer’s location link'
+        : 'Pin found from the address';
+    return text ? `${text} · ${pin}` : pin;
+  }
 
   readonly state = signal<PageState>('loading');
   readonly refetching = signal(false);

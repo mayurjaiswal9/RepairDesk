@@ -3,10 +3,16 @@ package com.acetelecom.repairdesk.feature.notification.domain;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.annotations.Filter;
+
+import com.acetelecom.repairdesk.feature.company.CompanyAssignListener;
+import com.acetelecom.repairdesk.feature.company.CompanyFilters;
+import com.acetelecom.repairdesk.feature.company.CompanyScoped;
 import com.acetelecom.repairdesk.feature.user.domain.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,14 +26,19 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "notifications")
+@EntityListeners(CompanyAssignListener.class)
+@Filter(name = CompanyFilters.NAME, condition = CompanyFilters.CONDITION)
 @Getter
 @Setter
 @NoArgsConstructor
-public class Notification {
+public class Notification implements CompanyScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "company_id", nullable = false)
+    private UUID companyId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "recipient_id", nullable = false)

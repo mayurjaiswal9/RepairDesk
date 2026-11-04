@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.customer.dto.CreateCustomerRequest;
 import com.acetelecom.repairdesk.feature.customer.dto.CreateCustomerResponse;
 import com.acetelecom.repairdesk.feature.user.domain.AccountStatus;
@@ -54,6 +55,11 @@ public class CustomerService {
         String rawPassword = generated ? generatePassword() : providedPassword;
 
         User user = new User();
+        UUID companyId = CompanyContext.get();
+        if (companyId == null) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "Sign in again");
+        }
+        user.setCompanyId(companyId);
         user.setName(req.name().strip());
         user.setMobile(mobile);
         user.setUsername(username);

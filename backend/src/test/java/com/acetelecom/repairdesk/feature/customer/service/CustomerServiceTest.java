@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.customer.dto.CreateCustomerRequest;
 import com.acetelecom.repairdesk.feature.user.domain.AccountStatus;
 import com.acetelecom.repairdesk.feature.user.domain.Role;
@@ -34,6 +36,7 @@ class CustomerServiceTest {
     @BeforeEach
     void setUp() {
         service = new CustomerService(userRepo, encoder);
+        CompanyContext.set(UUID.randomUUID());
         org.mockito.Mockito.lenient().when(encoder.encode(anyString())).thenReturn("hashed");
         org.mockito.Mockito.lenient().when(userRepo.save(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0);
@@ -42,6 +45,11 @@ class CustomerServiceTest {
             }
             return u;
         });
+    }
+
+    @AfterEach
+    void clearCompany() {
+        CompanyContext.clear();
     }
 
     @Test

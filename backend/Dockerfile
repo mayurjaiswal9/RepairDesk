@@ -6,8 +6,8 @@ WORKDIR /workspace
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
-# Download dependencies first (better layer caching)
-RUN ./mvnw dependency:go-offline -q
+# Download dependencies first (better layer caching). chmod: Windows uploads drop the execute bit.
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -q
 
 COPY src src
 # maven.test.skip skips test compilation too (-DskipTests still compiles tests).

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>RepairDesk Staff Portal — User Manual</title>
+  <style>
+    @page { size: A4; margin: 16mm 16mm 18mm 16mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: "Segoe UI", Calibri, Arial, sans-serif;
+      color: #1a1f36; background: #fff;
+      font-size: 11pt; line-height: 1.45;
+    }
+    .cover {
+      page-break-after: always; min-height: 240mm;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 28mm 8mm 16mm;
+    }
+    .cover-brand {
+      font-size: 12pt; letter-spacing: 0.12em; text-transform: uppercase;
+      color: #1e3a8a; font-weight: 700;
+    }
+    .cover h1 { font-size: 32pt; line-height: 1.15; margin: 18px 0 8px; color: #0f172a; }
+    .cover .subtitle { font-size: 14pt; color: #475569; margin: 0 0 28px; }
+    .meta-box {
+      border: 1px solid #dbe4f0; border-left: 6px solid #1d4ed8;
+      border-radius: 8px; padding: 16px 18px; background: #f8fafc; max-width: 440px;
+    }
+    .meta-box dt {
+      font-size: 9pt; text-transform: uppercase; letter-spacing: 0.06em;
+      color: #64748b; margin-top: 8px;
+    }
+    .meta-box dt:first-child { margin-top: 0; }
+    .meta-box dd { margin: 2px 0 0; font-weight: 600; }
+    .cover-foot { color: #64748b; font-size: 10pt; }
+    h2 {
+      color: #1e3a8a; font-size: 16pt; border-bottom: 2px solid #dbe4f0;
+      padding-bottom: 6px; margin: 22px 0 12px; page-break-after: avoid;
+    }
+    h3 { color: #0f172a; font-size: 12.5pt; margin: 16px 0 8px; page-break-after: avoid; }
+    p, li { orphans: 3; widows: 3; }
+    table {
+      width: 100%; border-collapse: collapse; margin: 10px 0 14px;
+      font-size: 10.5pt; page-break-inside: avoid;
+    }
+    th, td { border: 1px solid #dbe4f0; padding: 7px 10px; text-align: left; vertical-align: top; }
+    th { background: #1e3a8a; color: #fff; font-weight: 600; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 10pt;
+    }
+    .note {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+      padding: 10px 12px; margin: 12px 0; page-break-inside: avoid;
+    }
+    .warn {
+      background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px;
+      padding: 10px 12px; margin: 12px 0; page-break-inside: avoid;
+    }
+    figure { margin: 12px 0 18px; page-break-inside: avoid; }
+    figure.phone { text-align: center; }
+    figure.phone img { width: 72mm; display: inline-block; }
+    figure img {
+      width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+    figcaption { font-size: 9.5pt; color: #475569; margin-top: 6px; font-style: italic; }
+    ol { padding-left: 22px; }
+    a { color: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div>
+      <div class="cover-brand">ACE Telecom · RepairDesk</div>
+      <h1>Staff Portal<br>User Manual</h1>
+      <p class="subtitle">Create requests, place visit pins, assign technicians, see where technicians are, and read the attendance list.</p>
+      <dl class="meta-box">
+        <dt>Audience</dt><dd>Shop staff (counter / phone desk)</dd>
+        <dt>Portal</dt><dd>https://repairdesk-admin-portal.azurewebsites.net<br>Same screens: https://black-cliff-0c84a7c00.7.azurestaticapps.net</dd>
+        <dt>Staff username</dt><dd>anita</dd>
+        <dt>Password after first change</dt><dd>Anita$1234</dd>
+        <dt>Screenshots</dt><dd>Live Azure portal, signed in as Staff</dd>
+      </dl>
+    </div>
+    <p class="cover-foot">An administrator creates your account. The first sign-in asks you to choose a new password. Keep credentials private. The full index is in Staff-Portal-User-Manual.md beside this file.</p>
+  </section>
+
+  <section>
+    <h2>Contents</h2>
+    <ol>
+      <li>Staff credentials and sign-in</li>
+      <li>What Staff can and cannot do</li>
+      <li>Dashboard, customers, and create a request</li>
+      <li>Service address on a new request</li>
+      <li>Jobs: assign, schedule, notes, photos, and status</li>
+      <li>Move a job pin and Start Navigating</li>
+      <li>Technician locations and customer ETA</li>
+      <li>Attendance — who started and ended the day</li>
+      <li>Appointments, notifications, and your account</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>1. Staff credentials</h2>
+    <table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Portal URL</td><td>https://black-cliff-0c84a7c00.7.azurestaticapps.net</td></tr>
+        <tr><td>Username</td><td><code>anita</code></td></tr>
+        <tr><td>First-sign-in password</td><td><code>Staff$1234</code></td></tr>
+        <tr><td>Password after first change</td><td><code>Anita$1234</code></td></tr>
+        <tr><td>Role</td><td>Staff</td></tr>
+      </tbody>
+    </table>
+    <p class="note">The first API call after the site has been idle can take up to a minute (cold start). If sign-in looks stuck, wait and try once more.</p>
+  </section>
+
+  <section>
+    <h2>2. Sign in</h2>
+    <ol>
+      <li>Open the portal URL.</li>
+      <li>Enter your username and password.</li>
+      <li>Click <strong>Sign in</strong>.</li>
+    </ol>
+    <figure>
+      <img src="staff-manual-assets/staff-01-sign-in.png" alt="Staff sign-in" />
+      <figcaption>Figure 1. Sign-in as Staff (username anita).</figcaption>
+    </figure>
+    <h3>2.1 First sign-in — choose a new password</h3>
+    <p>If the account still uses the password it was set up with, you must change it before the dashboard opens.</p>
+    <ol>
+      <li>Enter the current (temporary) password from your administrator.</li>
+      <li>Enter a new password (minimum 8 characters) and confirm it.</li>
+      <li>Click <strong>Update password</strong>.</li>
+    </ol>
+    <figure>
+      <img src="staff-manual-assets/staff-02-change-password.png" alt="Choose a new password" />
+      <figcaption>Figure 2. First sign-in password change.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>3. What Staff can do</h2>
+    <p>Staff work the counter and the phone. The sidebar is Dashboard, Repair Requests, Locations, Jobs, Appointments, and Customers. You cannot open Staff management, Device Categories, Business Settings, or Office location. Repair Requests opens a page that says review is limited to administrators — create the request from the dashboard instead.</p>
+    <table>
+      <thead><tr><th>You can</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Create a request, including the visit pin</td><td>Dashboard → Create request</td></tr>
+        <tr><td>Look up customers and their history</td><td>People → Customers</td></tr>
+        <tr><td>See technician positions and travel time</td><td>Work → Locations</td></tr>
+        <tr><td>Assign a technician, move the pin, schedule, add notes and photos</td><td>Work → Jobs → open the job</td></tr>
+        <tr><td>See the week’s appointments and unscheduled jobs</td><td>Work → Appointments</td></tr>
+      </tbody>
+    </table>
+    <p class="warn">After you create a request it is <strong>Pending review</strong>. An administrator approves it; that creates the <strong>job</strong>. You then assign the technician on the job — not on the Create request screen.</p>
+  </section>
+
+  <section>
+    <h2>4. Dashboard</h2>
+    <p>After sign-in you see your name and the Staff sidebar. Pending review is a count only. Active jobs and Unscheduled jobs open the job list. Create request is the intake shortcut. Locations is the technician map.</p>
+    <figure>
+      <img src="staff-manual-assets/staff-03-dashboard.png" alt="Staff dashboard" />
+      <figcaption>Figure 3. Staff dashboard. Use Create request for walk-in or phone intake.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>5. Create a request</h2>
+    <p>Use this when a customer walks in or calls and did not submit from the mobile app. The request is owned by them, not by you.</p>
+    <ol>
+      <li>Dashboard → <strong>Create request</strong> (or Customers → open someone → New request).</li>
+      <li>Find or create the customer.</li>
+      <li>Check Contact for this request. You can edit name / mobile without changing their account.</li>
+      <li>Fill Request details: device type, optional brand/model, issue (at least 10 characters), how they contacted you, optional photos.</li>
+      <li>Click <strong>Create request →</strong>. <strong>Save for review</strong> parks the same pending request.</li>
+    </ol>
+    <figure>
+      <img src="staff-manual-assets/staff-04-create-request.png" alt="Create request form" />
+      <figcaption>Figure 4. Create request — customer, contact, and device/issue.</figcaption>
+    </figure>
+    <h3>5.1 New walk-in customer</h3>
+    <ol>
+      <li>Click <strong>+ New customer</strong>.</li>
+      <li>Enter Name and Mobile. Username and password are optional.</li>
+      <li>Click <strong>Create customer</strong>.</li>
+    </ol>
+    <figure>
+      <img src="staff-manual-assets/staff-05-new-customer.png" alt="New customer dialog" />
+      <figcaption>Figure 5. New customer. Name and mobile are enough.</figcaption>
+    </figure>
+    <p>If a password was generated, a dialog shows it once. Give it to the customer for the mobile app. It cannot be retrieved again.</p>
+    <figure>
+      <img src="staff-manual-assets/staff-06-customer-password.png" alt="Generated customer password" />
+      <figcaption>Figure 6. Generated password is shown once. The value in the screenshot is an example only.</figcaption>
+    </figure>
+    <h3>5.2 Finish the request</h3>
+    <figure>
+      <img src="staff-manual-assets/staff-07-create-request-filled.png" alt="Filled create request form" />
+      <figcaption>Figure 7. Customer selected, device and issue filled, ready to create.</figcaption>
+    </figure>
+    <p>You land on the customer page. The new request is <strong>Pending review</strong>. There is no job yet.</p>
+    <figure>
+      <img src="staff-manual-assets/staff-08-customer-after-create.png" alt="Customer page after create" />
+      <figcaption>Figure 8. RD-2026000001 pending review. Tell an administrator to approve it.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>6. Assign a technician</h2>
+    <p>Assignment is on the <strong>job</strong>. Open Work → Jobs after the request is approved. The job uses the same reference number as the request.</p>
+    <figure>
+      <img src="staff-manual-assets/staff-10-jobs.png" alt="Jobs list" />
+      <figcaption>Figure 9. Jobs list. Unassigned jobs are ready to dispatch.</figcaption>
+    </figure>
+    <ol>
+      <li>Open the job.</li>
+      <li>In the Technician card, click <strong>Assign</strong>.</li>
+      <li>Choose an active technician and click <strong>Assign</strong>.</li>
+    </ol>
+    <figure>
+      <img src="staff-manual-assets/staff-11-job-detail.png" alt="Unassigned job detail" />
+      <figcaption>Figure 10. Job detail before assign — Technician says “Not yet assigned”.</figcaption>
+    </figure>
+    <figure>
+      <img src="staff-manual-assets/staff-13-assign-tech-list.png" alt="Assign technician list" />
+      <figcaption>Figure 11. Only active technicians appear (example: Ravi Mehta).</figcaption>
+    </figure>
+    <figure>
+      <img src="staff-manual-assets/staff-14-job-assigned.png" alt="Job assigned" />
+      <figcaption>Figure 12. After assign: Change, Unassign, Schedule appointment, Start repair.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>7. Other Staff work</h2>
+    <h3>7.1 Customers</h3>
+    <p>People → Customers — search by name, username, or mobile. Open a row, then <strong>New request</strong> for another repair.</p>
+    <figure>
+      <img src="staff-manual-assets/staff-09-customers.png" alt="Customers list" />
+      <figcaption>Figure 13. Customers directory.</figcaption>
+    </figure>
+    <h3>7.2 Appointments</h3>
+    <p>Work → Appointments — weekly calendar. Unscheduled jobs sit in the right rail. Book from the job or from here.</p>
+    <figure>
+      <img src="staff-manual-assets/staff-15-appointments.png" alt="Appointments calendar" />
+      <figcaption>Figure 14. Calendar with an unscheduled assigned job in the rail.</figcaption>
+    </figure>
+    <h3>7.3 On the job (after assign)</h3>
+    <table>
+      <thead><tr><th>Action</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td>Schedule appointment</td><td>Book a visit for the assigned technician</td></tr>
+        <tr><td>Change / Unassign</td><td>Wrong technician, or they are unavailable</td></tr>
+        <tr><td>+ Add (internal notes)</td><td>Parts or promises the customer must not see</td></tr>
+        <tr><td>+ Upload (job attachments)</td><td>Bench photos; internal only</td></tr>
+        <tr><td>Start repair</td><td>Usually the technician; Staff can if needed</td></tr>
+        <tr><td>Cancel job</td><td>Work cannot proceed — not undoable</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Service address, the job pin, and the technician map</h2>
+    <h3>On a new request</h3>
+    <p>The technician follows the pin. Type the address, then search a place (at least 5 letters; the list refreshes every 5 seconds), paste the Maps link the customer sent and click <strong>Use this pin</strong>, or click <strong>Find on map</strong> and drag the pin. A photo of a map is not a pin. A typed area name without a picked building is only the centre of that area.</p>
+    <figure>
+      <img src="location-manual-assets/05-create-request-address.png" alt="Address search on Create request" />
+      <figcaption>Create request: address, place search, and the customer’s Maps link.</figcaption>
+    </figure>
+    <h3>On a job</h3>
+    <p>The search box stays hidden until you click <strong>Edit</strong>. Then search, paste the customer’s link, or drag the pin, and click <strong>Save</strong>. <strong>Cancel</strong> leaves the stored address unchanged. <strong>Start Navigating</strong> opens Google Maps directions to that pin.</p>
+    <figure>
+      <img src="location-manual-assets/03-job-address.png" alt="Job address before edit" />
+      <figcaption>Before Edit: map, address, and Start Navigating.</figcaption>
+    </figure>
+    <figure>
+      <img src="location-manual-assets/04-job-address-edit.png" alt="Job address while editing" />
+      <figcaption>After Edit: search, customer’s location, Save, and Cancel.</figcaption>
+    </figure>
+    <h3>Locations</h3>
+    <p>Work → <strong>Locations</strong>. <strong>O</strong> is the shop, <strong>T</strong> is a technician who opened an assigned job with location allowed, and unmarked pins are jobs. Click <strong>Refresh</strong>. Minutes say <strong>from the technician</strong> or <strong>from the office</strong>. A line that says <strong>estimated</strong> is a straight-line fallback. <strong>Start day</strong> is the work-day record on Attendance. It does not move the T pin.</p>
+    <figure>
+      <img src="location-manual-assets/01-technician-locations.png" alt="Technician locations" />
+      <figcaption>Technician locations, last shared positions, and job travel times.</figcaption>
+    </figure>
+    <p>If the suggestion list does not appear, paste the customer’s Maps link or drag the pin. The message <strong>Place search is unavailable</strong> means Google place search is switched off; the map and the customer link still work.</p>
+  </section>
+
+  <section>
+    <h2>Attendance</h2>
+    <p>Work → <strong>Attendance</strong>. The same list is on the phone under <strong>Attendance</strong> when you are signed in as Staff. Technicians do not see it. The page opens on today in India. One row per active technician, including people who have not started. Coordinates are not shown.</p>
+    <figure>
+      <img src="location-manual-assets/06-attendance-list.png" alt="Attendance list in the portal" />
+      <figcaption>Attendance in the portal. Times are India time. Download CSV saves these columns.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Column</th><th>What it shows</th></tr></thead>
+      <tbody>
+        <tr><td>Status</td><td>Not started, On duty since a time, Ended, or Auto-ended</td></tr>
+        <tr><td>Start flag</td><td>Inside shop, Outside shop, Location uncertain, Location missing, or Mocked location</td></tr>
+        <tr><td>End</td><td>Manual when they tapped End day. Auto when the shop’s end-of-day time closed it</td></tr>
+        <tr><td>Hours</td><td>Time between start and end, for example 7h 40m</td></tr>
+      </tbody>
+    </table>
+    <p>Set <strong>From</strong> and <strong>To</strong>, then <strong>Show</strong>. The range can cover at most 31 days. A longer range says <strong>Date range must be 31 days or less.</strong></p>
+    <p>While Attendance is off, the list still opens. The notice says an administrator turns it on from Office location. Days already recorded stay in the list. You cannot change the switch.</p>
+    <p>After an administrator turns Attendance on and saves, the technician’s home screen shows <strong>Work day</strong>. <strong>Start day</strong> stores the time and whether they were at the shop. A fix is clear when its accuracy is no wider than the shop radius. A clear fix outside the shop circle is refused unless the office allows a start outside the shop. <strong>End day</strong> always closes an open day. At 19:00, unless the office changed that time, an open day closes by itself and the technician gets one in-app notice. Opening a job, Start Repair, and Start Navigating do not check the work day.</p>
+    <figure class="phone">
+      <img src="staff-manual-assets/staff-16-attendance.png" alt="Attendance on the staff phone" />
+      <figcaption>The same list on the staff phone. Pull down to refresh. There is no CSV download on the phone.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>8. Quick reference</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Portal</td><td>https://repairdesk-admin-portal.azurewebsites.net</td></tr>
+        <tr><td>Move a job pin</td><td>Job → Edit → Save</td></tr>
+        <tr><td>Where technicians are</td><td>Work → Locations → Refresh</td></tr>
+        <tr><td>Who started the day</td><td>Work → Attendance. Download CSV for the same columns</td></tr>
+        <tr><td>Staff username</td><td><code>anita</code></td></tr>
+        <tr><td>Staff password (after first change)</td><td><code>Anita$1234</code></td></tr>
+        <tr><td>Create a request</td><td>Dashboard → Create request</td></tr>
+        <tr><td>Assign a technician</td><td>Jobs → open the job → Assign</td></tr>
+        <tr><td>Look up a customer</td><td>People → Customers</td></tr>
+        <tr><td>Book a visit</td><td>Job → Schedule appointment</td></tr>
+        <tr><td>Request review / approve</td><td>Administrator only</td></tr>
+        <tr><td>Staff / catalog / settings</td><td>Administrator only</td></tr>
+        <tr><td>Issue description</td><td>Minimum 10 characters</td></tr>
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>

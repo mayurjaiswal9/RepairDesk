@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>RepairDesk Location Features — Proposed App Wireframes</title>
+  <style>
+    @page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: "Segoe UI", Calibri, Arial, sans-serif;
+      color: #1a1f36; background: #fff;
+      font-size: 10.5pt; line-height: 1.45;
+    }
+    .cover {
+      page-break-after: always; min-height: 250mm;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 26mm 8mm 14mm;
+    }
+    .cover-brand { font-size: 12pt; letter-spacing: 0.12em; text-transform: uppercase; color: #1e3a8a; font-weight: 700; }
+    .cover h1 { font-size: 30pt; line-height: 1.15; margin: 18px 0 8px; color: #0f172a; }
+    .cover .subtitle { font-size: 13.5pt; color: #475569; margin: 0 0 26px; }
+    .meta-box { border: 1px solid #dbe4f0; border-left: 6px solid #1d4ed8; border-radius: 8px; padding: 16px 18px; background: #f8fafc; max-width: 470px; margin: 0; }
+    .meta-box dt { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; margin-top: 8px; }
+    .meta-box dt:first-child { margin-top: 0; }
+    .meta-box dd { margin: 2px 0 0; font-weight: 600; }
+    .cover-foot { color: #64748b; font-size: 10pt; }
+    h2 { color: #1e3a8a; font-size: 16pt; border-bottom: 2px solid #dbe4f0; padding-bottom: 6px; margin: 4px 0 12px; page-break-after: avoid; }
+    h3 { color: #0f172a; font-size: 12.5pt; margin: 14px 0 4px; page-break-after: avoid; }
+    .feature { display: inline-block; font-size: 8.5pt; font-weight: 600; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 1px 9px; margin-bottom: 8px; }
+    .section { page-break-before: always; }
+    .screen { page-break-inside: avoid; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 9.8pt; page-break-inside: avoid; }
+    th, td { border: 1px solid #dbe4f0; padding: 6px 9px; text-align: left; vertical-align: top; }
+    th { background: #1e3a8a; color: #fff; font-weight: 600; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .note { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; margin: 12px 0; page-break-inside: avoid; }
+    ol.notes { margin: 8px 0 0; padding-left: 20px; font-size: 9.6pt; color: #334155; }
+    ol.notes li { margin-bottom: 3px; }
+
+    /* ── Phone wireframes ── */
+    .phones { display: flex; gap: 5mm; justify-content: flex-start; align-items: flex-start; page-break-inside: avoid; }
+    .ph-wrap { width: 56mm; flex-shrink: 0; }
+    .phone { width: 56mm; border: 1.2px solid #94a3b8; border-radius: 16px; overflow: hidden; background: #fff; position: relative; }
+    .bar { background: #1d4ed8; color: #fff; padding: 4px 10px 7px; }
+    .bar .sb { font-size: 6.5pt; opacity: 0.8; margin-bottom: 3px; }
+    .bar .tt { font-size: 9pt; font-weight: 600; }
+    .body { padding: 7px; min-height: 108mm; display: flex; flex-direction: column; gap: 5px; font-size: 7.3pt; line-height: 1.3; }
+    .cap { font-size: 8.3pt; color: #475569; font-style: italic; margin-top: 4px; }
+    .box { border: 1px solid #cbd5e1; border-radius: 7px; padding: 6px; display: flex; flex-direction: column; gap: 3px; }
+    .box.dash { border-style: dashed; }
+    .b { font-weight: 600; }
+    .m { color: #64748b; }
+    .acc { color: #1d4ed8; font-weight: 600; }
+    .big { font-size: 12pt; font-weight: 700; }
+    .mid { font-size: 9pt; font-weight: 600; }
+    .btn { border: 1px solid #cbd5e1; border-radius: 7px; padding: 5px; text-align: center; font-weight: 600; color: #1d4ed8; }
+    .btn.p { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+    .btn.off { color: #94a3b8; }
+    .kv { display: flex; justify-content: space-between; gap: 6px; }
+    .kv span:first-child { color: #64748b; }
+    .kv.s span:last-child { font-weight: 600; }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+    .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tag { font-size: 6.3pt; font-weight: 600; padding: 1px 6px; border-radius: 999px; border: 1px solid #cbd5e1; color: #475569; white-space: nowrap; }
+    .tag.on { border-color: #1d4ed8; color: #1d4ed8; }
+    .tag.warn { border-color: #f59e0b; color: #b45309; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .sw { width: 20px; height: 11px; border-radius: 999px; background: #cbd5e1; position: relative; flex-shrink: 0; }
+    .sw::after { content: ""; position: absolute; top: 1.5px; left: 1.5px; width: 8px; height: 8px; border-radius: 999px; background: #fff; }
+    .sw.on { background: #1d4ed8; }
+    .sw.on::after { left: 10.5px; }
+    .overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 10px; }
+    .dialog { background: #fff; border-radius: 10px; padding: 9px; width: 100%; display: flex; flex-direction: column; gap: 5px; font-size: 7.3pt; }
+    .bar.sys { background: #f1f5f9; color: #0f172a; border-bottom: 1px solid #e2e8f0; }
+    .sysdlg { background: #fff; border-radius: 14px; padding: 10px; width: 100%; display: flex; flex-direction: column; gap: 6px; font-size: 7.3pt; text-align: center; }
+    .sysdlg .ico { width: 18px; height: 18px; border-radius: 999px; background: #dbeafe; margin: 0 auto; }
+    .sysdlg .ttl { font-size: 8.6pt; font-weight: 600; color: #0f172a; }
+    .sysopt { border-radius: 999px; background: #e0e7ff; color: #1e3a8a; padding: 5px; font-weight: 600; }
+    .prec { display: flex; justify-content: center; gap: 12px; }
+    .prec div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .prec .c { width: 30px; height: 30px; border-radius: 999px; border: 1.5px solid #94a3b8; background: #f1f5f9; position: relative; }
+    .prec .c.sel { border-color: #1d4ed8; }
+    .prec .c::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 999px; background: #1d4ed8; }
+    .prec .c.wide::after { width: 18px; height: 18px; margin: -9px 0 0 -9px; background: rgba(29,78,216,0.25); }
+    .radio { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+    .radio i { width: 10px; height: 10px; border-radius: 999px; border: 1.5px solid #94a3b8; flex-shrink: 0; }
+    .radio i.on { border-color: #1d4ed8; background: radial-gradient(#1d4ed8 40%, #fff 45%); }
+    .banner { background: #fff7ed; border: 1px solid #fdba74; border-radius: 7px; padding: 6px; display: flex; flex-direction: column; gap: 3px; }
+    .map svg { display: block; width: 100%; border-radius: 7px; border: 1px solid #cbd5e1; background: #f1f5f9; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div>
+      <div class="cover-brand">ACE Telecom · RepairDesk</div>
+      <h1>Location Features<br>Proposed App Wireframes</h1>
+      <p class="subtitle">Geotagged job check-in and check-out, attendance by geofence, on-duty tracking, travel allowance, and live ETA for customers.</p>
+      <dl class="meta-box">
+        <dt>Status</dt><dd>Proposal — for review</dd>
+        <dt>Prepared</dt><dd>30 September 2026</dd>
+        <dt>Apps</dt><dd>RepairDesk Android app (Technician, Staff, Customer) and Admin settings</dd>
+        <dt>Market</dt><dd>India — budget Android phones, patchy mobile data, DPDP Act 2023</dd>
+      </dl>
+    </div>
+    <p class="cover-foot">These are low-fidelity wireframes built on the current app layout (blue app bar, Job Detail sections, Start Repair confirmation). Names, job numbers, distances and amounts are examples.</p>
+  </section>
+
+  <section>
+    <h2>1. Overview</h2>
+    <p>Five location features are proposed. Each one can be switched on independently by the Admin, and they are ordered so the simplest, most reliable features ship first.</p>
+    <table>
+      <thead><tr><th>#</th><th>Feature</th><th>What it does</th><th>Used by</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Geotagged check-in / check-out</td><td>Records location and time when the technician taps Start Repair and Mark Complete. Proves the visit happened.</td><td>Technician, Staff</td></tr>
+        <tr><td>2</td><td>Attendance by geofence</td><td>Start day / End day allowed only near the shop. Replaces paper registers and biometric punching.</td><td>Technician, Staff, Admin</td></tr>
+        <tr><td>3</td><td>On-duty periodic tracking</td><td>Location every 5 minutes (configurable) between Start day and End day only. Live map for the dispatcher.</td><td>Staff</td></tr>
+        <tr><td>4</td><td>Distance and travel allowance</td><td>Calculates km travelled per day and per job, at the shop's per-km rate. One-tap claim and approval.</td><td>Technician, Staff, Admin</td></tr>
+        <tr><td>5</td><td>Customer live ETA</td><td>Customer sees the technician approaching after “On my way”, until check-in.</td><td>Customer</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Screen</th><th>Role</th><th>Features</th><th>Page section</th></tr></thead>
+      <tbody>
+        <tr><td>1A. Location explanation (first run)</td><td>Technician</td><td>All</td><td>2</td></tr>
+        <tr><td>1B. Android permission prompts</td><td>Technician</td><td>All</td><td>2</td></tr>
+        <tr><td>2. Home — Start day / End day</td><td>Technician</td><td>2, 3</td><td>2</td></tr>
+        <tr><td>3. Job — travel, check-in and check-out</td><td>Technician</td><td>1, 5</td><td>2</td></tr>
+        <tr><td>4. Travel &amp; allowance</td><td>Technician</td><td>4</td><td>2</td></tr>
+        <tr><td>5. Live technician map</td><td>Staff</td><td>3</td><td>3</td></tr>
+        <tr><td>6. Proof of visit and attendance report</td><td>Staff / Admin</td><td>1, 2, 4</td><td>3</td></tr>
+        <tr><td>7. Track your technician</td><td>Customer</td><td>5</td><td>4</td></tr>
+        <tr><td>8. Location settings</td><td>Admin</td><td>All</td><td>5</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Nothing changes for how technicians work a job today. Check-in and check-out ride on the existing <strong>Start Repair</strong> and <strong>Mark Complete</strong> buttons, so there are no new steps to learn for feature 1.</p>
+  </section>
+
+  <!-- ─────────────── TECHNICIAN ─────────────── -->
+  <section class="section">
+    <h2>2. Technician app</h2>
+
+    <div class="screen">
+      <h3>Screen 1A — First run: RepairDesk explains location use</h3>
+      <span class="feature">All features</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:41 · 4G</div><div class="tt">Location access</div></div>
+            <div class="body">
+              <div class="box dash">
+                <span class="mid">Why RepairDesk needs your location</span>
+                <span class="m">• Record check-in and check-out at each job</span>
+                <span class="m">• Mark attendance when you start your day at the shop</span>
+                <span class="m">• Calculate travel distance for your allowance</span>
+                <span class="m">• Show customers your ETA when you tap On my way</span>
+              </div>
+              <div class="box">
+                <span class="b">Only during duty hours</span>
+                <span class="m">Tracking stops when you tap End day or at 7:00 PM. Nothing is recorded on your days off.</span>
+              </div>
+              <div class="btn p">Allow location</div>
+              <span class="m">Step 1 of 2</span>
+            </div>
+          </div>
+          <div class="cap">Shown once after first sign-in, before Android's own prompt.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:41 · 4G</div><div class="tt">Keep tracking reliable</div></div>
+            <div class="body">
+              <div class="box dash">
+                <span class="mid">Step 2 of 2 · Battery setting</span>
+                <span class="m">Your phone may stop RepairDesk in the background, which leaves gaps in attendance and travel.</span>
+              </div>
+              <div class="box">
+                <span class="b">On Xiaomi / Redmi</span>
+                <span class="m">Settings → Apps → RepairDesk → Battery saver → <b>No restrictions</b></span>
+                <span class="b">On Realme / Oppo / Vivo</span>
+                <span class="m">Settings → Battery → RepairDesk → <b>Allow background activity</b></span>
+              </div>
+              <div class="btn p">Open battery settings</div>
+              <div class="btn">I'll do it later</div>
+              <span class="m">Declining location never blocks job work. Features that need it show a small “Location off” banner.</span>
+            </div>
+          </div>
+          <div class="cap">Brand-specific help, deep-linking to the right settings page where possible.</div>
+        </div>
+      </div>
+      <ol class="notes">
+        <li>Every use of location is explained before the Android prompt, as the Digital Personal Data Protection Act, 2023 expects a clear notice and purpose.</li>
+        <li>“While using the app” is requested first. Background location (“Allow all the time”) is only needed for tracking and distance, so it is requested when the technician first taps Start day.</li>
+        <li>The battery step matters most on Xiaomi, Realme, Vivo and Oppo phones, which aggressively stop background apps.</li>
+        <li>Android never grants location at install time. Android's own prompts (Screen 1B) appear when the technician taps <b>Allow location</b>.</li>
+      </ol>
+    </div>
+
+    <div class="screen" style="page-break-inside:auto; page-break-before:always">
+      <h3>Screen 1B — Android's permission prompts</h3>
+      <span class="feature">All features · Android 12 and newer</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:41 · 4G</div><div class="tt">Location access</div></div>
+            <div class="body"><div class="box dash"><span class="mid">Why RepairDesk needs your location</span></div></div>
+            <div class="overlay">
+              <div class="sysdlg">
+                <div class="ico"></div>
+                <span class="ttl">Allow RepairDesk to access this device's location?</span>
+                <div class="prec">
+                  <div><span class="c sel"></span><span class="b">Precise</span></div>
+                  <div><span class="c wide"></span><span class="m">Approximate</span></div>
+                </div>
+                <div class="sysopt">While using the app</div>
+                <div class="sysopt">Only this time</div>
+                <div class="sysopt">Don't allow</div>
+              </div>
+            </div>
+          </div>
+          <div class="cap">Android's first prompt. There is no “Allow all the time” here on Android 11+.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar sys"><div class="sb">9:12 · 4G</div><div class="tt">&lt;&nbsp; Location permission</div></div>
+            <div class="body">
+              <div class="box dash" style="background:#eff6ff">
+                <span class="b">From RepairDesk, after tapping Start day</span>
+                <span class="m">To record travel while you're on duty, choose <b>Allow all the time</b>. Tracking stops when you tap End day.</span>
+              </div>
+              <span class="m" style="text-transform:uppercase; letter-spacing:.05em">Location access for this app</span>
+              <div class="radio"><i class="on"></i><span class="b">Allow all the time</span></div>
+              <div class="radio"><i></i><span>Allow only while using the app</span></div>
+              <div class="radio"><i></i><span>Ask every time</span></div>
+              <div class="radio"><i></i><span>Don't allow</span></div>
+              <div class="row" style="border-top:1px solid #e2e8f0; padding-top:6px"><span class="b">Use precise location</span><span class="sw on"></span></div>
+            </div>
+          </div>
+          <div class="cap">Background location is chosen in Android Settings; RepairDesk opens this page for the technician.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:41 · 4G</div><div class="tt">RepairDesk</div></div>
+            <div class="body"><span class="mid">My work</span></div>
+            <div class="overlay">
+              <div class="sysdlg">
+                <div class="ico"></div>
+                <span class="ttl">Allow RepairDesk to send you notifications?</span>
+                <div class="sysopt">Allow</div>
+                <div class="sysopt">Don't allow</div>
+              </div>
+            </div>
+          </div>
+          <div class="cap">Android 13+. Needed for job alerts and the “sharing location while on duty” notification.</div>
+        </div>
+      </div>
+      <div class="phones" style="margin-top:5mm">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:41 · 4G</div><div class="tt">RepairDesk</div></div>
+            <div class="body">
+              <div class="banner">
+                <span class="b">Location is off for RepairDesk</span>
+                <span class="m">Check-in, attendance and travel won't be recorded. Your jobs still work.</span>
+                <span class="acc">Turn on in Settings</span>
+              </div>
+              <span class="mid">My work</span>
+              <div class="btn">My Jobs</div>
+              <div class="btn">My Appointments</div>
+            </div>
+          </div>
+          <div class="cap">After “Don't allow”. Declined twice, Android stops prompting, so the banner opens Settings.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:41 · 4G</div><div class="tt">RepairDesk</div></div>
+            <div class="body">
+              <div class="banner">
+                <span class="b">Precise location needed</span>
+                <span class="m">Approximate location can be off by a kilometre or more, so the shop area and job check-in can't be confirmed.</span>
+                <span class="acc">Switch to Precise</span>
+              </div>
+              <span class="mid">My work</span>
+              <div class="btn">My Jobs</div>
+              <div class="btn">My Appointments</div>
+            </div>
+          </div>
+          <div class="cap">After choosing Approximate in the first prompt.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:41 · 4G</div><div class="tt">RepairDesk</div></div>
+            <div class="body">
+              <div class="banner" style="background:#eff6ff; border-color:#bfdbfe">
+                <span class="b">Location allowed only this time</span>
+                <span class="m">You'll be asked again each time RepairDesk restarts. Choose “While using the app” to avoid this.</span>
+                <span class="acc">Change in Settings</span>
+              </div>
+              <span class="mid">My work</span>
+              <div class="btn">My Jobs</div>
+              <div class="btn">My Appointments</div>
+            </div>
+          </div>
+          <div class="cap">After “Only this time”.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Technician chooses</th><th>What works in RepairDesk</th></tr></thead>
+        <tbody>
+          <tr><td>While using the app + Precise</td><td>Check-in / check-out, Start day geofence, On my way ETA</td></tr>
+          <tr><td>+ Allow all the time (Settings)</td><td>Also on-duty tracking and distance for allowance</td></tr>
+          <tr><td>Approximate</td><td>Too inaccurate for geofence and check-in — app asks to switch to Precise</td></tr>
+          <tr><td>Only this time</td><td>Works until the app restarts, then the prompt returns</td></tr>
+          <tr><td>Don't allow</td><td>Jobs still work; location features show a “Location off” banner</td></tr>
+        </tbody>
+      </table>
+      <ol class="notes">
+        <li>Older phones differ: Android 10 offers Allow all the time / Allow only while using the app / Deny in one prompt; Android 6–9 show only Allow / Deny.</li>
+        <li>On company-owned phones, location can be pre-granted with <code>adb install -g</code> or a device-management tool (for example Microsoft Intune), so no prompt appears.</li>
+        <li>If RepairDesk is published on the Play Store, Google requires the Screen 1A explanation plus a background-location declaration and demo video.</li>
+      </ol>
+    </div>
+
+    <div class="screen">
+      <h3>Screen 2 — Home: start and end the day</h3>
+      <span class="feature">Attendance by geofence · On-duty tracking</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:08 · 4G</div><div class="tt">RepairDesk</div></div>
+            <div class="body">
+              <span class="mid">My work</span>
+              <div class="box">
+                <div class="row"><span class="b">Off duty</span><span class="tag on">Inside shop area</span></div>
+                <span class="m">ACE Telecom, Andheri West · 40 m away</span>
+                <div class="map" data-h="90" data-fence="128,45,34" data-pins='[[122,48,"You",1]]'></div>
+                <div class="btn p">Start day</div>
+              </div>
+              <div class="btn">My Jobs</div>
+              <div class="btn">My Appointments</div>
+            </div>
+          </div>
+          <div class="cap">Before duty. Start day works only inside the shop geofence.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:08 · 4G</div><div class="tt">RepairDesk</div></div>
+            <div class="body">
+              <span class="mid">My work</span>
+              <div class="box">
+                <div class="row"><span class="b">Off duty</span><span class="tag warn">Outside shop area</span></div>
+                <span class="m">ACE Telecom, Andheri West · 1.2 km away</span>
+                <div class="map" data-h="90" data-fence="80,45,26" data-pins='[[200,30,"You",1]]'></div>
+                <div class="btn off">Move closer to the shop to start</div>
+              </div>
+              <div class="btn">My Jobs</div>
+              <div class="btn">My Appointments</div>
+            </div>
+          </div>
+          <div class="cap">Outside the area the button is disabled (unless the Admin allows field starts).</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:41 · 4G</div><div class="tt">RepairDesk</div></div>
+            <div class="body">
+              <span class="mid">My work</span>
+              <div class="box">
+                <div class="row"><span class="b">On duty since 9:12 AM</span><span class="tag on">Tracking on</span></div>
+                <span class="m">Location shared every 5 min · last 9:38 AM</span>
+                <div class="grid3">
+                  <div class="box"><span class="m">Jobs</span><span class="mid">2</span></div>
+                  <div class="box"><span class="m">Distance</span><span class="mid">18.6 km</span></div>
+                  <div class="box"><span class="m">Allowance</span><span class="mid">₹93</span></div>
+                </div>
+                <div class="btn">End day</div>
+              </div>
+              <div class="btn">My Jobs</div>
+              <div class="btn">My Appointments</div>
+              <div class="btn">Travel &amp; allowance</div>
+            </div>
+          </div>
+          <div class="cap">On duty. A persistent Android notification shows tracking is on.</div>
+        </div>
+      </div>
+      <ol class="notes">
+        <li>Start day records attendance time and location; allowed only within the shop radius set by the Admin (for example 150 m).</li>
+        <li>Tracking runs only between Start day and End day. If the technician forgets End day, it stops automatically at the working-hours end time.</li>
+        <li>Android requires an ongoing notification (“RepairDesk is sharing your location while on duty”) for background tracking — it also reassures the technician.</li>
+      </ol>
+    </div>
+
+    <div class="screen">
+      <h3>Screen 3 — Job: travel, check-in and check-out</h3>
+      <span class="feature">Geotagged check-in / check-out · Live ETA</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:47 · 4G</div><div class="tt">&lt;&nbsp; Job Detail</div></div>
+            <div class="body">
+              <div class="row"><span class="acc" style="font-size:9pt">RD-2026000002</span><span class="tag">Assigned</span></div>
+              <div class="box">
+                <span class="b">Visit</span>
+                <span class="m">Priya Shah · 14, Lokhandwala Rd, Andheri W</span>
+                <div class="map" data-h="80" data-pins='[[60,55,"You",0],[175,28,"Customer",1]]' data-route="60,55 105,50 140,32 175,28"></div>
+                <div class="kv"><span>Distance</span><span>4.2 km · ~14 min</span></div>
+                <div class="grid2"><div class="btn">Navigate</div><div class="btn p">On my way</div></div>
+              </div>
+              <span class="b">Actions</span>
+              <div class="btn">Start Repair</div>
+              <span class="b">Internal Notes</span>
+              <span class="m">No internal notes</span>
+            </div>
+          </div>
+          <div class="cap">New Visit section. On my way starts ETA sharing with the customer.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">10:02 · 4G</div><div class="tt">&lt;&nbsp; Job Detail</div></div>
+            <div class="body">
+              <div class="row"><span class="acc" style="font-size:9pt">RD-2026000002</span><span class="tag">Assigned</span></div>
+              <div class="box"><span class="b">Visit</span><span class="m">Priya Shah · Andheri W</span></div>
+            </div>
+            <div class="overlay">
+              <div class="dialog">
+                <span class="mid">Start Repair?</span>
+                <span class="m">Job RD-2026000002 will move to In Progress and the customer may be notified.</span>
+                <div class="box dash">
+                  <span class="b">Check-in location</span>
+                  <div class="kv"><span>Accuracy</span><span>±12 m</span></div>
+                  <div class="kv s"><span>From customer pin</span><span>45 m</span></div>
+                </div>
+                <div style="text-align:right" class="acc">Not now</div>
+                <div class="btn p">Start Repair</div>
+              </div>
+            </div>
+          </div>
+          <div class="cap">The existing Start Repair confirmation also captures the check-in.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">11:19 · 4G</div><div class="tt">&lt;&nbsp; Job Detail</div></div>
+            <div class="body">
+              <div class="row"><span class="acc" style="font-size:9pt">RD-2026000002</span><span class="tag on">Completed</span></div>
+              <div class="box">
+                <span class="b">Visit record</span>
+                <div class="kv"><span>On my way</span><span>9:48 AM</span></div>
+                <div class="kv"><span>Check-in</span><span>10:02 AM · 45 m</span></div>
+                <div class="kv"><span>Check-out</span><span>11:18 AM · 38 m</span></div>
+                <div class="kv s"><span>Time on site</span><span>1 h 16 min</span></div>
+              </div>
+              <div class="box">
+                <span class="b">Resolution</span>
+                <span class="m">Replaced display assembly. Touch and display tested.</span>
+              </div>
+              <span class="b">Internal Notes</span>
+              <span class="m">Display arrived from supplier 10:40 AM.</span>
+            </div>
+          </div>
+          <div class="cap">After Mark Complete, the Visit record is the proof of visit.</div>
+        </div>
+      </div>
+      <ol class="notes">
+        <li>Check-in is recorded on confirming Start Repair; check-out on Mark Complete. Distances are measured from the customer's saved pin.</li>
+        <li>The customer pin is saved on the first visit, because Indian addresses are often landmark-based.</li>
+        <li>With weak GPS (basements, older buildings) the app takes the best fix within 20 seconds and marks it “Low accuracy” instead of blocking the job.</li>
+        <li>On my way is optional; sharing stops automatically at check-in. Bench jobs at the shop skip the Visit section.</li>
+      </ol>
+    </div>
+
+    <div class="screen">
+      <h3>Screen 4 — Travel &amp; allowance</h3>
+      <span class="feature">Distance travelled · Conveyance allowance</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">7:02 PM · 4G</div><div class="tt">&lt;&nbsp; Travel &amp; allowance</div></div>
+            <div class="body">
+              <div class="tags"><span class="tag on">Today</span><span class="tag">This week</span><span class="tag">This month</span></div>
+              <div class="box">
+                <div class="row">
+                  <div><div class="m">Tue, 30 Sep</div><div class="big">18.6 km</div></div>
+                  <div style="text-align:right"><div class="m">Two-wheeler @ ₹5/km</div><div class="big acc">₹93</div></div>
+                </div>
+                <div class="map" data-h="95" data-pins='[[30,70,"Shop",1],[130,25,"Priya",0],[215,72,"Rahul",0]]' data-route="30,70 80,45 130,25 175,50 215,72 120,85 30,70"></div>
+              </div>
+              <div class="box">
+                <div class="kv"><span>Shop → Priya Shah (…002)</span><span>6.2 km</span></div>
+                <div class="kv"><span>Priya Shah → Rahul Verma (…004)</span><span>4.1 km</span></div>
+                <div class="kv"><span>Rahul Verma → Shop</span><span>8.3 km</span></div>
+              </div>
+              <div class="btn p">Submit claim for 30 Sep</div>
+              <span class="m">Approved: 29 Sep ₹76 · 28 Sep ₹110</span>
+            </div>
+          </div>
+          <div class="cap">Opened from home. Uses on-duty location points only.</div>
+        </div>
+        <div style="flex:1; padding-top:4mm">
+          <ol class="notes" style="margin-top:0">
+            <li>Distance is road distance between on-duty points, with GPS jumps filtered out (speeds over 120 km/h, or jitter while parked).</li>
+            <li>Trips are split at job check-ins, so each leg is tied to a job reference — this is what makes the claim quick to approve.</li>
+            <li>Rate and vehicle type come from Admin settings. Technicians cannot edit the distance but can add a note if a reading looks wrong.</li>
+            <li>One claim per day. Staff or Admin approve it from the Attendance &amp; travel report (Screen 6).</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── STAFF ─────────────── -->
+  <section class="section">
+    <h2>3. Staff / dispatcher</h2>
+
+    <div class="screen">
+      <h3>Screen 5 — Live technician map</h3>
+      <span class="feature">On-duty tracking</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">10:15 · 4G</div><div class="tt">&lt;&nbsp; Technicians · Live</div></div>
+            <div class="body">
+              <div class="map" data-h="165" data-fence="60,110,22" data-pins='[[60,110,"Shop",0],[150,45,"Ravi",1],[205,120,"Kiran",1]]'></div>
+              <div class="box"><div class="row"><span class="b">Ravi Mehta</span><span class="tag on">On job</span></div><span class="m">RD-2026000002 · Andheri W · updated 2 min ago</span></div>
+              <div class="box"><div class="row"><span class="b">Kiran Rao</span><span class="tag on">Travelling</span></div><span class="m">To RD-2026000005 · ETA 12 min · updated 1 min ago</span></div>
+              <div class="box"><div class="row"><span class="b">Suresh Patil</span><span class="tag">Off duty</span></div><span class="m">Day ended 6:40 PM yesterday</span></div>
+            </div>
+          </div>
+          <div class="cap">New quick action on the Staff/Admin dashboard.</div>
+        </div>
+        <div style="flex:1; padding-top:4mm">
+          <ol class="notes" style="margin-top:0">
+            <li>Only on-duty technicians appear on the map. Off-duty technicians show a status, never a location.</li>
+            <li>“Updated x min ago” turns into a warning after 15 minutes without a ping — usually the phone stopped the app or has no network.</li>
+            <li>Tapping a technician opens today's timeline: Start day, each check-in and check-out, and the current job.</li>
+            <li>When assigning a job, the Assign dialog can sort technicians by distance to the job address.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen">
+      <h3>Screen 6 — Proof of visit and attendance report</h3>
+      <span class="feature">Check-in / check-out · Attendance · Allowance approval</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">3:05 PM · 4G</div><div class="tt">&lt;&nbsp; Job Detail</div></div>
+            <div class="body">
+              <div class="row"><span class="acc" style="font-size:9pt">RD-2026000004</span><span class="tag on">Completed</span></div>
+              <div class="box">
+                <span class="b">Visit record</span>
+                <div class="kv"><span>Technician</span><span>Kiran Rao</span></div>
+                <div class="kv s"><span>Check-in</span><span>2:10 PM · 1.8 km away</span></div>
+                <div class="tags"><span class="tag warn">Far from customer address</span></div>
+                <div class="kv"><span>Check-out</span><span>2:25 PM · 1.8 km away</span></div>
+                <div class="kv"><span>Time on site</span><span>15 min</span></div>
+              </div>
+              <div class="btn">View on map</div>
+              <span class="m">Tip: the customer pin may be wrong. Update it from Customer details.</span>
+            </div>
+          </div>
+          <div class="cap">Staff see the Visit record, flagged when check-in was far from the address.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">7:30 PM · 4G</div><div class="tt">&lt;&nbsp; Attendance &amp; travel</div></div>
+            <div class="body">
+              <div class="tags"><span class="tag on">30 Sep</span><span class="tag">Week</span><span class="tag">Month</span></div>
+              <div class="box">
+                <div class="kv s"><span>Ravi Mehta</span><span>9:05–6:52 · 22.4 km</span></div>
+                <div class="row"><span class="m">₹112 claimed</span><span class="acc">Approve</span></div>
+              </div>
+              <div class="box">
+                <div class="kv s"><span>Kiran Rao</span><span>9:12–7:00* · 18.6 km</span></div>
+                <div class="row"><span class="m">*auto-ended · ₹93 claimed</span><span class="acc">Approve</span></div>
+              </div>
+              <div class="box">
+                <div class="kv"><span>Suresh Patil</span><span>Absent</span></div>
+                <span class="m">No Start day recorded</span>
+              </div>
+              <div class="btn">Approve all</div>
+              <div class="btn">Export to Excel</div>
+            </div>
+          </div>
+          <div class="cap">Daily report for Staff/Admin; export for payroll.</div>
+        </div>
+      </div>
+      <ol class="notes">
+        <li>The “far from address” flag (default over 500 m) is informational. A wrong customer pin is the most common cause.</li>
+        <li>The report replaces the paper register: first Start day, last End day, and whether each was inside the shop area.</li>
+        <li>Claims are approved one by one or in bulk; approved amounts appear in the monthly export.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ─────────────── CUSTOMER ─────────────── -->
+  <section class="section">
+    <h2>4. Customer app</h2>
+    <div class="screen">
+      <h3>Screen 7 — Track your technician</h3>
+      <span class="feature">Live ETA</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">9:49 · 4G</div><div class="tt">&lt;&nbsp; Request RD-2026000002</div></div>
+            <div class="body">
+              <div class="box">
+                <span class="mid">Ravi is on the way</span>
+                <span class="big acc">Arriving in 14 min</span>
+                <span class="m">Estimated 10:02 AM · updated every 30 s</span>
+              </div>
+              <div class="map" data-h="160" data-pins='[[55,120,"Ravi",1],[180,40,"Your home",0]]' data-route="55,120 95,100 140,70 180,40"></div>
+              <div class="box"><div class="row"><div><div class="b">Ravi Mehta</div><div class="m">ACE Telecom technician</div></div><span class="tag on">Call</span></div></div>
+              <span class="m">Screen repair · Mobile Phone</span>
+            </div>
+          </div>
+          <div class="cap">Opens from the “Ravi is on the way” notification or SMS link.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">10:05 · 4G</div><div class="tt">&lt;&nbsp; Request RD-2026000002</div></div>
+            <div class="body">
+              <div class="box">
+                <span class="mid">Technician has arrived</span>
+                <span class="m">Repair started at 10:02 AM</span>
+              </div>
+              <div class="box">
+                <div class="kv"><span>Request received</span><span>29 Sep</span></div>
+                <div class="kv"><span>Technician assigned</span><span>29 Sep</span></div>
+                <div class="kv"><span>On the way</span><span>9:48 AM</span></div>
+                <div class="kv s"><span>Repair in progress</span><span>10:02 AM</span></div>
+                <div class="kv"><span>Completed</span><span>—</span></div>
+              </div>
+              <span class="m">Location sharing has ended.</span>
+            </div>
+          </div>
+          <div class="cap">After check-in the map is replaced by the status timeline.</div>
+        </div>
+      </div>
+      <ol class="notes">
+        <li>The customer sees the technician's location only between On my way and check-in — never before or after.</li>
+        <li>The SMS link opens a lightweight web page, so customers without the app can track too.</li>
+        <li>The Call button can later switch to masked calling so the technician's number is not shared.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ─────────────── ADMIN ─────────────── -->
+  <section class="section">
+    <h2>5. Admin settings</h2>
+    <div class="screen">
+      <h3>Screen 8 — Location settings</h3>
+      <span class="feature">Controls for all five features</span>
+      <div class="phones">
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">4:00 PM · 4G</div><div class="tt">&lt;&nbsp; Location settings</div></div>
+            <div class="body">
+              <div class="box">
+                <div class="row"><span class="b">Check-in / check-out on jobs</span><span class="sw on"></span></div>
+                <div class="row"><span class="b">Attendance (Start / End day)</span><span class="sw on"></span></div>
+                <div class="row"><span class="b">On-duty tracking</span><span class="sw on"></span></div>
+                <div class="row"><span class="b">Travel allowance</span><span class="sw on"></span></div>
+                <div class="row"><span class="b">Customer live ETA</span><span class="sw"></span></div>
+              </div>
+              <div class="box">
+                <span class="b">Shop location</span>
+                <div class="map" data-h="80" data-fence="128,40,26" data-pins='[[128,40,"ACE Telecom",1]]'></div>
+                <div class="kv"><span>Radius</span><span>150 m</span></div>
+                <div class="kv"><span>Allow Start day outside shop</span><span>Off</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="cap">Each feature is switched on independently.</div>
+        </div>
+        <div class="ph-wrap">
+          <div class="phone">
+            <div class="bar"><div class="sb">4:00 PM · 4G</div><div class="tt">&lt;&nbsp; Location settings</div></div>
+            <div class="body">
+              <div class="box">
+                <span class="b">Tracking</span>
+                <div class="kv"><span>Ping interval</span><span>5 min</span></div>
+                <div class="kv"><span>Working hours</span><span>9:00 AM – 7:00 PM</span></div>
+                <div class="kv"><span>Auto end day at</span><span>7:00 PM</span></div>
+                <div class="kv"><span>Far-from-address flag</span><span>500 m</span></div>
+              </div>
+              <div class="box">
+                <span class="b">Allowance</span>
+                <div class="kv"><span>Two-wheeler</span><span>₹5 / km</span></div>
+                <div class="kv"><span>Four-wheeler</span><span>₹10 / km</span></div>
+                <div class="kv"><span>Approved by</span><span>Staff or Admin</span></div>
+              </div>
+              <div class="box">
+                <span class="b">Privacy</span>
+                <div class="kv"><span>Keep location history</span><span>90 days</span></div>
+                <div class="kv"><span>Visit records</span><span>Kept with the job</span></div>
+                <span class="m">Technicians can view and download their own history from Account.</span>
+              </div>
+            </div>
+          </div>
+          <div class="cap">Tracking, allowance and retention rules.</div>
+        </div>
+      </div>
+      <ol class="notes">
+        <li>Every rate and threshold is a setting, so each shop can match its existing allowance policy.</li>
+        <li>A 2-minute interval improves the live map but uses more battery; 5 minutes is a good default on budget phones.</li>
+        <li>Raw location points are deleted after the retention period. Visit records stay with the job as proof of service.</li>
+        <li>Branches can be added later, each with its own geofence.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ─────────────── ROLLOUT ─────────────── -->
+  <section class="section">
+    <h2>6. Rollout, privacy and practicalities</h2>
+    <h3>Suggested rollout</h3>
+    <table>
+      <thead><tr><th>Phase</th><th>Feature</th><th>Screens</th><th>Background location</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Geotagged check-in / check-out</td><td>3, 6, 8</td><td>No — one fix when a button is tapped</td></tr>
+        <tr><td>2</td><td>Attendance by geofence</td><td>1, 2, 6, 8</td><td>No</td></tr>
+        <tr><td>3</td><td>On-duty tracking</td><td>2, 5, 8</td><td>Yes</td></tr>
+        <tr><td>4</td><td>Distance and travel allowance</td><td>4, 6, 8</td><td>Yes</td></tr>
+        <tr><td>5</td><td>Customer live ETA</td><td>3, 7, 8</td><td>Yes, only while travelling to a job</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Phases 1 and 2 need only a single location reading when the technician taps a button, so they work reliably on budget phones and raise few privacy concerns. Phases 3–5 need background tracking, a foreground notification, and battery-setting guidance, so they follow once the basics are proven.</p>
+
+    <h3>What is recorded, and for how long</h3>
+    <table>
+      <thead><tr><th>Data</th><th>When</th><th>Who sees it</th><th>Kept</th></tr></thead>
+      <tbody>
+        <tr><td>Check-in / check-out point</td><td>Start Repair, Mark Complete</td><td>Staff, Admin, the technician</td><td>With the job</td></tr>
+        <tr><td>Start day / End day point</td><td>Tapping Start day / End day</td><td>Staff, Admin, the technician</td><td>Retention period</td></tr>
+        <tr><td>On-duty location points</td><td>Every 5 min while on duty</td><td>Staff, Admin (live map, distance)</td><td>Retention period (90 days default)</td></tr>
+        <tr><td>Live position for customer</td><td>On my way until check-in</td><td>That job's customer only</td><td>Not stored beyond the trip</td></tr>
+      </tbody>
+    </table>
+
+    <h3>India-specific practicalities</h3>
+    <table>
+      <thead><tr><th>Topic</th><th>Approach</th></tr></thead>
+      <tbody>
+        <tr><td>Budget Android phones</td><td>Foreground service with a visible notification, plus brand-specific battery-setting help (Screen 1).</td></tr>
+        <tr><td>Patchy mobile data</td><td>Points are stored on the phone and uploaded when the network returns; job actions never wait for GPS.</td></tr>
+        <tr><td>Data and battery use</td><td>About 1–5 MB of data per month at a 5-minute interval; a few percent of battery per day.</td></tr>
+        <tr><td>Landmark addresses</td><td>Save the customer's pin on the first visit and reuse it.</td></tr>
+        <tr><td>Maps cost</td><td>Google Maps by default; Mappls (MapmyIndia) or Ola Maps are cheaper alternatives if usage grows.</td></tr>
+        <tr><td>DPDP Act, 2023</td><td>Clear notice and purpose, duty hours only, a retention limit, and technicians can see their own data.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Decisions needed</h3>
+    <table>
+      <thead><tr><th>Question</th><th>Proposed default</th></tr></thead>
+      <tbody>
+        <tr><td>Shop geofence radius</td><td>150 m</td></tr>
+        <tr><td>Can technicians start the day from home or the field?</td><td>Off; Admin can enable per shop</td></tr>
+        <tr><td>Tracking interval</td><td>5 minutes</td></tr>
+        <tr><td>Allowance rates</td><td>₹5 / km two-wheeler, ₹10 / km four-wheeler</td></tr>
+        <tr><td>Who approves allowance claims</td><td>Staff or Admin</td></tr>
+        <tr><td>Location history retention</td><td>90 days</td></tr>
+        <tr><td>Customer live ETA at launch</td><td>Off until phases 1–4 are stable</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    (function () {
+      var NS = "http://www.w3.org/2000/svg";
+      function el(name, attrs) {
+        var e = document.createElementNS(NS, name);
+        for (var k in attrs) e.setAttribute(k, attrs[k]);
+        return e;
+      }
+      document.querySelectorAll(".map").forEach(function (m) {
+        var h = +m.dataset.h || 120;
+        var svg = el("svg", { viewBox: "0 0 256 " + h, height: h * 0.62 + "pt" });
+        [40, 90, 150, 210].forEach(function (x) {
+          svg.appendChild(el("line", { x1: x, y1: 0, x2: x + 18, y2: h, stroke: "#dde3ea", "stroke-width": 6 }));
+        });
+        [h * 0.3, h * 0.68].forEach(function (y) {
+          svg.appendChild(el("line", { x1: 0, y1: y, x2: 256, y2: y - 12, stroke: "#dde3ea", "stroke-width": 6 }));
+        });
+        if (m.dataset.fence) {
+          var f = m.dataset.fence.split(",").map(Number);
+          svg.appendChild(el("circle", { cx: f[0], cy: f[1], r: f[2], fill: "rgba(29,78,216,0.07)", stroke: "#1d4ed8", "stroke-dasharray": "4 3", "stroke-width": 1.5 }));
+        }
+        if (m.dataset.route) {
+          svg.appendChild(el("polyline", { points: m.dataset.route, fill: "none", stroke: "#1d4ed8", "stroke-width": 2.5, "stroke-linejoin": "round" }));
+        }
+        JSON.parse(m.dataset.pins || "[]").forEach(function (p) {
+          svg.appendChild(el("circle", { cx: p[0], cy: p[1], r: p[3] ? 6 : 5, fill: p[3] ? "#1d4ed8" : "#fff", stroke: "#1d4ed8", "stroke-width": 2 }));
+          var t = el("text", { x: p[0] + 9, y: p[1] + 4, "font-size": 10, "font-weight": 600, fill: "#334155" });
+          t.textContent = p[2];
+          svg.appendChild(t);
+        });
+        m.appendChild(svg);
+      });
+    })();
+  </script>
+</body>
+</html>

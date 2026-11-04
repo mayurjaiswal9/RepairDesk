@@ -1,3 +1,5 @@
+import { ServiceLocation } from './request.models';
+
 export type JobStatus =
   | 'CREATED'
   | 'ASSIGNED'
@@ -34,6 +36,7 @@ export interface JobDetail {
   resolutionSummary?: string | null;
   cancelReason?: string | null;
   internalNotes?: string | null;
+  serviceLocation?: ServiceLocation | null;
   createdAt: string;
   updatedAt: string;
   version: number;

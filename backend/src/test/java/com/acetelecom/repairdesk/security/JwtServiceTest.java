@@ -34,6 +34,7 @@ class JwtServiceTest {
     void mintToken_then_validateAndParseClaims_roundtrip() {
         User user = new User();
         user.setId(UUID.randomUUID());
+        user.setCompanyId(UUID.randomUUID());
         user.setRole(Role.ADMIN);
 
         String token = jwtService.mintToken(user);
@@ -42,12 +43,14 @@ class JwtServiceTest {
         Claims claims = jwtService.validateAndParseClaims(token);
         assertThat(jwtService.extractUserId(claims)).isEqualTo(user.getId());
         assertThat(jwtService.extractRole(claims)).isEqualTo("ADMIN");
+        assertThat(jwtService.extractCompanyId(claims)).isEqualTo(user.getCompanyId());
     }
 
     @Test
     void validateAndParseClaims_withTamperedToken_throwsJwtException() {
         User user = new User();
         user.setId(UUID.randomUUID());
+        user.setCompanyId(UUID.randomUUID());
         user.setRole(Role.STAFF);
 
         String token = jwtService.mintToken(user);
@@ -62,6 +65,7 @@ class JwtServiceTest {
         for (Role role : Role.values()) {
             User user = new User();
             user.setId(UUID.randomUUID());
+            user.setCompanyId(UUID.randomUUID());
             user.setRole(role);
 
             String token = jwtService.mintToken(user);

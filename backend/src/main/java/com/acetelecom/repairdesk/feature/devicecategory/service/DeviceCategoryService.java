@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.BrandMode;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
 import com.acetelecom.repairdesk.feature.devicecategory.dto.DeviceCategoryRequest;
@@ -106,8 +107,10 @@ public class DeviceCategoryService {
     }
 
     private DeviceCategory require(UUID id) {
-        return repo.findById(id)
+        DeviceCategory category = repo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Device category not found"));
+        CompanyContext.requireSame(category.getCompanyId(), "Device category not found");
+        return category;
     }
 
     private void checkNameUnique(String name, UUID excludeId) {

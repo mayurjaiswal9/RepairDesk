@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/session_controller.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../trips/data/trip_recorder.dart';
 import '../data/profile_repository.dart';
 
 final _profileProvider = FutureProvider.autoDispose(
@@ -100,9 +101,10 @@ class AccountScreen extends ConsumerWidget {
                         color: AppTheme.error),
                     title: const Text('Sign Out',
                         style: TextStyle(color: AppTheme.error)),
-                    onTap: () => ref
-                        .read(sessionControllerProvider.notifier)
-                        .signOut(),
+                    onTap: () async {
+                      await ref.read(tripRecorderProvider.notifier).beforeSignOut();
+                      await ref.read(sessionControllerProvider.notifier).signOut();
+                    },
                   ),
                 ],
               ),

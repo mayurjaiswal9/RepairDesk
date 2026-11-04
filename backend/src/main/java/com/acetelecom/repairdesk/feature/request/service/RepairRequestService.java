@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.acetelecom.repairdesk.common.error.ApiException;
 import com.acetelecom.repairdesk.common.error.ErrorCode;
+import com.acetelecom.repairdesk.feature.company.CompanyContext;
 import com.acetelecom.repairdesk.common.web.PageResponse;
 import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.devicecategory.domain.DeviceCategory;
@@ -20,6 +21,7 @@ import com.acetelecom.repairdesk.feature.devicecategory.repository.DeviceCategor
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.job.service.JobService;
+import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
 import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
 import com.acetelecom.repairdesk.feature.request.domain.IntakeChannel;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
@@ -51,6 +53,7 @@ public class RepairRequestService {
     private final AuditService auditService;
     private final JobService jobService;
     private final NotificationService notifService;
+    private final ServiceLocationApplier locationApplier;
 
     public RepairRequestService(RepairRequestRepository requestRepo,
             DeviceCategoryRepository categoryRepo,
@@ -59,7 +62,8 @@ public class RepairRequestService {
             JdbcTemplate jdbc,
             AuditService auditService,
             JobService jobService,
-            NotificationService notifService) {
+            NotificationService notifService,
+            ServiceLocationApplier locationApplier) {
         this.requestRepo = requestRepo;
         this.categoryRepo = categoryRepo;
         this.userRepo = userRepo;
@@ -68,6 +72,7 @@ public class RepairRequestService {
         this.jdbc = jdbc;
         this.jobService = jobService;
         this.notifService = notifService;
+        this.locationApplier = locationApplier;
     }
 
     public RepairRequestResponse create(CreateRequestDto dto, AuthenticatedUser caller) {
@@ -89,6 +94,7 @@ public class RepairRequestService {
                 .filter(c -> !c.isArchived())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
                         "Device category not found or archived"));
+        CompanyContext.requireSame(category.getCompanyId(), "Device category not found or archived");
 
         String refNumber = generateReferenceNumber();
 
@@ -110,6 +116,10 @@ public class RepairRequestService {
         req.setOrigin(origin);
         req.setCreatedBy(actor);
         req.setIntakeChannel(parseIntakeChannel(dto.intakeChannel()));
+        if (req.getServiceLocation() == null) {
+            req.setServiceLocation(new com.acetelecom.repairdesk.feature.location.domain.ServiceLocation());
+        }
+        locationApplier.apply(req.getServiceLocation(), dto.serviceLocation());
 
         req = requestRepo.save(req);
         auditService.record(caller, "REQUEST", req.getId(), "CREATED",
@@ -131,6 +141,7 @@ public class RepairRequestService {
     private User resolveAssistedCustomer(UUID customerId) {
         User customer = userRepo.findById(customerId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Customer not found"));
+        CompanyContext.requireSame(customer.getCompanyId(), "Customer not found");
         if (customer.getRole() != Role.CUSTOMER) {
             throw new ApiException(ErrorCode.NOT_FOUND, "Customer not found");
         }
@@ -211,6 +222,12 @@ public class RepairRequestService {
         req.setIssueDescription(dto.issueDescription());
         req.setPreferredDate(dto.preferredDate());
         req.setPreferredTime(dto.preferredTime());
+        if (dto.serviceLocation() != null) {
+            if (req.getServiceLocation() == null) {
+                req.setServiceLocation(new com.acetelecom.repairdesk.feature.location.domain.ServiceLocation());
+            }
+            locationApplier.apply(req.getServiceLocation(), dto.serviceLocation());
+        }
         req.setUpdatedAt(Instant.now());
 
         return RepairRequestResponse.from(requestRepo.save(req), null);
@@ -239,8 +256,10 @@ public class RepairRequestService {
     }
 
     private RepairRequest requireById(UUID id) {
-        return requestRepo.findById(id)
+        RepairRequest request = requestRepo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Repair request not found"));
+        CompanyContext.requireSame(request.getCompanyId(), "Repair request not found");
+        return request;
     }
 
     private void checkReadAccess(RepairRequest req, AuthenticatedUser caller) {
@@ -298,8 +317,10 @@ public class RepairRequestService {
     }
 
     private RepairRequest findById(UUID id) {
-        return requestRepo.findById(id)
+        RepairRequest request = requestRepo.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
                         "Repair request not found"));
+        CompanyContext.requireSame(request.getCompanyId(), "Repair request not found");
+        return request;
     }
 }

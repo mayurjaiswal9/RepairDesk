@@ -1,6 +1,10 @@
 package com.acetelecom.repairdesk.feature.user.domain;
 
-import com.acetelecom.repairdesk.common.domain.BaseEntity;
+import org.hibernate.annotations.Filter;
+
+import com.acetelecom.repairdesk.common.domain.TenantEntity;
+import com.acetelecom.repairdesk.feature.company.CompanyFilters;
+import com.acetelecom.repairdesk.feature.location.domain.VehicleType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,10 +17,11 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "users")
+@Filter(name = CompanyFilters.NAME, condition = CompanyFilters.CONDITION)
 @Getter
 @Setter
 @NoArgsConstructor
-public class User extends BaseEntity {
+public class User extends TenantEntity {
 
     @Column(nullable = false, length = 50)
     private String username;
@@ -40,6 +45,10 @@ public class User extends BaseEntity {
 
     @Column(name = "must_change_password", nullable = false)
     private boolean mustChangePassword = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_type", length = 20)
+    private VehicleType vehicleType;
 
     public boolean isActive() {
         return status == AccountStatus.ACTIVE;

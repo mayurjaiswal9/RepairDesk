@@ -6,6 +6,9 @@ import java.util.UUID;
 
 import com.acetelecom.repairdesk.feature.request.domain.WarrantyStatus;
 
+import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
+
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -52,7 +55,10 @@ public record CreateRequestDto(
         String note,
 
         @Size(max = 20)
-        String intakeChannel) {
+        String intakeChannel,
+
+        @Valid
+        ServiceLocationDto serviceLocation) {
 
     public boolean shouldApproveOnCreate() {
         return Boolean.TRUE.equals(approveOnCreate);

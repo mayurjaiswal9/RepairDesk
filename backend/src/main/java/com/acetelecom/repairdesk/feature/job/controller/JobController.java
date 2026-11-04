@@ -8,6 +8,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,9 +18,12 @@ import com.acetelecom.repairdesk.common.web.PageResponse;
 import com.acetelecom.repairdesk.feature.job.dto.JobResponse;
 import com.acetelecom.repairdesk.feature.job.dto.JobSummary;
 import com.acetelecom.repairdesk.feature.job.service.JobService;
+import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
+import com.acetelecom.repairdesk.feature.trip.domain.NoTripReason;
 import com.acetelecom.repairdesk.security.AuthenticatedUser;
 import com.acetelecom.repairdesk.security.CurrentUser;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 @RestController
@@ -70,10 +74,20 @@ public class JobController {
         return service.unassign(id, currentUser.get());
     }
 
+    @PutMapping("/{id}/service-location")
+    @Secured({ "ROLE_STAFF", "ROLE_ADMIN" })
+    public JobResponse updateServiceLocation(@PathVariable UUID id,
+            @Valid @RequestBody ServiceLocationDto body) {
+        return service.updateServiceLocation(id, body, currentUser.get());
+    }
+
     @PostMapping("/{id}/start")
     @Secured({ "ROLE_STAFF", "ROLE_ADMIN", "ROLE_TECHNICIAN" })
-    public JobResponse start(@PathVariable UUID id) {
-        return service.start(id, currentUser.get());
+    public JobResponse start(@PathVariable UUID id,
+            @RequestBody(required = false) StartRequest body) {
+        NoTripReason reason = body == null ? null : body.noTripReason();
+        String note = body == null ? null : body.noTripNote();
+        return service.start(id, reason, note, currentUser.get());
     }
 
     @PostMapping("/{id}/awaiting-parts")
@@ -127,6 +141,7 @@ public class JobController {
     }
 
     record AssignRequest(UUID technicianId) {}
+    record StartRequest(NoTripReason noTripReason, String noTripNote) {}
     record CompleteRequest(@NotBlank String resolutionSummary) {}
     record ReasonRequest(@NotBlank String reason) {}
     record PriorityRequest(String priority) {}
