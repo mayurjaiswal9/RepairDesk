@@ -24,6 +24,7 @@
 
   <app-open-jobs-banner [refreshToken]="carryoverToken()" />
 
+  <div class="filter-stack">
   <div class="filter-bar">
     <div class="seg" role="group" aria-label="Status filter">
       @for (f of statusFilters; track f.key) {
@@ -65,6 +66,16 @@
       </select>
     }
 
+    <select class="select" [value]="activeSort()" (change)="onSortChange($event)" aria-label="Sort">
+      <option value="updatedAt,desc">Updated (newest)</option>
+      <option value="updatedAt,asc">Updated (oldest)</option>
+      <option value="referenceNumber,asc">Reference</option>
+      <option value="status,asc">Status</option>
+      <option value="priority,asc">Priority</option>
+    </select>
+  </div>
+
+  <div class="filter-bar dates" aria-label="Date filter">
     <label class="range-field">
       From
       <input
@@ -85,14 +96,7 @@
     </label>
     <button type="button" class="ghost-btn sm" (click)="setToday()">Today</button>
     <button type="button" class="ghost-btn sm" (click)="setAllDates()">All dates</button>
-
-    <select class="select" [value]="activeSort()" (change)="onSortChange($event)" aria-label="Sort">
-      <option value="updatedAt,desc">Updated (newest)</option>
-      <option value="updatedAt,asc">Updated (oldest)</option>
-      <option value="referenceNumber,asc">Reference</option>
-      <option value="status,asc">Status</option>
-      <option value="priority,asc">Priority</option>
-    </select>
+  </div>
   </div>
 
   @if (hasFilters()) {

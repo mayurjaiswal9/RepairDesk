@@ -245,8 +245,12 @@ export function maskSerial(serial: string): string {
   return `${'•'.repeat(Math.min(cleaned.length - 4, 12))} ${cleaned.slice(-4)}`;
 }
 
-export function formatSubmittedAt(iso: string): { relative: string; absolute: string } {
+export function formatSubmittedAt(iso: string | null | undefined): { relative: string; absolute: string } {
+  if (!iso) return { relative: '—', absolute: '—' };
   const date = new Date(iso);
+  if (Number.isNaN(date.getTime()) || date.getTime() === 0) {
+    return { relative: '—', absolute: '—' };
+  }
   const absolute = date.toLocaleString(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',

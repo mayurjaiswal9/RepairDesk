@@ -39,7 +39,8 @@ export interface JobSummary {
   deviceCategoryName?: string;
   assignedTechnicianId?: string | null;
   assignedTechnicianName?: string | null;
-  updatedAt: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface CustomerHistory {

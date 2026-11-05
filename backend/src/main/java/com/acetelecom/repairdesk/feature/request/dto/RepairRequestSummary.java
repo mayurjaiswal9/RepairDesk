@@ -42,7 +42,7 @@ public record RepairRequestSummary(
                 r.getStatus(),
                 r.getPriority(),
                 r.getSubmittedAt(),
-                r.getUpdatedAt(),
+                r.getUpdatedAt() != null ? r.getUpdatedAt() : r.getCreatedAt(),
                 job != null ? job.getId() : null,
                 job != null ? job.getStatus() : null,
                 job != null && job.getAssignedTechnician() != null

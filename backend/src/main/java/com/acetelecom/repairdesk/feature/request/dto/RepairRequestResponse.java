@@ -75,7 +75,7 @@ public record RepairRequestResponse(
                 r.getInfoRequestedMessage(),
                 r.getCustomerInfoResponse(),
                 r.getSubmittedAt(),
-                r.getUpdatedAt(),
+                r.getUpdatedAt() != null ? r.getUpdatedAt() : r.getCreatedAt(),
                 r.getVersion(),
                 job != null ? job.getId() : null,
                 job != null ? job.getStatus() : null,

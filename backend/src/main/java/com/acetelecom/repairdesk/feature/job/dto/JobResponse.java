@@ -66,7 +66,7 @@ public record JobResponse(
                 j.getCancelReason(),
                 j.getInternalNotes(),
                 j.getCreatedAt(),
-                j.getUpdatedAt(),
+                j.getUpdatedAt() != null ? j.getUpdatedAt() : j.getCreatedAt(),
                 j.getVersion(),
                 ServiceLocationDto.from(j.getServiceLocation()));
     }

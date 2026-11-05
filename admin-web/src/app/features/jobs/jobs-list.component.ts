@@ -287,7 +287,7 @@ export class JobsListComponent implements OnInit {
   }
 
   updated(job: JobSummary): { relative: string; absolute: string } {
-    return formatSubmittedAt(job.updatedAt);
+    return formatSubmittedAt(job.updatedAt || job.createdAt);
   }
 
   priorityMarker(priority?: string): { icon: string; label: string } | null {

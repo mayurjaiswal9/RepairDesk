@@ -132,6 +132,7 @@ class JobServiceTest {
         assertThat(saved.getValue().getServiceLocation().getCity()).isEqualTo("Mumbai");
         assertThat(saved.getValue().getServiceLocation().getLatitude()).isEqualTo(19.14);
         assertThat(saved.getValue().getServiceLocation().getPinSource()).isEqualTo(PinSource.MANUAL_PIN);
+        assertThat(saved.getValue().getUpdatedAt()).isEqualTo(saved.getValue().getCreatedAt());
     }
 
     @Test

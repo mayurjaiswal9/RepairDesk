@@ -39,12 +39,22 @@
   }
 }
 
+.filter-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  margin-bottom: var(--space-m);
+}
+
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-m);
   align-items: flex-end;
-  margin-bottom: var(--space-m);
+}
+
+.filter-bar.dates {
+  align-items: flex-end;
 }
 
 .range-field {

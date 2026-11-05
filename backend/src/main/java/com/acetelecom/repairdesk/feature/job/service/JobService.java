@@ -100,6 +100,9 @@ public class JobService {
         requestRepo.save(req);
 
         Job job = new Job();
+        Instant created = Instant.now();
+        job.setCreatedAt(created);
+        job.setUpdatedAt(created);
         job.setRequest(req);
         job.setReferenceNumber(req.getReferenceNumber());
         job.setCustomer(req.getCustomer());
