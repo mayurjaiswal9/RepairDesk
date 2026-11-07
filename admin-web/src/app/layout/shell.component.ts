@@ -5,10 +5,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { filter } from 'rxjs';
 import { AuthApi } from '../core/api/auth.api';
 import { MeApi } from '../core/api/me.api';
 import { SessionService } from '../core/auth/session.service';
+import { DesktopAlertService } from '../core/notifications/desktop-alert.service';
 import { UnreadBadgeService } from '../core/notifications/unread-badge.service';
 import { NavGroupDef, isNavActive, navGroupsForRole } from '../core/nav/nav.config';
 import { UserRole } from '../core/models/auth.models';
@@ -25,6 +27,7 @@ const RAIL_KEY = 'repairdesk.admin.sidebarCollapsed';
     MatIconModule,
     MatMenuModule,
     MatTooltipModule,
+    MatSnackBarModule,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -34,6 +37,7 @@ export class ShellComponent implements OnInit {
   private readonly meApi = inject(MeApi);
   private readonly authApi = inject(AuthApi);
   private readonly badge = inject(UnreadBadgeService);
+  private readonly desktopAlerts = inject(DesktopAlertService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -80,6 +84,8 @@ export class ShellComponent implements OnInit {
     return n > 99 ? '99+' : String(n);
   });
 
+  readonly askForDesktopAlerts = this.desktopAlerts.ask;
+
   private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
@@ -96,6 +102,7 @@ export class ShellComponent implements OnInit {
       .subscribe((e) => this.currentUrl.set(e.urlAfterRedirects));
 
     this.startUnreadPolling();
+    this.desktopAlerts.start();
     document.addEventListener('visibilitychange', this.onVisibility);
     this.destroyRef.onDestroy(() => {
       document.removeEventListener('visibilitychange', this.onVisibility);
@@ -118,9 +125,19 @@ export class ShellComponent implements OnInit {
   }
 
   signOut(): void {
-    this.authApi.logout().subscribe({ error: () => undefined });
-    this.session.clear();
-    void this.router.navigate(['/login'], { queryParams: { reason: 'signed-out' } });
+    void this.desktopAlerts.stop().finally(() => {
+      this.authApi.logout().subscribe({ error: () => undefined });
+      this.session.clear();
+      void this.router.navigate(['/login'], { queryParams: { reason: 'signed-out' } });
+    });
+  }
+
+  enableDesktopAlerts(): void {
+    void this.desktopAlerts.enable();
+  }
+
+  dismissDesktopAlerts(): void {
+    this.desktopAlerts.dismiss();
   }
 
   groupVisible(_group: NavGroupDef): boolean {
@@ -159,9 +176,19 @@ export class ShellComponent implements OnInit {
     }
   }
 
+  private previousUnread: number | null = null;
+
   private fetchUnread(): void {
     this.meApi.unreadNotificationCount().subscribe({
-      next: (r) => this.badge.set(r.count ?? 0),
+      next: (r) => {
+        const next = r.count ?? 0;
+        const previous = this.previousUnread;
+        this.previousUnread = next;
+        this.badge.set(next);
+        if (previous != null && next > previous) {
+          this.desktopAlerts.revealLatest();
+        }
+      },
       error: () => undefined,
     });
   }

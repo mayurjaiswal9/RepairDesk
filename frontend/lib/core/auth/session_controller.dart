@@ -39,6 +39,11 @@ class SessionState {
   static const unauthenticated = SessionState();
 }
 
+/// Runs while the auth token is still stored, so a phone can unregister its alert token.
+class SessionHooks {
+  static Future<void> Function()? beforeSignOut;
+}
+
 @riverpod
 class SessionController extends _$SessionController {
   @override
@@ -87,6 +92,14 @@ class SessionController extends _$SessionController {
 
   /// Clears session on logout or account disable.
   Future<void> signOut() async {
+    final hook = SessionHooks.beforeSignOut;
+    if (hook != null) {
+      try {
+        await hook();
+      } catch (_) {
+        // Signing out still clears the session.
+      }
+    }
     final storage = ref.read(secureStorageProvider);
     await storage.deleteAll();
     state = SessionState.unauthenticated;

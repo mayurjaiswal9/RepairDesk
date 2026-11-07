@@ -15,6 +15,8 @@ class AppNotification {
   final String type;
   final String message;
   final String? referenceNumber;
+  final String? relatedType;
+  final String? relatedEntityId;
   final bool read;
   final String createdAt;
 
@@ -23,6 +25,8 @@ class AppNotification {
     required this.type,
     required this.message,
     this.referenceNumber,
+    this.relatedType,
+    this.relatedEntityId,
     required this.read,
     required this.createdAt,
   });
@@ -33,6 +37,8 @@ class AppNotification {
         type: json['type'] as String,
         message: json['message'] as String,
         referenceNumber: json['referenceNumber'] as String?,
+        relatedType: json['relatedType'] as String?,
+        relatedEntityId: json['relatedEntityId'] as String?,
         read: json['read'] as bool? ?? false,
         createdAt: json['createdAt'] as String,
       );

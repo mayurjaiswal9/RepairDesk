@@ -11,7 +11,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.acetelecom.repairdesk.feature.location.service.AttendanceService.AutoEndResult;
-import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.notification.domain.NotificationEvent;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationContext;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationDispatcher;
 
 /**
  * Closes open work days at the stored India time. Does not change a job and
@@ -25,11 +27,11 @@ public class AttendanceAutoEnd {
 
     private final ScheduledTaskGuard guard;
     private final AttendanceService attendance;
-    private final NotificationService notifications;
+    private final NotificationDispatcher notifications;
     private final Clock clock;
 
     public AttendanceAutoEnd(ScheduledTaskGuard guard, AttendanceService attendance,
-            NotificationService notifications, Clock clock) {
+            NotificationDispatcher notifications, Clock clock) {
         this.guard = guard;
         this.attendance = attendance;
         this.notifications = notifications;
@@ -45,9 +47,9 @@ public class AttendanceAutoEnd {
         String when = result.autoEndTime().format(CLOCK);
         for (UUID technicianId : result.technicianIds()) {
             try {
-                notifications.send(technicianId, "DAY_ENDED",
-                        "Your work day ended automatically at " + when + ".",
-                        null, null, null);
+                notifications.publish(NotificationEvent.DAY_ENDED, NotificationContext.create()
+                        .technician(technicianId)
+                        .when(when));
             } catch (RuntimeException ex) {
                 log.warn("Attendance auto-end notice was not sent");
             }

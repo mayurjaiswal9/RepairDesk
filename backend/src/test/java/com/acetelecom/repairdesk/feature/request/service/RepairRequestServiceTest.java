@@ -24,7 +24,7 @@ import com.acetelecom.repairdesk.feature.devicecategory.repository.DeviceCategor
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.job.service.JobService;
 import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
-import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationDispatcher;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
@@ -46,7 +46,7 @@ class RepairRequestServiceTest {
     @Mock private JdbcTemplate jdbc;
     @Mock private AuditService auditService;
     @Mock private JobService jobService;
-    @Mock private NotificationService notifService;
+    @Mock private NotificationDispatcher notifications;
     @Mock private ServiceLocationApplier locationApplier;
 
     private RepairRequestService service;
@@ -56,7 +56,7 @@ class RepairRequestServiceTest {
     @BeforeEach
     void setUp() {
         service = new RepairRequestService(requestRepo, categoryRepo,
-                userRepo, jobRepo, jdbc, auditService, jobService, notifService, locationApplier);
+                userRepo, jobRepo, jdbc, auditService, jobService, notifications, locationApplier);
 
         UUID customerId = UUID.randomUUID();
         customerActor = new AuthenticatedUser(customerId, "cust1", "CUSTOMER");

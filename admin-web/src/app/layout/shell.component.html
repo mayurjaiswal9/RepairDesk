@@ -92,6 +92,14 @@
       </mat-menu>
     </header>
 
+    @if (askForDesktopAlerts()) {
+      <div class="alert-banner" role="region" aria-label="Computer alerts">
+        <p>Turn on computer alerts so RepairDesk can reach this browser after it is closed.</p>
+        <button type="button" class="banner-primary" (click)="enableDesktopAlerts()">Turn on</button>
+        <button type="button" class="banner-quiet" (click)="dismissDesktopAlerts()">Not now</button>
+      </div>
+    }
+
     <main id="content" class="content" tabindex="-1">
       <router-outlet />
     </main>

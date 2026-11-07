@@ -24,7 +24,9 @@ import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.job.service.JobService;
 import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
-import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.notification.domain.NotificationEvent;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationContext;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationDispatcher;
 import com.acetelecom.repairdesk.feature.request.domain.IntakeChannel;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
@@ -54,7 +56,7 @@ public class RepairRequestService {
     private final JdbcTemplate jdbc;
     private final AuditService auditService;
     private final JobService jobService;
-    private final NotificationService notifService;
+    private final NotificationDispatcher notifications;
     private final ServiceLocationApplier locationApplier;
 
     public RepairRequestService(RepairRequestRepository requestRepo,
@@ -64,7 +66,7 @@ public class RepairRequestService {
             JdbcTemplate jdbc,
             AuditService auditService,
             JobService jobService,
-            NotificationService notifService,
+            NotificationDispatcher notifications,
             ServiceLocationApplier locationApplier) {
         this.requestRepo = requestRepo;
         this.categoryRepo = categoryRepo;
@@ -73,7 +75,7 @@ public class RepairRequestService {
         this.auditService = auditService;
         this.jdbc = jdbc;
         this.jobService = jobService;
-        this.notifService = notifService;
+        this.notifications = notifications;
         this.locationApplier = locationApplier;
     }
 
@@ -129,9 +131,16 @@ public class RepairRequestService {
 
         boolean approveNow = staffCaller && dto.shouldApproveOnCreate();
         if (!approveNow) {
-            notifService.send(customer.getId(), "REQUEST_RECEIVED",
-                    "We received your repair request " + req.getReferenceNumber() + ".",
-                    req.getReferenceNumber(), "REPAIR_REQUEST", req.getId());
+            notifications.publish(NotificationEvent.REQUEST_RECEIVED, NotificationContext.create()
+                    .customer(customer.getId())
+                    .reference(req.getReferenceNumber())
+                    .request(req.getId()));
+        }
+        notifications.publish(NotificationEvent.REQUEST_SUBMITTED, NotificationContext.create()
+                .customer(customer.getId())
+                .reference(req.getReferenceNumber())
+                .request(req.getId()));
+        if (!approveNow) {
             return RepairRequestResponse.from(req, null);
         }
 

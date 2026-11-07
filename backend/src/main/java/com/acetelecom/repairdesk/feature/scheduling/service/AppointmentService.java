@@ -16,7 +16,9 @@ import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
-import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.notification.domain.NotificationEvent;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationContext;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationDispatcher;
 import com.acetelecom.repairdesk.feature.scheduling.domain.Appointment;
 import com.acetelecom.repairdesk.feature.scheduling.domain.AppointmentStatus;
 import com.acetelecom.repairdesk.feature.scheduling.dto.AppointmentResponse;
@@ -35,17 +37,17 @@ public class AppointmentService {
     private final JobRepository jobRepo;
     private final UserRepository userRepo;
     private final SettingsService settingsService;
-    private final NotificationService notifService;
+    private final NotificationDispatcher notifications;
     private final AuditService auditService;
 
     public AppointmentService(AppointmentRepository appointmentRepo, JobRepository jobRepo,
             UserRepository userRepo, SettingsService settingsService,
-            NotificationService notifService, AuditService auditService) {
+            NotificationDispatcher notifications, AuditService auditService) {
         this.appointmentRepo = appointmentRepo;
         this.jobRepo = jobRepo;
         this.userRepo = userRepo;
         this.settingsService = settingsService;
-        this.notifService = notifService;
+        this.notifications = notifications;
         this.auditService = auditService;
     }
 
@@ -105,9 +107,20 @@ public class AppointmentService {
         }
         jobRepo.save(job);
 
-        notifService.send(job.getCustomer().getId(), "APPOINTMENT_SCHEDULED",
-                "Your repair appointment is scheduled for " + date + " at " + startTime + ".",
-                job.getReferenceNumber(), "JOB", job.getId());
+        notifications.publish(NotificationEvent.APPOINTMENT_SCHEDULED, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .technician(technician.getId())
+                .reference(job.getReferenceNumber())
+                .date(String.valueOf(date))
+                .time(String.valueOf(startTime))
+                .job(job.getId()));
+        notifications.publish(NotificationEvent.APPOINTMENT_SCHEDULED_TECHNICIAN, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .technician(technician.getId())
+                .reference(job.getReferenceNumber())
+                .date(String.valueOf(date))
+                .time(String.valueOf(startTime))
+                .job(job.getId()));
 
         auditService.record(actor, "JOB", jobId, "APPOINTMENT_SCHEDULED",
                 "Appointment " + appt.getId() + " on " + date + " at " + startTime
@@ -166,9 +179,20 @@ public class AppointmentService {
         }
         jobRepo.save(job);
 
-        notifService.send(job.getCustomer().getId(), "APPOINTMENT_RESCHEDULED",
-                "Your appointment has been rescheduled to " + newDate + " at " + newStartTime + ".",
-                job.getReferenceNumber(), "JOB", job.getId());
+        notifications.publish(NotificationEvent.APPOINTMENT_RESCHEDULED, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .technician(newAppt.getTechnician().getId())
+                .reference(job.getReferenceNumber())
+                .date(String.valueOf(newDate))
+                .time(String.valueOf(newStartTime))
+                .job(job.getId()));
+        notifications.publish(NotificationEvent.APPOINTMENT_RESCHEDULED_TECHNICIAN, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .technician(newAppt.getTechnician().getId())
+                .reference(job.getReferenceNumber())
+                .date(String.valueOf(newDate))
+                .time(String.valueOf(newStartTime))
+                .job(job.getId()));
 
         auditService.record(actor, "JOB", jobId, "APPOINTMENT_RESCHEDULED",
                 "Rescheduled from " + old.getScheduledDate() + " to " + newDate);
@@ -210,9 +234,20 @@ public class AppointmentService {
         }
         jobRepo.save(job);
 
-        notifService.send(job.getCustomer().getId(), "APPOINTMENT_CANCELLED",
-                "Your appointment on " + appt.getScheduledDate() + " has been cancelled. " + reason,
-                job.getReferenceNumber(), "JOB", job.getId());
+        notifications.publish(NotificationEvent.APPOINTMENT_CANCELLED, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .technician(appt.getTechnician().getId())
+                .reference(job.getReferenceNumber())
+                .date(String.valueOf(appt.getScheduledDate()))
+                .reason(reason)
+                .job(job.getId()));
+        notifications.publish(NotificationEvent.APPOINTMENT_CANCELLED_TECHNICIAN, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .technician(appt.getTechnician().getId())
+                .reference(job.getReferenceNumber())
+                .date(String.valueOf(appt.getScheduledDate()))
+                .reason(reason)
+                .job(job.getId()));
 
         auditService.record(actor, "JOB", jobId, "APPOINTMENT_CANCELLED", reason);
     }

@@ -1,5 +1,8 @@
 package com.acetelecom.repairdesk
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Bundle
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -9,6 +12,20 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private var pendingNotificationResult: MethodChannel.Result? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "repairdesk_alerts",
+                "Repair updates",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            )
+            channel.description = "Repair requests, jobs, and appointments"
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(channel)
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

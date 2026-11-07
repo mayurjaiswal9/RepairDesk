@@ -100,6 +100,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'settings/notifications',
+        loadComponent: () =>
+          import('./features/settings/notification-settings.component').then(
+            (m) => m.NotificationSettingsComponent,
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/business-settings.component').then(

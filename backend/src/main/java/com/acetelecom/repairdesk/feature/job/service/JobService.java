@@ -26,7 +26,9 @@ import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
 import com.acetelecom.repairdesk.feature.location.domain.ServiceLocation;
 import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
 import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
-import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.notification.domain.NotificationEvent;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationContext;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationDispatcher;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
 import com.acetelecom.repairdesk.feature.request.domain.RequestStatus;
 import com.acetelecom.repairdesk.feature.request.repository.RepairRequestRepository;
@@ -44,19 +46,19 @@ public class JobService {
     private final JobRepository jobRepo;
     private final RepairRequestRepository requestRepo;
     private final UserRepository userRepo;
-    private final NotificationService notifService;
+    private final NotificationDispatcher notifications;
     private final AuditService auditService;
     private final ServiceLocationApplier locationApplier;
     private final TripService tripService;
 
     public JobService(JobRepository jobRepo, RepairRequestRepository requestRepo,
-            UserRepository userRepo, NotificationService notifService,
+            UserRepository userRepo, NotificationDispatcher notifications,
             AuditService auditService, ServiceLocationApplier locationApplier,
             TripService tripService) {
         this.jobRepo = jobRepo;
         this.requestRepo = requestRepo;
         this.userRepo = userRepo;
-        this.notifService = notifService;
+        this.notifications = notifications;
         this.auditService = auditService;
         this.locationApplier = locationApplier;
         this.tripService = tripService;
@@ -118,10 +120,10 @@ public class JobService {
         job.setServiceLocation(ServiceLocation.copyOf(req.getServiceLocation()));
         Job saved = jobRepo.save(job);
 
-        notifService.send(req.getCustomer().getId(), "JOB_APPROVED",
-                "Your repair request " + req.getReferenceNumber()
-                        + " has been accepted and is being prepared.",
-                req.getReferenceNumber(), "JOB", saved.getId());
+        notifications.publish(NotificationEvent.JOB_APPROVED, NotificationContext.create()
+                .customer(req.getCustomer().getId())
+                .reference(req.getReferenceNumber())
+                .job(saved.getId()));
 
         auditService.record(actor, "REQUEST", requestId, "APPROVED", null);
         if (note != null && !note.isBlank()) {
@@ -153,12 +155,15 @@ public class JobService {
         req.setReviewedAt(Instant.now());
         requestRepo.save(req);
 
-        notifService.send(req.getCustomer().getId(), "REQUEST_REJECTED",
-                customerMessage != null && !customerMessage.isBlank()
-                        ? customerMessage
-                        : "Your repair request " + req.getReferenceNumber()
-                                + " could not be accepted at this time.",
-                req.getReferenceNumber(), "REPAIR_REQUEST", requestId);
+        String rejection = customerMessage != null && !customerMessage.isBlank()
+                ? customerMessage
+                : "Your repair request " + req.getReferenceNumber()
+                        + " could not be accepted at this time.";
+        notifications.publish(NotificationEvent.REQUEST_REJECTED, NotificationContext.create()
+                .customer(req.getCustomer().getId())
+                .reference(req.getReferenceNumber())
+                .detail(rejection)
+                .request(requestId));
 
         auditService.record(actor, "REQUEST", requestId, "REJECTED",
                 "Reason: " + reasonCode);
@@ -179,10 +184,11 @@ public class JobService {
         req.setInfoRequestedMessage(message);
         requestRepo.save(req);
 
-        notifService.send(req.getCustomer().getId(), "INFO_REQUIRED",
-                "More information is needed for your request "
-                        + req.getReferenceNumber() + ": " + message,
-                req.getReferenceNumber(), "REPAIR_REQUEST", requestId);
+        notifications.publish(NotificationEvent.INFO_REQUIRED, NotificationContext.create()
+                .customer(req.getCustomer().getId())
+                .reference(req.getReferenceNumber())
+                .detail(message)
+                .request(requestId));
 
         auditService.record(actor, "REQUEST", requestId, "INFO_REQUESTED", message);
     }
@@ -298,9 +304,10 @@ public class JobService {
         job.setUpdatedAt(Instant.now());
         jobRepo.save(job);
 
-        notifService.send(technicianId, "JOB_ASSIGNED",
-                "You have been assigned to job " + job.getReferenceNumber() + ".",
-                job.getReferenceNumber(), "JOB", job.getId());
+        notifications.publish(NotificationEvent.JOB_ASSIGNED, NotificationContext.create()
+                .technician(technicianId)
+                .reference(job.getReferenceNumber())
+                .job(job.getId()));
         auditService.record(actor, "JOB", jobId, "ASSIGNED", "Technician: " + tech.getUsername());
 
         return JobResponse.from(job);
@@ -315,10 +322,17 @@ public class JobService {
                     "Cannot unassign in status " + job.getStatus());
         }
 
+        UUID previousTechnician = job.getAssignedTechnician() == null
+                ? null : job.getAssignedTechnician().getId();
+
         job.setAssignedTechnician(null);
         job.setStatus(JobStatus.CREATED);
         job.setUpdatedAt(Instant.now());
         jobRepo.save(job);
+        notifications.publish(NotificationEvent.JOB_UNASSIGNED, NotificationContext.create()
+                .technician(previousTechnician)
+                .reference(job.getReferenceNumber())
+                .job(job.getId()));
         auditService.record(actor, "JOB", jobId, "UNASSIGNED", null);
         return JobResponse.from(job);
     }
@@ -337,9 +351,10 @@ public class JobService {
         job.setUpdatedAt(Instant.now());
         jobRepo.save(job);
 
-        notifService.send(job.getCustomer().getId(), "JOB_IN_PROGRESS",
-                "Work has started on your repair " + job.getReferenceNumber() + ".",
-                job.getReferenceNumber(), "JOB", job.getId());
+        notifications.publish(NotificationEvent.JOB_IN_PROGRESS, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .reference(job.getReferenceNumber())
+                .job(job.getId()));
         auditService.record(actor, "JOB", jobId, "STARTED", null);
         return JobResponse.from(job);
     }
@@ -372,10 +387,10 @@ public class JobService {
         job.setUpdatedAt(Instant.now());
         jobRepo.save(job);
 
-        notifService.send(job.getCustomer().getId(), "JOB_AWAITING_PARTS",
-                "Your repair " + job.getReferenceNumber()
-                        + " is on hold while we source parts.",
-                job.getReferenceNumber(), "JOB", job.getId());
+        notifications.publish(NotificationEvent.JOB_AWAITING_PARTS, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .reference(job.getReferenceNumber())
+                .job(job.getId()));
         auditService.record(actor, "JOB", jobId, "AWAITING_PARTS", null);
         return JobResponse.from(job);
     }
@@ -387,6 +402,10 @@ public class JobService {
         job.setStatus(JobStatus.IN_PROGRESS);
         job.setUpdatedAt(Instant.now());
         jobRepo.save(job);
+        notifications.publish(NotificationEvent.JOB_RESUMED, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .reference(job.getReferenceNumber())
+                .job(job.getId()));
         auditService.record(actor, "JOB", jobId, "RESUMED", null);
         return JobResponse.from(job);
     }
@@ -404,10 +423,10 @@ public class JobService {
         job.setUpdatedAt(Instant.now());
         jobRepo.save(job);
 
-        notifService.send(job.getCustomer().getId(), "JOB_COMPLETED",
-                "Your repair " + job.getReferenceNumber()
-                        + " is complete and ready for collection.",
-                job.getReferenceNumber(), "JOB", job.getId());
+        notifications.publish(NotificationEvent.JOB_COMPLETED, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .reference(job.getReferenceNumber())
+                .job(job.getId()));
         auditService.record(actor, "JOB", jobId, "COMPLETED", resolutionSummary);
         return JobResponse.from(job);
     }
@@ -429,10 +448,11 @@ public class JobService {
         job.setUpdatedAt(Instant.now());
         jobRepo.save(job);
 
-        notifService.send(job.getCustomer().getId(), "JOB_CANCELLED",
-                "Your repair " + job.getReferenceNumber()
-                        + " has been cancelled. Reason: " + reason,
-                job.getReferenceNumber(), "JOB", job.getId());
+        notifications.publish(NotificationEvent.JOB_CANCELLED, NotificationContext.create()
+                .customer(job.getCustomer().getId())
+                .reference(job.getReferenceNumber())
+                .reason(reason)
+                .job(job.getId()));
         auditService.record(actor, "JOB", jobId, "CANCELLED", reason);
     }
 

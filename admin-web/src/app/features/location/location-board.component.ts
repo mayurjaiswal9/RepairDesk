@@ -1,27 +1,18 @@
-import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LocationApi, LocationBoard } from '../../core/api/location.api';
+import { LocationApi, LocationBoard, LocationHistory } from '../../core/api/location.api';
 import { SessionService } from '../../core/auth/session.service';
 import { mapHttpError, MappedApiError } from '../../core/api/api-error';
 import { googleMapsDirectionsUrl } from '../../core/maps/directions';
 import { MapPin, PinMapComponent } from '../../core/maps/pin-map.component';
 
 type PageState = 'loading' | 'ready' | 'error';
-type Technician = LocationBoard['technicians'][number];
-
-/** A position counts as stale after the matching update interval plus this grace. */
-const STALE_GRACE_MS = 15 * 60_000;
-
-export interface PresenceLabel {
-  text: string;
-  tone: 'travelling' | 'onsite' | 'stale';
-}
+type LocationEntry = LocationHistory['locations'][number];
 
 @Component({
   selector: 'app-location-board',
   standalone: true,
-  imports: [RouterLink, PinMapComponent, DatePipe],
+  imports: [RouterLink, PinMapComponent],
   templateUrl: './location-board.component.html',
   styleUrl: './location-board.component.scss',
 })
@@ -31,23 +22,31 @@ export class LocationBoardComponent implements OnInit {
 
   readonly state = signal<PageState>('loading');
   readonly error = signal<MappedApiError | null>(null);
+  readonly historyError = signal<string | null>(null);
   readonly board = signal<LocationBoard | null>(null);
-  readonly travelPingSeconds = signal(120);
-  readonly onSitePingMinutes = signal(60);
+  readonly historyDays = signal<string[]>([]);
+  readonly historyDate = signal('');
+  readonly locations = signal<LocationEntry[]>([]);
+  readonly historyLoading = signal(false);
+  readonly selectedLocationId = signal('');
   readonly technicianId = signal('');
   readonly isAdmin = computed(() => this.session.role() === 'ADMIN');
 
   readonly technicians = computed(() => this.board()?.technicians ?? []);
-  readonly visibleTechnicians = computed(() => {
-    const id = this.technicianId();
-    const list = this.technicians();
-    return id ? list.filter((tech) => tech.id === id) : list;
-  });
   readonly visibleJobs = computed(() => {
     const board = this.board();
     if (!board) return [];
     const id = this.technicianId();
     return id ? board.jobs.filter((job) => job.technicianId === id) : board.jobs;
+  });
+  readonly visibleLocations = computed(() => {
+    const id = this.technicianId();
+    const list = this.locations();
+    return id ? list.filter((row) => row.technicianId === id) : list;
+  });
+  readonly viewingToday = computed(() => {
+    const days = this.historyDays();
+    return !!days.length && this.historyDate() === days[0];
   });
 
   readonly pins = computed<MapPin[]>(() => {
@@ -63,54 +62,84 @@ export class LocationBoardComponent implements OnInit {
         kind: 'office',
       });
     }
-    for (const tech of this.visibleTechnicians()) {
-      if (tech.latitude == null || tech.longitude == null) continue;
+    const selected = this.visibleLocations().find((row) => row.id === this.selectedLocationId());
+    const shown = selected ? [selected] : latestPerTechnician(this.visibleLocations());
+    for (const row of shown) {
       pins.push({
-        id: tech.id,
-        latitude: tech.latitude,
-        longitude: tech.longitude,
-        title: tech.name,
+        id: row.id,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        title: row.technicianName,
         kind: 'technician',
       });
     }
-    for (const job of this.visibleJobs()) {
-      if (job.latitude == null || job.longitude == null) continue;
-      pins.push({
-        id: job.id,
-        latitude: job.latitude,
-        longitude: job.longitude,
-        title: `${job.referenceNumber} ${job.address ?? ''}`.trim(),
-        kind: 'job',
-      });
+    if (this.viewingToday()) {
+      for (const job of this.visibleJobs()) {
+        if (job.latitude == null || job.longitude == null) continue;
+        pins.push({
+          id: job.id,
+          latitude: job.latitude,
+          longitude: job.longitude,
+          title: `${job.referenceNumber} ${job.address ?? ''}`.trim(),
+          kind: 'job',
+        });
+      }
     }
     return pins;
   });
 
-  readonly locatedTechnicians = computed(
-    () => this.visibleTechnicians().filter((tech) => tech.latitude != null),
-  );
-
   onTechnicianInput(event: Event): void {
     this.technicianId.set((event.target as HTMLSelectElement).value);
+    this.selectedLocationId.set('');
   }
 
-  canLiveTrack(tech: Technician): boolean {
-    return this.isAdmin() && tech.state === 'TRAVELLING' && !!tech.jobId;
+  onDayInput(event: Event): void {
+    const date = (event.target as HTMLSelectElement).value;
+    this.historyDate.set(date);
+    this.selectedLocationId.set('');
+    this.loadHistory(date);
   }
 
-  jobReference(jobId?: string | null): string | null {
-    if (!jobId) return null;
-    return this.board()?.jobs.find((job) => job.id === jobId)?.referenceNumber ?? null;
+  selectLocation(id: string): void {
+    this.selectedLocationId.update((current) => (current === id ? '' : id));
+  }
+
+  canLiveTrack(row: LocationEntry): boolean {
+    if (!this.viewingToday() || !this.isAdmin() || row.state !== 'TRAVELLING' || !row.jobId) return false;
+    const newest = this.visibleLocations().find((item) => item.technicianId === row.technicianId);
+    return newest?.id === row.id;
+  }
+
+  dayLabel(iso: string): string {
+    const days = this.historyDays();
+    const shown = indiaDayLabel(iso);
+    if (iso === days[0]) return `Today, ${shown}`;
+    if (iso === days[1]) return `Yesterday, ${shown}`;
+    return shown;
+  }
+
+  clock(iso: string): string {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date(iso));
+  }
+
+  stateLabel(state?: string | null): string {
+    if (state === 'TRAVELLING') return 'Travelling';
+    if (state === 'ON_SITE') return 'On site';
+    return 'Shared';
+  }
+
+  stateTone(state?: string | null): string {
+    if (state === 'TRAVELLING') return 'travelling';
+    if (state === 'ON_SITE') return 'onsite';
+    return 'stale';
   }
 
   ngOnInit(): void {
-    this.api.config().subscribe({
-      next: (config) => {
-        if (config.travelPingSeconds) this.travelPingSeconds.set(config.travelPingSeconds);
-        if (config.onSitePingMinutes) this.onSitePingMinutes.set(config.onSitePingMinutes);
-      },
-      error: () => undefined,
-    });
     this.reload();
   }
 
@@ -120,6 +149,7 @@ export class LocationBoardComponent implements OnInit {
       next: (board) => {
         this.board.set(board);
         this.state.set('ready');
+        this.loadHistory(this.historyDate());
       },
       error: (err) => {
         this.error.set(mapHttpError(err));
@@ -136,22 +166,6 @@ export class LocationBoardComponent implements OnInit {
     });
   }
 
-  /** Null when the technician has no state; the board then shows the plain time. */
-  presenceLabel(tech: Technician): PresenceLabel | null {
-    if (!tech.state || !tech.recordedAt) return null;
-    const recorded = new Date(tech.recordedAt).getTime();
-    if (Number.isNaN(recorded)) return null;
-    const age = Math.max(0, Date.now() - recorded);
-    const job = this.jobReference(tech.jobId);
-    if (tech.state === 'TRAVELLING' && age <= this.travelPingSeconds() * 1000 + STALE_GRACE_MS) {
-      return { text: `Travelling${job ? ` to ${job}` : ''} · ${agoLabel(age)}`, tone: 'travelling' };
-    }
-    if (tech.state === 'ON_SITE' && age <= this.onSitePingMinutes() * 60_000 + STALE_GRACE_MS) {
-      return { text: `On site${job ? ` at ${job}` : ''} · ${agoLabel(age)}`, tone: 'onsite' };
-    }
-    return { text: `Stale · last seen ${lastSeenLabel(tech.recordedAt)}`, tone: 'stale' };
-  }
-
   etaLabel(job: LocationBoard['jobs'][number]): string {
     if (job.etaMinutes == null) return 'No ETA yet';
     const from = job.etaFrom === 'TECHNICIAN' ? 'from the technician' : 'from the office';
@@ -159,26 +173,44 @@ export class LocationBoardComponent implements OnInit {
     const km = job.distanceMetres == null ? '' : ` · ${(job.distanceMetres / 1000).toFixed(1)} km`;
     return `${estimate}${job.etaMinutes} min ${from}${km}`;
   }
+
+  private loadHistory(date: string): void {
+    this.historyLoading.set(true);
+    this.historyError.set(null);
+    this.api.history(date || null).subscribe({
+      next: (history) => {
+        this.historyDays.set(history.days ?? []);
+        this.historyDate.set(history.date);
+        this.locations.set(history.locations ?? []);
+        this.historyLoading.set(false);
+      },
+      error: (err) => {
+        this.locations.set([]);
+        this.historyError.set(mapHttpError(err).message);
+        this.historyLoading.set(false);
+      },
+    });
+  }
 }
 
-function agoLabel(ms: number): string {
-  const minutes = Math.floor(ms / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
-  return `${Math.floor(minutes / 60)} h ${minutes % 60} min ago`;
+/** Newest share for each technician. The list itself stays newest-first. */
+function latestPerTechnician(rows: LocationEntry[]): LocationEntry[] {
+  const seen = new Set<string>();
+  const latest: LocationEntry[] = [];
+  for (const row of rows) {
+    if (seen.has(row.technicianId)) continue;
+    seen.add(row.technicianId);
+    latest.push(row);
+  }
+  return latest;
 }
 
-/** `HH:mm` India time, with the date when it was not today. */
-function lastSeenLabel(iso: string): string {
-  const date = new Date(iso);
-  const day = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
-  const time = new Intl.DateTimeFormat('en-GB', {
+function indiaDayLabel(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  if (!year || !month || !day) return iso;
+  return new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Kolkata',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(date);
-  if (day(date) === day(new Date())) return time;
-  const shortDate = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short' }).format(date);
-  return `${shortDate} ${time}`;
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(Date.UTC(year, month - 1, day, 6, 30)));
 }

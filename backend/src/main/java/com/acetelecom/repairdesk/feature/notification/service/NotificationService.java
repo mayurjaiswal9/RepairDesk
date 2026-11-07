@@ -35,7 +35,7 @@ public class NotificationService {
      *
      * @param relatedType {@code REPAIR_REQUEST}, {@code JOB}, or {@code APPOINTMENT}
      */
-    public void send(UUID recipientId, String type, String message,
+    public Notification send(UUID recipientId, String type, String message,
             String referenceNumber, String relatedType, UUID relatedEntityId) {
         User recipient = userRepo.findById(recipientId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Recipient not found"));
@@ -47,7 +47,7 @@ public class NotificationService {
         n.setReferenceNumber(referenceNumber);
         n.setRelatedType(relatedType);
         n.setRelatedEntityId(relatedEntityId);
-        notifRepo.save(n);
+        return notifRepo.save(n);
     }
 
     @Transactional(readOnly = true)

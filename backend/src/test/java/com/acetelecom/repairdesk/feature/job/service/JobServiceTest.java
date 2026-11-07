@@ -36,7 +36,8 @@ import com.acetelecom.repairdesk.feature.location.domain.ServiceLocation;
 import com.acetelecom.repairdesk.feature.location.dto.ServiceLocationDto;
 import com.acetelecom.repairdesk.feature.location.service.MapsService;
 import com.acetelecom.repairdesk.feature.location.service.ServiceLocationApplier;
-import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.notification.domain.NotificationEvent;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationDispatcher;
 import com.acetelecom.repairdesk.feature.trip.service.TripService;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.request.domain.RepairRequest;
@@ -60,7 +61,7 @@ class JobServiceTest {
     @Mock
     private UserRepository userRepo;
     @Mock
-    private NotificationService notifService;
+    private NotificationDispatcher notifications;
     @Mock
     private AuditService auditService;
     @Mock
@@ -78,7 +79,7 @@ class JobServiceTest {
     void setUp() {
         locationApplier = new ServiceLocationApplier(mapsService);
         jobService = new JobService(jobRepo, requestRepo, userRepo,
-                notifService, auditService, locationApplier, tripService);
+                notifications, auditService, locationApplier, tripService);
 
         UUID staffId = UUID.randomUUID();
         staffActor = new AuthenticatedUser(staffId, "staff1", "STAFF");
@@ -105,7 +106,7 @@ class JobServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(req.getStatus()).isEqualTo(RequestStatus.APPROVED);
-        verify(notifService).send(any(), eq("JOB_APPROVED"), any(), any(), any(), any());
+        verify(notifications).publish(eq(NotificationEvent.JOB_APPROVED), any());
         verify(auditService).record(eq(staffActor), eq("REQUEST"), eq(reqId),
                 eq("APPROVED"), any());
     }
@@ -197,7 +198,7 @@ class JobServiceTest {
 
         assertThat(req.getStatus()).isEqualTo(RequestStatus.REJECTED);
         assertThat(req.getRejectionReasonCode()).isEqualTo("CANNOT_REPAIR");
-        verify(notifService).send(any(), eq("REQUEST_REJECTED"), any(), any(), any(), any());
+        verify(notifications).publish(eq(NotificationEvent.REQUEST_REJECTED), any());
     }
 
     @Test

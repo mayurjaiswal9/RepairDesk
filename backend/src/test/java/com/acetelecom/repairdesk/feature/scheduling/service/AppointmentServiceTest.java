@@ -23,7 +23,7 @@ import com.acetelecom.repairdesk.feature.audit.service.AuditService;
 import com.acetelecom.repairdesk.feature.job.domain.Job;
 import com.acetelecom.repairdesk.feature.job.domain.JobStatus;
 import com.acetelecom.repairdesk.feature.job.repository.JobRepository;
-import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationDispatcher;
 import com.acetelecom.repairdesk.feature.request.domain.Priority;
 import com.acetelecom.repairdesk.feature.scheduling.domain.Appointment;
 import com.acetelecom.repairdesk.feature.scheduling.domain.AppointmentStatus;
@@ -43,7 +43,7 @@ class AppointmentServiceTest {
     @Mock private JobRepository jobRepo;
     @Mock private UserRepository userRepo;
     @Mock private SettingsService settingsService;
-    @Mock private NotificationService notifService;
+    @Mock private NotificationDispatcher notifications;
     @Mock private AuditService auditService;
 
     private AppointmentService appointmentService;
@@ -52,7 +52,7 @@ class AppointmentServiceTest {
     @BeforeEach
     void setUp() {
         appointmentService = new AppointmentService(appointmentRepo, jobRepo,
-                userRepo, settingsService, notifService, auditService);
+                userRepo, settingsService, notifications, auditService);
         staffActor = new AuthenticatedUser(UUID.randomUUID(), "staff1", "STAFF");
     }
 

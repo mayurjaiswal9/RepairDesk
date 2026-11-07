@@ -1,0 +1,90 @@
+@if (state() === 'forbidden') {
+  <div class="state-panel">
+    <h1 class="display" tabindex="-1">Notification settings</h1>
+    <p>Notification settings are limited to administrators.</p>
+    <a routerLink="/dashboard" class="primary-btn">Back to dashboard</a>
+  </div>
+} @else if (state() === 'error') {
+  <div class="state-panel error" role="alert">
+    <h1 class="display" tabindex="-1">Couldn't load notification settings</h1>
+    <p>{{ error()?.message }}</p>
+    @if (error()?.correlationId) {
+      <p class="cid">correlationId: {{ error()?.correlationId }}</p>
+    }
+    <button type="button" class="primary-btn" (click)="load()">Retry</button>
+  </div>
+} @else if (state() === 'loading') {
+  <div class="page-header">
+    <h1 class="display" tabindex="-1">Notification settings</h1>
+  </div>
+  <div class="form-shell" aria-busy="true">
+    @for (_ of [1, 2, 3]; track $index) {
+      <div class="skel"></div>
+    }
+  </div>
+} @else {
+  <div class="page-header">
+    <div>
+      <h1 class="display" tabindex="-1">Notification settings</h1>
+      <p class="meta">Choose who hears each update, and how. The inbox is saved even if a phone or computer alert cannot be delivered.</p>
+    </div>
+    <button type="button" class="primary-btn" (click)="save()" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Save' }}
+    </button>
+  </div>
+
+  @if (!phoneReady()) {
+    <p class="note">Phone alerts are saved with these settings. They are delivered after the Firebase project for Ace Smart Care is connected.</p>
+  }
+  <p class="note">WhatsApp and SMS stay off until those channels are connected. Each workshop will use its own Meta account and its own SMS registration.</p>
+
+  <div class="rules">
+    @for (rule of rules(); track rule.eventKey) {
+      <section class="rule">
+        <div class="rule-head">
+          <div>
+            <h2>{{ rule.label }}</h2>
+            <p>{{ rule.description }}</p>
+          </div>
+          <mat-slide-toggle [(ngModel)]="rule.enabled" [disabled]="saving()">On</mat-slide-toggle>
+        </div>
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Message</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="rule.messageTemplate" maxlength="500" [readonly]="saving()"></textarea>
+          <mat-hint>{{ placeholders }}</mat-hint>
+        </mat-form-field>
+
+        <fieldset>
+          <legend>Who</legend>
+          <label><input type="checkbox" [(ngModel)]="rule.notifyCustomer" [disabled]="saving()" /> Customer</label>
+          <label><input type="checkbox" [(ngModel)]="rule.notifyTechnician" [disabled]="saving()" /> Assigned technician</label>
+          <label><input type="checkbox" [(ngModel)]="rule.notifyStaff" [disabled]="saving()" /> Staff</label>
+          <label><input type="checkbox" [(ngModel)]="rule.notifyAdmin" [disabled]="saving()" /> Admin</label>
+        </fieldset>
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Also these people</mat-label>
+          <mat-select [(ngModel)]="rule.extraUserIds" multiple [disabled]="saving()">
+            @for (person of people(); track person.id) {
+              <mat-option [value]="person.id">{{ person.name }} · {{ person.role }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <fieldset>
+          <legend>How</legend>
+          <label><input type="checkbox" [(ngModel)]="rule.channelInApp" [disabled]="saving()" /> In the app</label>
+          <label><input type="checkbox" [(ngModel)]="rule.channelPhone" [disabled]="saving()" /> Phone</label>
+          <label><input type="checkbox" [(ngModel)]="rule.channelDesktop" [disabled]="saving()" /> Desktop</label>
+          <label class="locked" title="Available after WhatsApp is connected">
+            <input type="checkbox" [checked]="false" disabled /> WhatsApp
+          </label>
+          <label class="locked" title="Available after SMS is connected">
+            <input type="checkbox" [checked]="false" disabled /> SMS
+          </label>
+        </fieldset>
+      </section>
+    }
+  </div>
+}

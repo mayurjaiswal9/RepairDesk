@@ -50,7 +50,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
         label: 'Locations',
         path: '/location',
         icon: 'my_location',
-        roles: ['ADMIN', 'STAFF'],
+        roles: ['ADMIN'],
         description: 'Office, technician positions, and job ETAs',
       },
       {
@@ -136,6 +136,14 @@ export const NAV_GROUPS: NavGroupDef[] = [
         description: 'Business details and working hours',
       },
       {
+        id: 'notification-settings',
+        label: 'Notification settings',
+        path: '/settings/notifications',
+        icon: 'notifications_active',
+        roles: ['ADMIN'],
+        description: 'Choose who is told, and how',
+      },
+      {
         id: 'office-location',
         label: 'Office location',
         path: '/settings/location',
@@ -187,6 +195,9 @@ export function isNavActive(currentUrl: string, path: string): boolean {
       currentUrl.startsWith('/requests?') ||
       (currentUrl.startsWith('/requests/') && !currentUrl.startsWith('/requests/new'))
     );
+  }
+  if (path === '/settings') {
+    return currentUrl === '/settings' || currentUrl.startsWith('/settings?');
   }
   return currentUrl === path || currentUrl.startsWith(path + '/') || currentUrl.startsWith(path + '?');
 }

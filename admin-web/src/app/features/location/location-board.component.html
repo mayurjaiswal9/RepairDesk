@@ -2,8 +2,8 @@
   <div>
     <h1 class="display">Technician locations</h1>
     <p class="lede">
-      Office, open jobs, and the latest position each technician has shared.
-      Travel time uses the technician when a position is available, otherwise the office.
+      Positions from the last 2 days. Older ones are removed. Times are India time.
+      The newest share for the selected day is at the top.
     </p>
   </div>
   <button type="button" class="ghost-btn" (click)="reload()">Refresh</button>
@@ -17,51 +17,59 @@
 } @else if (state() === 'loading') {
   <p class="muted">Loading the map…</p>
 } @else {
-  <label class="filter">
-    Technician
-    <select [value]="technicianId()" (change)="onTechnicianInput($event)">
-      <option value="">All technicians</option>
-      @for (tech of technicians(); track tech.id) {
-        <option [value]="tech.id">{{ tech.name }}</option>
-      }
-    </select>
-  </label>
+  <div class="filters">
+    <label class="filter">
+      Technician
+      <select [value]="technicianId()" (change)="onTechnicianInput($event)">
+        <option value="">All technicians</option>
+        @for (tech of technicians(); track tech.id) {
+          <option [value]="tech.id">{{ tech.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="filter">
+      Day
+      <select [value]="historyDate()" (change)="onDayInput($event)">
+        @for (day of historyDays(); track day) {
+          <option [value]="day">{{ dayLabel(day) }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <section class="card history-card">
+    <h2>Locations <span class="count">{{ visibleLocations().length }}</span></h2>
+    @if (historyLoading()) {
+      <p class="muted">Loading locations…</p>
+    } @else if (historyError()) {
+      <p class="muted">{{ historyError() }}</p>
+    } @else if (!visibleLocations().length) {
+      <p class="muted">No locations on this day.</p>
+    } @else {
+      <ul>
+        @for (row of visibleLocations(); track row.id) {
+          <li [class.selected]="selectedLocationId() === row.id" (click)="selectLocation(row.id)">
+            <span class="loc-line">
+              <strong>{{ row.technicianName }}</strong>
+              <span>{{ clock(row.recordedAt) }}</span>
+              <span class="presence {{ stateTone(row.state) }}">{{ stateLabel(row.state) }}</span>
+            </span>
+            @if (row.jobId && row.jobReference) {
+              <a [routerLink]="['/jobs', row.jobId]" (click)="$event.stopPropagation()">{{ row.jobReference }}</a>
+            }
+            @if (canLiveTrack(row)) {
+              <a [routerLink]="['/location/live', row.technicianId, row.jobId]" (click)="$event.stopPropagation()">Live Track</a>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
 
   <app-pin-map [pins]="pins()" [height]="420" />
-  <p class="legend">O office · T technician · unmarked pins are jobs</p>
+  <p class="legend">O office · T technician · unmarked pins are today’s jobs</p>
 
   <div class="columns">
-    <section class="card">
-      <h2>Technicians</h2>
-      @if (!visibleTechnicians().length) {
-        <p class="muted">No technicians yet.</p>
-      } @else {
-        <ul>
-          @for (tech of visibleTechnicians(); track tech.id) {
-            <li>
-              <strong>{{ tech.name }}</strong>
-              @if (tech.latitude == null) {
-                <span class="muted">No position shared yet</span>
-              } @else {
-                @if (presenceLabel(tech); as presence) {
-                  <span class="presence {{ presence.tone }}">{{ presence.text }}</span>
-                } @else if (tech.recordedAt) {
-                  <span class="muted">{{ tech.recordedAt | date: 'short' }}</span>
-                }
-              }
-              @if (canLiveTrack(tech)) {
-                <span class="live-line">
-                  <a [routerLink]="['/jobs', tech.jobId]">{{ jobReference(tech.jobId) || 'Job' }}</a>
-                  <span class="sep">—</span>
-                  <a [routerLink]="['/location/live', tech.id, tech.jobId]">Live Track</a>
-                </span>
-              }
-            </li>
-          }
-        </ul>
-      }
-    </section>
-
     <section class="card">
       <h2>Jobs and ETA</h2>
       @if (!visibleJobs().length) {

@@ -59,6 +59,22 @@ export interface LocationConfig {
 
 export type TechnicianState = 'TRAVELLING' | 'ON_SITE';
 
+export interface LocationHistory {
+  date: string;
+  days: string[];
+  locations: {
+    id: string;
+    technicianId: string;
+    technicianName: string;
+    latitude: number;
+    longitude: number;
+    recordedAt: string;
+    jobId?: string | null;
+    jobReference?: string | null;
+    state?: TechnicianState | string | null;
+  }[];
+}
+
 export interface LocationBoard {
   shop: { latitude?: number | null; longitude?: number | null; radiusM: number };
   technicians: {
@@ -125,6 +141,11 @@ export class LocationApi {
 
   board(): Observable<LocationBoard> {
     return this.http.get<LocationBoard>(`${this.base}/location/board`);
+  }
+
+  history(date?: string | null): Observable<LocationHistory> {
+    const params = date ? { date } : undefined;
+    return this.http.get<LocationHistory>(`${this.base}/location/board/history`, { params });
   }
 
   config(): Observable<LocationConfig> {

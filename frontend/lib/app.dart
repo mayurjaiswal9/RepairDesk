@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/auth/roles.dart';
 import 'core/auth/session_controller.dart';
 import 'core/branding/branding_config.dart';
+import 'core/push/push_registrar.dart';
 import 'features/trips/data/on_site_tracker.dart';
 import 'features/trips/data/presence_tracker.dart';
 import 'features/trips/data/trip_recorder.dart';
@@ -63,6 +64,40 @@ class _RepairDeskAppState extends ConsumerState<RepairDeskApp>
       theme: AppTheme.light(),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child ?? const SizedBox.shrink(),
+            const _PushBinding(),
+          ],
+        );
+      },
     );
+  }
+}
+
+class _PushBinding extends ConsumerStatefulWidget {
+  const _PushBinding();
+
+  @override
+  ConsumerState<_PushBinding> createState() => _PushBindingState();
+}
+
+class _PushBindingState extends ConsumerState<_PushBinding> {
+  @override
+  void initState() {
+    super.initState();
+    SessionHooks.beforeSignOut =
+        () => ref.read(pushRegistrarProvider).unregister();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(sessionControllerProvider, (previous, next) {
+      if (next.isAuthenticated) {
+        unawaited(ref.read(pushRegistrarProvider).register());
+      }
+    });
+    return const SizedBox.shrink();
   }
 }

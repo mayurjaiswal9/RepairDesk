@@ -77,6 +77,14 @@ app:
     default-username: admin
     default-password: "Admin$1234"
     default-mobile: "0000000000"
+  push:
+    # Path to a Firebase service-account JSON, or the JSON itself. Empty skips phone alerts.
+    firebase-credentials: ${FIREBASE_CREDENTIALS:}
+    firebase-credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
+    # Browser push. Override both keys together in production.
+    vapid-public-key: ${VAPID_PUBLIC_KEY:BEuD2wP_q389mcmUi-0rXndKCnxhxy5wnbfljh9eZlJia0F-4xkT0iYbVwk1iStMuKHGOdtfmKFq7BksZL7ulsY}
+    vapid-private-key: ${VAPID_PRIVATE_KEY:xo2LeZB96blhIfQCCdlfnf2hupKHucfwIdHgvy8vFXA}
+    vapid-subject: ${VAPID_SUBJECT:mailto:notifications@repairdesk.local}
   maps:
     server-key: ${GOOGLE_MAPS_SERVER_KEY:}
     daily-limit-geocode: ${MAPS_DAILY_LIMIT_GEOCODE:2000}

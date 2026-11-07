@@ -1,8 +1,9 @@
 package com.acetelecom.repairdesk.feature.location.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,18 +18,21 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.acetelecom.repairdesk.feature.location.service.AttendanceService.AutoEndResult;
-import com.acetelecom.repairdesk.feature.notification.service.NotificationService;
+import com.acetelecom.repairdesk.feature.notification.domain.NotificationEvent;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationContext;
+import com.acetelecom.repairdesk.feature.notification.service.NotificationDispatcher;
 
 @ExtendWith(MockitoExtension.class)
 class AttendanceAutoEndTest {
 
     @Mock private ScheduledTaskGuard guard;
     @Mock private AttendanceService attendance;
-    @Mock private NotificationService notifications;
+    @Mock private NotificationDispatcher notifications;
 
     @Test
     void skippedClaimDoesNotCloseDaysOrNotify() {
@@ -39,7 +43,7 @@ class AttendanceAutoEndTest {
         job.run();
 
         verify(attendance, never()).autoEndOpenDays();
-        verify(notifications, never()).send(any(), any(), any(), any(), any(), any());
+        verify(notifications, never()).publish(any(), any());
     }
 
     @Test
@@ -53,9 +57,11 @@ class AttendanceAutoEndTest {
 
         job.run();
 
-        verify(notifications).send(technicianId, "DAY_ENDED",
-                "Your work day ended automatically at 19:00.", null, null, null);
-        verify(notifications, never()).send(any(), any(), any(), any(), eq("JOB"), any());
+        ArgumentCaptor<NotificationContext> cap = ArgumentCaptor.forClass(NotificationContext.class);
+        verify(notifications).publish(eq(NotificationEvent.DAY_ENDED), cap.capture());
+        assertThat(cap.getValue().technicianId()).isEqualTo(technicianId);
+        assertThat(cap.getValue().when()).isEqualTo("19:00");
+        verify(notifications, never()).publish(eq(NotificationEvent.JOB_ASSIGNED), any());
     }
 
     @Test
@@ -67,11 +73,13 @@ class AttendanceAutoEndTest {
         when(attendance.autoEndOpenDays())
                 .thenReturn(new AutoEndResult(LocalTime.of(19, 0), List.of(first, second)));
         doThrow(new IllegalStateException("inbox down"))
-                .when(notifications).send(eq(first), any(), any(), isNull(), isNull(), isNull());
+                .when(notifications).publish(eq(NotificationEvent.DAY_ENDED),
+                        argThat(ctx -> first.equals(ctx.technicianId())));
         AttendanceAutoEnd job = new AttendanceAutoEnd(guard, attendance, notifications, clock);
 
         job.run();
 
-        verify(notifications).send(eq(second), eq("DAY_ENDED"), any(), isNull(), isNull(), isNull());
+        verify(notifications).publish(eq(NotificationEvent.DAY_ENDED),
+                argThat(ctx -> second.equals(ctx.technicianId())));
     }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/session_controller.dart';
+import '../../../core/push/notification_target.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../data/notifications_repository.dart';
 import '../data/unread_count_provider.dart';
@@ -72,6 +74,12 @@ class NotificationsScreen extends ConsumerWidget {
                             .read(unreadCountProvider.notifier)
                             .decrement();
                       }
+                      openNotificationTarget(
+                        role: ref.read(sessionControllerProvider).role,
+                        relatedType: items[i].relatedType ?? '',
+                        relatedId: items[i].relatedEntityId ?? '',
+                        reference: items[i].referenceNumber ?? '',
+                      );
                     },
                   ),
                 ),
